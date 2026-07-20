@@ -17,7 +17,7 @@ export interface TemplateConfig {
   duration: number; // seconds
 }
 
-export type TextAnimationType = 'fade' | 'slide-up' | 'typewriter' | 'scale' | 'none';
+export type TextAnimationType = 'fade' | 'slide-up' | 'typewriter' | 'scale' | 'none' | 'text-animate' | 'typing-animation' | 'dia-text-reveal' | 'blur-out-up' | 'bottom-up-letters' | 'depth-parallax-words' | 'fade-through' | 'focus-blur-resolve' | 'kinetic-center-build' | 'line-by-line-slide' | 'mask-reveal-up' | 'micro-scale-fade' | 'per-character-rise' | 'per-word-crossfade' | 'reveal-text' | 'scale-down-fade';
 
 export interface TextOverlay {
   id: string;
@@ -27,6 +27,11 @@ export interface TextOverlay {
   color: string;
   fontSize: number;
   animationType: TextAnimationType;
+  previewTrigger?: number;
+  animationSpeed: number;
+  isBold?: boolean;
+  isItalic?: boolean;
+  isUnderline?: boolean;
 }
 
 export interface SceneSettings {
@@ -49,6 +54,7 @@ export interface AppState {
   screenshotUrl: string | null;
   screenshotOrientation: Orientation | null;
   device: DeviceType;
+  deviceColor: string;
   orientation: Orientation;
   template: TemplateName;
   speed: number;

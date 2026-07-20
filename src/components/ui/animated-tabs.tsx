@@ -41,10 +41,12 @@ export function AnimatedTabs({
       style={{
         display: 'flex',
         position: 'relative',
-        background: variant === 'segment' ? 'var(--bg-input)' : 'transparent',
+        background: '#ffffff',
         borderRadius: '9999px',
-        padding: '2px',
+        padding: '8px',
+        gap: '8px',
         userSelect: 'none',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
       }}
     >
       {tabs.map((tab) => {
@@ -61,8 +63,8 @@ export function AnimatedTabs({
             style={{
               background: 'transparent',
               border: 'none',
-              padding: '8px 16px',
-              fontSize: '13px',
+              padding: '10px 16px',
+              fontSize: '14px',
               fontWeight: 600,
               color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
               cursor: 'pointer',

@@ -133,6 +133,10 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
   const { nodes, materials } = useGLTF('/models/iphone16.gltf') as unknown as GLTFResult
   const placeholderTexture = usePlaceholderTexture();
 
+  const bodyMaterial = React.useMemo(() => {
+    return materials.d79c406d92ac2ea2b462;
+  }, [materials.d79c406d92ac2ea2b462]);
+
   // Re-project the UV coordinates of the screen geometry at runtime so the screenshot fits the panel boundary exactly
   React.useLayoutEffect(() => {
     const geometry = nodes.Object_18.geometry;
@@ -169,7 +173,7 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
     <group {...props} dispose={null}>
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <group rotation={[Math.PI / 2, 0, 0]}>
-          <mesh geometry={nodes.Object_12.geometry} material={materials.d79c406d92ac2ea2b462} />
+          <mesh geometry={nodes.Object_12.geometry} material={bodyMaterial} />
           <mesh geometry={nodes.Object_14.geometry} material={materials['8ed052ed6d3cd71ab5e3']} />
           <mesh geometry={nodes.Object_16.geometry} material={materials['5155c9eac3acd76d34a9']} />
 

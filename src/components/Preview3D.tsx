@@ -3,11 +3,13 @@
 
 import React, { Suspense, useRef, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment } from '@react-three/drei';
+import { Environment, Hud, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppState } from '@/store';
+import Link from 'next/link';
 import PhoneModel from './PhoneModel';
 import FloatingTopBar from './FloatingTopBar';
+import SceneTexts from './SceneTexts';
 
 function GradientBackground({ color1, color2, enabled }: { color1: string; color2: string; enabled: boolean }) {
   const { scene } = useThree();
@@ -84,30 +86,65 @@ function CameraZoomController() {
   return null;
 }
 
+function HudCameraAdapter() {
+  const { size, camera } = useThree();
+  React.useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.aspect = size.width / size.height;
+      camera.updateProjectionMatrix();
+    }
+  }, [size, camera]);
+  return null;
+}
+
 export default function Preview3D() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, undo, redo, canUndo, canRedo } = useAppState();
 
   const cameraPosition: [number, number, number] = [0, 0, 4];
 
   const isPortrait = state.orientation === 'portrait';
-  const containerStyle: React.CSSProperties = {
+  const containerStyle: React.CSSProperties = isPortrait ? {
     cursor: 'default',
-    aspectRatio: isPortrait ? '9 / 16' : '16 / 9',
-    width: isPortrait ? 'auto' : '85%',
-    height: isPortrait ? '85%' : 'auto',
+    aspectRatio: '9 / 16',
+    width: 'auto',
+    height: '85%',
     maxWidth: '90%',
     maxHeight: '90%',
-    transition: 'all 0.3s ease-in-out',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+  } : {
+    cursor: 'default',
+    aspectRatio: '16 / 9',
+    width: 'auto',
+    height: '85%',
+    maxWidth: '90%',
+    maxHeight: '90%',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
   };
 
   return (
-    <div 
-      className="preview-canvas-container" 
-      id="preview-3d" 
-      style={containerStyle}
-    >
-      <div onClick={(e) => e.stopPropagation()} style={{ zIndex: 50 }}>
+    <>
+      <div onClick={(e) => e.stopPropagation()} style={{ zIndex: 50, position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)' }}>
         <FloatingTopBar />
+      </div>
+
+      <div 
+        className="preview-canvas-container" 
+        id="preview-3d" 
+        style={containerStyle}
+      >
+
+      {/* Undo/Redo Controls */}
+      <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 50, display: 'flex', gap: '12px' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#ff4d4d', cursor: 'pointer', opacity: 1, padding: 0 }} title="Go to Home Screen">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+        </Link>
+        <div style={{ width: '1.5px', height: '20px', background: 'var(--border-color)', opacity: 0.8, alignSelf: 'center', margin: '0 4px' }} />
+        <button onClick={undo} disabled={!canUndo} style={{ background: 'transparent', border: 'none', cursor: canUndo ? 'pointer' : 'not-allowed', opacity: canUndo ? 1 : 0.5, color: '#ff4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+        </button>
+        <button onClick={redo} disabled={!canRedo} style={{ background: 'transparent', border: 'none', cursor: canRedo ? 'pointer' : 'not-allowed', opacity: canRedo ? 1 : 0.5, color: '#ff4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"/></svg>
+        </button>
       </div>
 
       <Canvas
@@ -137,6 +174,13 @@ export default function Preview3D() {
           <SceneLights />
 
           <PhoneModel screenshotUrl={state.screenshotUrl} />
+          
+          <Hud>
+            <PerspectiveCamera makeDefault fov={45} near={0.1} far={100} position={cameraPosition} />
+            <HudCameraAdapter />
+            <ambientLight intensity={1} />
+            <SceneTexts />
+          </Hud>
 
           <Environment preset="city" environmentIntensity={0.15} />
         </Suspense>
@@ -148,21 +192,26 @@ export default function Preview3D() {
       <button 
         style={{
           position: 'absolute',
-          bottom: '16px',
-          right: '16px',
-          background: 'rgba(0,0,0,0.6)',
-          border: '1px solid var(--border-color)',
-          color: 'var(--text-primary)',
-          width: '36px',
-          height: '36px',
-          borderRadius: '8px',
+          bottom: '24px',
+          right: '24px',
+          background: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          color: '#000000',
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          zIndex: 10
+          zIndex: 10,
+          transition: 'all 0.2s ease'
         }}
         title="Fullscreen"
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         onClick={() => {
           const el = document.getElementById('preview-3d');
           if (el) el.requestFullscreen();
@@ -175,5 +224,6 @@ export default function Preview3D() {
 
 
     </div>
+    </>
   );
 }

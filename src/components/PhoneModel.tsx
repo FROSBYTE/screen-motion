@@ -55,13 +55,6 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
     }
   });
 
-  // Assign the camera ref on first render
-  useFrame(({ camera }) => {
-    if (!cameraRef.current) {
-      cameraRef.current = camera as THREE.PerspectiveCamera;
-    }
-  });
-
   // Restart animation when export recording starts so it records a clean single loop from the beginning
   useEffect(() => {
     if (state.exportStatus === 'rendering' && animRef.current) {
@@ -82,7 +75,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
           )}
         </group>
       </React.Suspense>
-      <SceneTexts />
+      
     </group>
   );
 }

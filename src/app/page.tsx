@@ -1,92 +1,80 @@
-'use client';
+"use client";
 
-// Suppress three.js deprecation warnings coming from react-three-fiber internals
-if (typeof window !== 'undefined') {
-  const originalWarn = console.warn;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  console.warn = (...args: any[]) => {
-    const message = args[0];
-    if (
-      typeof message === 'string' &&
-      (message.includes('THREE.Clock: This module has been deprecated.') ||
-       message.includes('THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated.'))
-    ) {
-      return;
-    }
-    originalWarn.apply(console, args);
-  };
-}
+import { HeroHeader } from "@/components/smoothui/shared/hero-header";
+import Iridescence from "@/components/Iridescence";
+import { AnimatedGroup, AnimatedText } from "@/components/smoothui/shared";
+import SmoothButton from "@/components/smoothui/smooth-button";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
-import React, { useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import { AppProvider, useAppState } from '@/store';
-import RightSidebar from '@/components/RightSidebar';
-import FloatingTopBar from '@/components/FloatingTopBar';
-
-// Dynamic import for 3D preview (no SSR)
-const Preview3D = dynamic(() => import('@/components/Preview3D'), {
-  ssr: false,
-  loading: () => (
-    <div className="preview-canvas-container" style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--bg-primary)',
-    }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Loading 3D engine…</div>
-    </div>
-  ),
-});
-
-function ErrorToast() {
-  const { state, dispatch } = useAppState();
-
-  useEffect(() => {
-    if (state.error) {
-      const timer = setTimeout(() => {
-        dispatch({ error: null });
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [state.error, dispatch]);
-
-  if (!state.error) return null;
-
+export default function LandingPage() {
   return (
-    <div className="error-toast" id="error-toast">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, flexShrink: 0 }}>
-        <circle cx="12" cy="12" r="10" />
-        <line x1="15" y1="9" x2="9" y2="15" />
-        <line x1="9" y1="9" x2="15" y2="15" />
-      </svg>
-      {state.error}
-    </div>
-  );
-}
+    <div className="relative min-h-screen flex flex-col bg-white text-[#141414] selection:bg-[#141414] selection:text-white">
+      <HeroHeader />
 
-function AppContent() {
-  return (
-    <>
-      <div className="app-layout" id="app-container" style={{ position: 'relative' }}>
-        <div className="main-container">
-          {/* Center Canvas */}
-          <div className="preview-panel" id="preview-panel">
-            <Preview3D />
+      {/* Hero Section */}
+      <main className="flex-1 flex flex-col items-center justify-center relative overflow-hidden" style={{ minHeight: "100vh" }}>
+        {/* Iridescence Background — full bleed, no grayscale filter */}
+        <div className="absolute inset-0 z-0">
+          <Iridescence color={[0.9, 0.8, 1.0]} speed={1.2} amplitude={0.0} mouseReact={false} />
+        </div>
+
+        {/* Soft radial vignette — subtle, lets iridescence breathe */}
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(255,255,255,0.7) 100%)",
+          }}
+        />
+
+        {/* Content */}
+        <AnimatedGroup
+          className="pointer-events-none flex flex-col items-center gap-6 text-center z-10 relative px-6 w-full max-w-4xl"
+          preset="blur-slide"
+        >
+          <div className="flex flex-col items-center">
+            {/* Beta Tag */}
+            <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[#ededed] bg-white/80 px-4 py-1.5 text-sm font-medium text-[#141414] backdrop-blur-sm shadow-xs select-none">
+              <span className="flex h-2 w-2 rounded-full bg-[#ffa4a4] animate-pulse" />
+              Beta
+            </div>
+
+            <AnimatedText
+              as="h1"
+              className="mb-10 md:mb-12 text-pretty font-semibold text-5xl tracking-[-0.011em] lg:text-7xl xl:text-[80px] leading-[1.00] text-[#141414]"
+            >
+              Create stunning{" "}
+              <br className="hidden md:block" />
+              device mockups
+            </AnimatedText>
+            <AnimatedText
+              as="p"
+              className="mx-auto max-w-xl text-[#404040] text-lg lg:text-xl leading-relaxed tracking-[0.013em]"
+              delay={0.15}
+            >
+              Upload a screenshot, pick a template, and export
+              professional 3D mockup animations — in seconds
+            </AnimatedText>
           </div>
 
-          <RightSidebar />
-        </div>
-      </div>
-
-      <ErrorToast />
-    </>
-  );
-}
-
-export default function Home() {
-  return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+          <AnimatedGroup
+            className="pointer-events-auto mt-8 flex flex-col sm:flex-row justify-center gap-4"
+            preset="slide"
+          >
+            <SmoothButton
+              size="lg"
+              shape="pill"
+              className="w-64 md:w-72"
+              asChild
+            >
+              <Link href="/editor">
+                Open Editor
+              </Link>
+            </SmoothButton>
+          </AnimatedGroup>
+        </AnimatedGroup>
+      </main>
+    </div>
   );
 }
