@@ -72,13 +72,24 @@ function SceneLights() {
 
 function CameraZoomController() {
   const { state } = useAppState();
-  const { zoom } = state.scene;
+  const { zoom, offsetX = 0, offsetY = 0 } = state.scene;
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, size }) => {
     const targetZoom = zoom || 1.0;
     if (camera.zoom !== targetZoom) {
       camera.zoom = targetZoom;
       (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+    }
+
+    // Apply perfect 2D framing offsets without breaking 3D orbits
+    const cam = camera as THREE.PerspectiveCamera;
+    if (offsetX !== 0 || offsetY !== 0) {
+      // Map 3D unit offsets to pixel offsets (approx 20% of screen width per unit)
+      const pxX = -(offsetX) * (size.width / 5);
+      const pxY = (offsetY) * (size.height / 5);
+      cam.setViewOffset(size.width, size.height, pxX, pxY, size.width, size.height);
+    } else {
+      if (cam.view) cam.clearViewOffset();
     }
   });
 

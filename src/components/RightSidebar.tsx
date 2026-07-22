@@ -98,20 +98,18 @@ export default function RightSidebar() {
         <div style={{ width: '100%', height: 2, background: 'var(--border-color)', marginBottom: 16 }} />
 
         {/* Color & Orientation Selector */}
-        <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', padding: '0 12px' }}>
-          {/* DISABLED_FEATURE_START: Device Color Selection */}
-          {/* DO NOT DELETE: Keeping this code disabled for future reference or reactivation. */}
-          {/*
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>DEVICE COLOR</span>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {['#FF5252', '#448AFF', '#69F0AE', '#FFD740'].map((color, i) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 12px' }}>
+          {/* Device Color Selection */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>DEVICE COLOR (iOS only)</span>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {['#333333', '#6b7280', '#991b1b', '#448AFF', '#69F0AE'].map((color, i) => (
                 <button 
                   key={i} 
                   title="Device Color" 
                   onClick={() => dispatch({ deviceColor: color })}
                   style={{ 
-                    width: 28, height: 28, borderRadius: '50%', background: color, cursor: 'pointer',
+                    width: 32, height: 32, borderRadius: '50%', background: color, cursor: 'pointer',
                     border: state.deviceColor === color ? '2px solid var(--text-primary)' : '1px solid rgba(0,0,0,0.1)',
                     transform: state.deviceColor === color ? 'scale(1.15)' : 'scale(1)',
                     transition: 'all 0.2s ease'
@@ -121,12 +119,8 @@ export default function RightSidebar() {
             </div>
           </div>
           
-          <div style={{ width: 1, background: 'var(--border-color)', margin: '0 12px', alignSelf: 'stretch' }} />
-          */}
-          {/* DISABLED_FEATURE_END: Device Color Selection */}
-          
           {/* Shape Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>SHAPE</span>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <button

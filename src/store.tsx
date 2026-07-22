@@ -20,8 +20,8 @@ const initialState: AppState = {
   screenshot: null,
   screenshotUrl: null,
   screenshotOrientation: null,
-  device: 'android',
-  deviceColor: '#448AFF', // default color based on the array
+  device: 'ios',
+  deviceColor: '#6b7280', // default grey color
   orientation: 'landscape',
   template: 'orbit',
   speed: 1,

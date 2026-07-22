@@ -2,16 +2,42 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import Iridescence from "@/components/Iridescence";
 import SplashCursor from "@/components/SplashCursor";
-import { TEMPLATES } from "@/types";
 import Footer1 from "@/components/smoothui/blocks/footers/footer-1";
+import { AppProvider } from "@/store";
+
+const Preview3D = dynamic(() => import("@/components/Preview3D"), {
+  ssr: false,
+  loading: () => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#6b7280", fontSize: "14px", fontWeight: 600 }}>
+      Loading 3D Motion Render Engine...
+    </div>
+  )
+});
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [studioMode, setStudioMode] = useState<"video" | "image">("video");
-  const [activeStudioTemplate, setActiveStudioTemplate] = useState("orbit");
+
+  const [showcaseIndex, setShowcaseIndex] = useState(0);
+
+  const showcaseAnimations = [
+    { name: "Orbit 3D", anim: "card-anim-orbit" },
+    { name: "Hero Reveal", anim: "card-anim-hero-reveal" },
+    { name: "Floating Drift", anim: "card-anim-float" },
+    { name: "Tilt Shift", anim: "card-anim-tilt-shift" },
+  ];
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setShowcaseIndex((prev) => (prev + 1) % showcaseAnimations.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentShowcase = showcaseAnimations[showcaseIndex];
 
   return (
     <div
@@ -167,7 +193,9 @@ export default function LandingPage() {
       {/* Fixed Top Right Header Button */}
       <div style={{ position: "fixed", top: "24px", right: "32px", zIndex: 100 }}>
         <a
-          href="#templates"
+          href="https://forms.gle/rtfYsFTgRUP9RE79A"
+          target="_blank"
+          rel="noopener noreferrer"
           className="font-headline hover:scale-[1.02] active:scale-[0.98]"
           style={{
             fontSize: "14px",
@@ -372,55 +400,6 @@ export default function LandingPage() {
             paddingRight: "24px"
           }}
         >
-          {/* Top Mode Switcher Bar */}
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            marginBottom: "16px"
-          }}>
-            {/* Interactive Mode Pills Switcher */}
-            <div style={{
-              display: "inline-flex",
-              backgroundColor: "rgba(17, 24, 39, 0.08)",
-              borderRadius: "999px",
-              padding: "4px"
-            }}>
-              <button
-                onClick={() => setStudioMode("video")}
-                style={{
-                  backgroundColor: studioMode === "video" ? "#111827" : "transparent",
-                  color: studioMode === "video" ? "#ffffff" : "#4b5563",
-                  padding: "6px 18px",
-                  borderRadius: "999px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease"
-                }}
-              >
-                Video Mode
-              </button>
-              <button
-                onClick={() => setStudioMode("image")}
-                style={{
-                  backgroundColor: studioMode === "image" ? "#111827" : "transparent",
-                  color: studioMode === "image" ? "#ffffff" : "#4b5563",
-                  padding: "6px 18px",
-                  borderRadius: "999px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease"
-                }}
-              >
-                Image Mode
-              </button>
-            </div>
-          </div>
-
           {/* macOS Studio Showcase Frame */}
           <div style={{
             backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -442,7 +421,7 @@ export default function LandingPage() {
                 <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#f59e0b" }} />
                 <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#10b981" }} />
                 <span style={{ marginLeft: "12px", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
-                  Screen Motion Studio ({studioMode === "video" ? "Video Render Engine" : "Static Image Render"})
+                  Screen Motion Studio (Video Render Engine)
                 </span>
               </div>
             </div>
@@ -450,38 +429,105 @@ export default function LandingPage() {
             {/* Gradient Studio Canvas */}
             <div style={{
               aspectRatio: "16 / 9",
-              minHeight: "360px",
+              minHeight: "420px",
+              width: "100%",
               background: "linear-gradient(135deg, #f0f7f4 0%, #fcf4f5 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               position: "relative",
-              perspective: "1000px",
-              transformStyle: "preserve-3d"
+              overflow: "hidden",
+              perspective: "1000px"
             }}>
-              {/* Active 3D Phone Model Display with Motion Animation */}
+              {/* Active 3D Device Model with Continuous Animation */}
               <div 
                 className="studio-canvas-phone"
                 style={{
-                  animation: studioMode === "video" ? `card-anim-${activeStudioTemplate} 3.5s infinite ease-in-out` : "none"
+                  animation: `${currentShowcase.anim} 3.8s infinite ease-in-out`
                 }}
               >
                 {/* Dynamic Island Notch */}
                 <div style={{
                   position: "absolute",
                   top: "14px",
-                  width: "48px",
-                  height: "14px",
+                  width: "44px",
+                  height: "12px",
                   backgroundColor: "#111827",
-                  borderRadius: "999px"
+                  borderRadius: "999px",
+                  zIndex: 20
                 }} />
 
-                <span className="material-symbols-outlined" style={{ fontSize: "36px", color: "#111827", marginTop: "16px" }}>
-                  {studioMode === "video" ? "videocam" : "photo_camera"}
-                </span>
-                <span style={{ fontFamily: "'Google Sans', sans-serif", fontSize: "13px", fontWeight: 700, color: "#111827" }}>
-                  {studioMode === "video" ? `Looping MP4 (${TEMPLATES.find(t => t.id === activeStudioTemplate)?.name || 'Orbit'})` : "High-Res PNG"}
-                </span>
+                {/* Animated Inner Screen Content (Slides on screen change) */}
+                <div style={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "32px",
+                  overflow: "hidden",
+                  position: "relative"
+                }}>
+                  <motion.div
+                    key={showcaseIndex}
+                    initial={{ x: "100%", opacity: 0 }}
+                    animate={{ x: "0%", opacity: 1 }}
+                    exit={{ x: "-100%", opacity: 0 }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "20px",
+                      gap: "12px",
+                      background: showcaseIndex % 2 === 0
+                        ? "linear-gradient(180deg, #ffffff 0%, #f3e8ff 100%)"
+                        : "linear-gradient(180deg, #ffffff 0%, #e0f2fe 100%)"
+                    }}
+                  >
+                    <div style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "14px",
+                      backgroundColor: showcaseIndex % 2 === 0 ? "#8b5cf6" : "#0284c7",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      boxShadow: "0 8px 16px rgba(0,0,0,0.1)"
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "24px" }}>
+                        {showcaseIndex === 0 ? "3d_rotation" : showcaseIndex === 1 ? "auto_awesome" : showcaseIndex === 2 ? "movie" : "motion_photos_on"}
+                      </span>
+                    </div>
+
+                    <span style={{
+                      fontFamily: "'Google Sans', sans-serif",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#111827",
+                      textAlign: "center"
+                    }}>
+                      {currentShowcase.name}
+                    </span>
+
+                    {/* Progress indicator pills */}
+                    <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
+                      {showcaseAnimations.map((_, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: showcaseIndex === i ? "14px" : "6px",
+                            height: "6px",
+                            borderRadius: "999px",
+                            backgroundColor: showcaseIndex === i ? "#111827" : "rgba(0,0,0,0.15)",
+                            transition: "all 0.3s ease"
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
               </div>
             </div>
           </div>

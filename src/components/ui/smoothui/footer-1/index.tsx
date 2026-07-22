@@ -6,6 +6,8 @@ import Link from "next/link";
 interface FooterProps {
   companyName?: string;
   copyright?: string;
+  description?: string;
+  links?: Record<string, { name: string; url: string }[]>;
 }
 
 export function FooterSimple({

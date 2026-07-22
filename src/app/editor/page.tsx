@@ -70,15 +70,34 @@ function AppContent() {
     <>
       <style>{`html, body { overflow: hidden; }`}</style>
       
-      {/* Professional Top-Left Home Button */}
-      <Link
-        href="/"
-        className="home-nav-btn"
-        title="Return to Home"
-        aria-label="Home"
-      >
-        <HomeIcon size={18} strokeWidth={2} />
-      </Link>
+      {/* Professional Top-Left Header Controls with Beta Tag */}
+      <div style={{ position: 'fixed', top: '24px', left: '24px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Link
+          href="/"
+          className="home-nav-btn"
+          title="Return to Home"
+          aria-label="Home"
+          style={{ position: 'static' }}
+        >
+          <HomeIcon size={18} strokeWidth={2} />
+        </Link>
+        <span style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          padding: '4px 10px',
+          borderRadius: '999px',
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          color: '#111827',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+          userSelect: 'none'
+        }}>
+          BETA
+        </span>
+      </div>
 
       <div className="app-layout" id="app-container" style={{ position: 'relative' }}>
         <div className="main-container">

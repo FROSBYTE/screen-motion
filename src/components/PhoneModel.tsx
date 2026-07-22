@@ -70,14 +70,14 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   }, [state.previewTrigger]);
 
   return (
-    <group 
-      position-x={state.scene.offsetX || 0}
-      position-y={state.scene.offsetY || 0}
-      rotation-y={((state.scene.rotationY || 0) * Math.PI) / 180}
-    >
+    <group>
       <group ref={groupRef}>
-        <React.Suspense fallback={null}>
-          <group scale={[0.15, 0.15, 0.15]}>
+        <group>
+          <React.Suspense fallback={null}>
+            <group 
+              scale={[0.15, 0.15, 0.15]}
+              rotation-y={((state.scene.rotationY || 0) * Math.PI) / 180}
+            >
             {state.device === 'ios' ? (
               <IPhone16 screenshotUrl={screenshotUrl} />
             ) : (
@@ -87,6 +87,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
             )}
           </group>
         </React.Suspense>
+        </group>
       </group>
     </group>
   );
