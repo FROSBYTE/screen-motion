@@ -301,6 +301,10 @@ function AnimatedText({
 }
 
 export default function SceneTexts() {
+  // DISABLED_FEATURE_START: SceneTexts Rendering Component
+  // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
+  return null;
+  /*
   const { state, dispatch } = useAppState();
   const { texts, textSpeed = 1.0 } = state.scene;
   const { selectedTextId } = state;
@@ -325,4 +329,6 @@ export default function SceneTexts() {
       ))}
     </>
   );
+  */
+  // DISABLED_FEATURE_END: SceneTexts Rendering Component
 }

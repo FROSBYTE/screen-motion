@@ -98,18 +98,18 @@ export default function RightSidebar() {
         <div style={{ width: '100%', height: 2, background: 'var(--border-color)', marginBottom: 16 }} />
 
         {/* Color & Orientation Selector */}
-        <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', padding: '0 12px' }}>
-          {/* Device Color Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>DEVICE COLOR</span>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {['#FF5252', '#448AFF', '#69F0AE', '#FFD740'].map((color, i) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 12px' }}>
+          {/* Device Color Selection */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>DEVICE COLOR (iOS only)</span>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {['#333333', '#6b7280', '#991b1b', '#448AFF', '#69F0AE'].map((color, i) => (
                 <button 
                   key={i} 
                   title="Device Color" 
                   onClick={() => dispatch({ deviceColor: color })}
                   style={{ 
-                    width: 28, height: 28, borderRadius: '50%', background: color, cursor: 'pointer',
+                    width: 32, height: 32, borderRadius: '50%', background: color, cursor: 'pointer',
                     border: state.deviceColor === color ? '2px solid var(--text-primary)' : '1px solid rgba(0,0,0,0.1)',
                     transform: state.deviceColor === color ? 'scale(1.15)' : 'scale(1)',
                     transition: 'all 0.2s ease'
@@ -119,10 +119,8 @@ export default function RightSidebar() {
             </div>
           </div>
           
-          <div style={{ width: 1, background: 'var(--border-color)', margin: '0 12px', alignSelf: 'stretch' }} />
-          
           {/* Shape Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>SHAPE</span>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <button
@@ -176,13 +174,17 @@ export default function RightSidebar() {
                 </div>
               )}
 
-              {/* Dynamic device mockup that animates depending on card type */}
+              {/* Centered Animation Title (Visible when resting) */}
+              <span className="animation-card-title">
+                {t.name}
+              </span>
+
+              {/* Dynamic device mockup (Reveals on hover/active) */}
               <div 
                 className={`animation-card-device-mock ${state.device}`}
                 style={{
-                  transform: isActive ? 'scale(1.05)' : 'none',
                   borderColor: isActive ? '#000000' : '#111827',
-                  animation: isActive ? `card-anim-${t.id} 3s infinite ease-in-out` : 'none'
+                  animation: `card-anim-${t.id} ${t.duration || 3}s infinite ease-in-out`
                 }}
               />
             </div>
@@ -190,31 +192,69 @@ export default function RightSidebar() {
         })}
       </div>
 
-      {/* CSS keyframe styles injection for animation cards (declared once) */}
+      {/* CSS keyframe styles injection for animation cards (all 15 templates looping infinitely) */}
       <style jsx>{`
         @keyframes card-anim-orbit {
           0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
-          50% { transform: rotateY(45deg) rotateX(10deg); }
+          50% { transform: rotateY(45deg) rotateX(15deg); }
+        }
+        @keyframes card-anim-hero-reveal {
+          0%, 100% { transform: scale(0.85) rotate(-5deg); }
+          50% { transform: scale(1.15) rotate(0deg); }
         }
         @keyframes card-anim-float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-8px) rotate(2deg); }
+          50% { transform: translateY(-8px) rotate(3deg); }
         }
         @keyframes card-anim-flip {
           0%, 100% { transform: rotateY(0deg); }
           50% { transform: rotateY(180deg); }
         }
         @keyframes card-anim-rise {
-          0%, 100% { transform: translateY(12px) scale(0.9); opacity: 0.7; }
-          50% { transform: translateY(0px) scale(1); opacity: 1; }
-        }
-        @keyframes card-anim-zoom-rotate {
-          0%, 100% { transform: scale(0.8) rotate(0deg); }
-          50% { transform: scale(1.1) rotate(15deg); }
+          0%, 100% { transform: translateY(10px) scale(0.9); }
+          50% { transform: translateY(-4px) scale(1.05); }
         }
         @keyframes card-anim-tilt-shift {
-          0%, 100% { transform: skewX(0deg) rotate(0deg); }
-          50% { transform: skewX(8deg) rotate(-5deg); }
+          0%, 100% { transform: rotateX(20deg) rotateY(-15deg); }
+          50% { transform: rotateX(-10deg) rotateY(15deg); }
+        }
+        @keyframes card-anim-bounce-drop {
+          0% { transform: translateY(-30px); }
+          50%, 100% { transform: translateY(0px); }
+        }
+        @keyframes card-anim-slide-in {
+          0%, 100% { transform: translateX(-12px); }
+          50% { transform: translateX(0px); }
+        }
+        @keyframes card-anim-spiral {
+          0%, 100% { transform: rotate(0deg) scale(0.85); }
+          50% { transform: rotate(180deg) scale(1.1); }
+        }
+        @keyframes card-anim-cinematic-pan {
+          0% { transform: translateX(-15px) rotateY(-15deg); }
+          50%, 100% { transform: translateX(0px) rotateY(0deg); }
+        }
+        @keyframes card-anim-slow-pan {
+          0%, 100% { transform: translateX(-8px); }
+          50% { transform: translateX(8px); }
+        }
+        @keyframes card-anim-minimal-sway {
+          0%, 100% { transform: rotate(-6deg); }
+          50% { transform: rotate(6deg); }
+        }
+        @keyframes card-anim-horizontal-slide {
+          0%, 100% { transform: translateX(12px); }
+          50% { transform: translateX(-4px); }
+        }
+        @keyframes card-anim-infinity-loop {
+          0%, 100% { transform: rotate(0deg) translateY(0px) scale(0.9); }
+          25% { transform: rotate(10deg) translateY(-6px) scale(1.05); }
+          50% { transform: rotate(0deg) translateY(4px) scale(0.95); }
+          75% { transform: rotate(-10deg) translateY(-6px) scale(1.05); }
+        }
+        @keyframes card-anim-dynamic-showcase {
+          0%, 100% { transform: rotate(-8px) scale(0.85); }
+          50% { transform: rotate(12px) scale(1.1); }
         }
       `}</style>
         </div>

@@ -56,25 +56,70 @@ export default function SceneControls() {
           />
         </div>
 
-        {/* Background Gradient Checkbox */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }} id="bg-gradient-checkbox">
-          <input
-            type="checkbox"
-            id="enable-gradient"
-            checked={scene.bgGradient || false}
-            onChange={(e) => dispatch({ scene: { bgGradient: e.target.checked } })}
-            style={{
-              width: 15,
-              height: 15,
-              cursor: 'pointer'
-            }}
-          />
-          <label htmlFor="enable-gradient" style={{ fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
-            Enable Background Gradient
-          </label>
+        {/* Sub-section Header: Background & Lighting */}
+        <div style={{
+          marginTop: "20px",
+          marginBottom: "12px",
+          paddingTop: "16px",
+          borderTop: "1px solid var(--border-color, rgba(0, 0, 0, 0.08))"
+        }}>
+          <h4 style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: "var(--text-secondary, #6b7280)",
+            margin: 0
+          }}>
+            Background & Lighting
+          </h4>
         </div>
 
-
+        {/* Background Gradient Custom Switch */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            borderRadius: '12px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            cursor: 'pointer',
+            userSelect: 'none',
+            transition: 'all 0.2s ease',
+          }}
+          onClick={() => dispatch({ scene: { bgGradient: !scene.bgGradient } })}
+          id="bg-gradient-checkbox"
+        >
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            Background Gradient
+          </span>
+          <div
+            style={{
+              width: '38px',
+              height: '22px',
+              borderRadius: '999px',
+              background: scene.bgGradient ? '#111827' : 'rgba(0,0,0,0.15)',
+              position: 'relative',
+              transition: 'background-color 0.2s ease',
+              padding: '2px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                transform: scene.bgGradient ? 'translateX(16px)' : 'translateX(0px)',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            />
+          </div>
+        </div>
 
         {/* Background Color */}
         <div className="color-control" id="bg-color-control">
@@ -111,7 +156,7 @@ export default function SceneControls() {
           <input
             type="range"
             min="0"
-            max="1"
+            max="2"
             step="0.01"
             value={scene.ambientIntensity}
             onChange={(e) => dispatch({ scene: { ambientIntensity: parseFloat(e.target.value) } })}
@@ -145,8 +190,6 @@ export default function SceneControls() {
           />
         </div>
 
-
-
         {/* Camera Zoom */}
         <div className="slider-control" id="zoom-control">
           <div className="slider-header">
@@ -163,7 +206,60 @@ export default function SceneControls() {
           />
         </div>
 
-        {/* Texts Management */}
+        {/* Sub-section Header: Device Settings */}
+        <div style={{
+          marginTop: "20px",
+          marginBottom: "12px",
+          paddingTop: "16px",
+          borderTop: "1px solid var(--border-color, rgba(0, 0, 0, 0.08))"
+        }}>
+          <h4 style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: "var(--text-secondary, #6b7280)",
+            margin: 0
+          }}>
+            Device Settings
+          </h4>
+        </div>
+
+        {/* X Position */}
+        <div className="slider-control" id="offset-x-control">
+          <div className="slider-header">
+            <span className="slider-label">X Position</span>
+            <span className="slider-value">{scene.offsetX ? scene.offsetX.toFixed(2) : '0.00'}</span>
+          </div>
+          <input
+            type="range"
+            min="-3"
+            max="3"
+            step="0.05"
+            value={scene.offsetX || 0}
+            onChange={(e) => dispatch({ scene: { offsetX: parseFloat(e.target.value) } })}
+          />
+        </div>
+
+        {/* Y Rotation */}
+        <div className="slider-control" id="rotation-y-control">
+          <div className="slider-header">
+            <span className="slider-label">Y Rotation</span>
+            <span className="slider-value">{scene.rotationY ? scene.rotationY.toFixed(0) : '0'}°</span>
+          </div>
+          <input
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value={scene.rotationY || 0}
+            onChange={(e) => dispatch({ scene: { rotationY: parseFloat(e.target.value) } })}
+          />
+        </div>
+
+        {/* DISABLED_FEATURE_START: Texts Management Editor */}
+        {/* DO NOT DELETE: Keeping this code disabled for future reference or reactivation. */}
+        {/*
         <div style={{ marginTop: 16, borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
           {(scene.texts && scene.texts.length > 0) ? (
             <>
@@ -206,7 +302,6 @@ export default function SceneControls() {
 
                       {expandedCards[t.id] && (
                         <>
-                          {/* Text Input */}
                           <textarea
                             value={t.text}
                             onChange={(e) => {
@@ -231,7 +326,6 @@ export default function SceneControls() {
                             }}
                           />
 
-                          {/* Animation Dropdown */}
                           <div style={{ marginBottom: 8 }} id="animation-dropdown-container">
                             <BasicDropdown
                               label="Animation Type"
@@ -245,10 +339,8 @@ export default function SceneControls() {
                             />
                           </div>
 
-                          {/* Formatting Row: Bold, Preview, Color */}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 12 }}>
                             <div style={{ display: 'flex', gap: 6 }}>
-                              {/* Bold Toggle */}
                               <button
                                 onClick={() => {
                                   const newTexts = [...(scene.texts || [])];
@@ -270,7 +362,6 @@ export default function SceneControls() {
                                 <Bold size={14} />
                               </button>
                               
-                              {/* Play/Preview */}
                               <button
                                 onClick={() => {
                                   const newTexts = [...(scene.texts || [])];
@@ -294,7 +385,6 @@ export default function SceneControls() {
                               </button>
                             </div>
 
-                            {/* Color Picker Swatch */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Color</span>
                               <div className="color-swatch" style={{ backgroundColor: t.color, width: 24, height: 24, borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -312,7 +402,6 @@ export default function SceneControls() {
                             </div>
                           </div>
 
-                          {/* Font Size Row */}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: '45px' }}>Size</span>
                             <input
@@ -327,7 +416,6 @@ export default function SceneControls() {
                             <span style={{ fontSize: 12, color: 'var(--text-primary)', width: '35px', textAlign: 'right' }}>{t.fontSize.toFixed(1)}</span>
                           </div>
 
-                          {/* Layer (Pos Z) Row */}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Layer (Pos Z)</span>
                             <input
@@ -350,7 +438,6 @@ export default function SceneControls() {
                             />
                           </div>
 
-                          {/* Anim Speed Row - Only show if animation is not None */}
                           {t.animationType !== 'none' && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
                               <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: '45px' }}>Speed</span>
@@ -367,7 +454,6 @@ export default function SceneControls() {
                             </div>
                           )}
 
-                          {/* Rotation Row */}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: '45px' }}>Rotation</span>
                             <input
@@ -386,7 +472,6 @@ export default function SceneControls() {
                     </div>
                   ))}
                   
-                  {/* NEW TXT Button */}
                   <button
                     onClick={() => {
                       const newId = Math.random().toString(36).substring(7);
@@ -403,7 +488,7 @@ export default function SceneControls() {
                       };
                       dispatch({ scene: { texts: [...(scene.texts || []), newText] } });
                       setExpandedCards(prev => ({ ...prev, [newId]: true }));
-                      setIsTextsExpanded(true); // Auto expand if adding new text
+                      setIsTextsExpanded(true);
                     }}
                     style={{
                       background: 'transparent',
@@ -431,7 +516,6 @@ export default function SceneControls() {
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Only render the NEW TXT Button directly if no text overlays exist */}
               <button
                 onClick={() => {
                   const newId = Math.random().toString(36).substring(7);
@@ -448,7 +532,7 @@ export default function SceneControls() {
                   };
                   dispatch({ scene: { texts: [...(scene.texts || []), newText] } });
                   setExpandedCards(prev => ({ ...prev, [newId]: true }));
-                  setIsTextsExpanded(true); // Auto expand if adding new text
+                  setIsTextsExpanded(true);
                 }}
                 style={{
                   background: 'transparent',
@@ -474,6 +558,8 @@ export default function SceneControls() {
             </div>
           )}
         </div>
+        */}
+        {/* DISABLED_FEATURE_END: Texts Management Editor */}
       </div>
     </div>
   );

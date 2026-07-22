@@ -3,6 +3,7 @@
 import React from 'react';
 import { useAppState } from '@/store';
 import { Resolution, TEMPLATES } from '@/types';
+import { trackMixpanelEvent } from '@/lib/mixpanel';
 
 export default function ExportBar() {
   const { state, dispatch } = useAppState();
@@ -31,9 +32,11 @@ export default function ExportBar() {
       const chunks: Blob[] = [];
       const stream = canvas.captureStream(30); // 30 FPS recording
       
-      let mimeType = 'video/webm;codecs=vp9';
+      let mimeType = 'video/mp4;codecs=avc1.42E01E';
       if (typeof MediaRecorder !== 'undefined') {
-        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/mp4';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=h264';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp9';
         if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
         if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
       }
@@ -47,15 +50,24 @@ export default function ExportBar() {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        const blob = new Blob(chunks, { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `mockup-${state.template}-${Date.now()}.webm`;
+        a.download = `screen-motion-${state.template}-${Date.now()}.mp4`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        trackMixpanelEvent('export_completed', {
+          template: state.template,
+          device: state.device,
+          resolution: state.resolution,
+          orientation: state.orientation,
+          speed: state.speed,
+          duration_seconds: Number((actualDurationMs / 1000).toFixed(1)),
+        });
 
         dispatch({ exportStatus: 'done', exportProgress: 100 });
         setTimeout(() => {

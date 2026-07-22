@@ -4,12 +4,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppState } from '@/store';
 import { Resolution, TEMPLATES } from '@/types';
 import { AnimatedTabs, TabItem } from '@/components/ui/animated-tabs';
+import { trackMixpanelEvent } from '@/lib/mixpanel';
 
 export default function FloatingTopBar() {
   const { state, dispatch, uploadScreenshot, undo, redo, canUndo, canRedo } = useAppState();
   const { resolution, exportStatus, exportProgress, screenshotUrl, screenshot, scene } = state;
 
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [exportFps, setExportFps] = useState<30 | 60>(60);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -59,16 +61,27 @@ export default function FloatingTopBar() {
       const actualDurationMs = (baseDuration / state.speed) * 1000;
 
       const chunks: Blob[] = [];
-      const stream = canvas.captureStream(30);
+      // Capture stream at user selected FPS (30 or 60)
+      const stream = canvas.captureStream(exportFps);
       
-      let mimeType = 'video/webm;codecs=vp9';
+      let mimeType = 'video/mp4;codecs=avc1.42E01E';
       if (typeof MediaRecorder !== 'undefined') {
-        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/mp4';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=h264';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp9';
         if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
         if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
       }
 
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      // High-bitrate encoding for 1080p (18 Mbps) and 4K (45 Mbps)
+      const targetBitrate = state.resolution === '4k' ? 45_000_000 : 18_000_000;
+
+      const recorder = new MediaRecorder(
+        stream,
+        mimeType
+          ? { mimeType, videoBitsPerSecond: targetBitrate }
+          : { videoBitsPerSecond: targetBitrate }
+      );
 
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
@@ -77,15 +90,24 @@ export default function FloatingTopBar() {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        const blob = new Blob(chunks, { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `mockup-${state.template}-${Date.now()}.webm`;
+        a.download = `screen-motion-${state.resolution}-${state.template}-${Date.now()}.mp4`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        trackMixpanelEvent('export_completed', {
+          template: state.template,
+          device: state.device,
+          resolution: state.resolution,
+          orientation: state.orientation,
+          speed: state.speed,
+          duration_seconds: Number((actualDurationMs / 1000).toFixed(1)),
+        });
 
         dispatch({ exportStatus: 'done', exportProgress: 100 });
         setTimeout(() => {
@@ -93,8 +115,9 @@ export default function FloatingTopBar() {
         }, 3000);
       };
 
+      // Restart animation to time 0 right as recording starts for 1 single clean cycle
+      dispatch({ previewTrigger: Date.now(), exportStatus: 'rendering', exportProgress: 5 });
       recorder.start();
-      dispatch({ exportStatus: 'rendering', exportProgress: 10 });
 
       const updateInterval = 100;
       let elapsed = 0;
@@ -107,9 +130,12 @@ export default function FloatingTopBar() {
         });
       }, updateInterval);
 
+      // Stop recording exactly after 1 single cycle of animation
       setTimeout(() => {
         clearInterval(interval);
-        recorder.stop();
+        if (recorder.state === 'recording') {
+          recorder.stop();
+        }
       }, actualDurationMs);
 
     } catch (err) {
@@ -144,19 +170,64 @@ export default function FloatingTopBar() {
     },
   ];
 
+  const handlePreview = () => {
+    dispatch({ previewTrigger: Date.now() });
+  };
+
   return (
-    <div ref={panelRef}>
+    <div ref={panelRef} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       {/* Hidden File Input */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime,video/*"
         onChange={handleFileChange}
         hidden
       />
 
-      {/* Top Panel Bar */}
-      <div className="top-panel-bar" style={{ display: 'flex', gap: '8px' }}>
+      {/* Sleek Minimal Floating Top Panel Bar */}
+      <div 
+        className="top-panel-bar"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          padding: '5px 8px',
+          borderRadius: '999px',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)'
+        }}
+      >
+        {/* Minimal Play Preview Button */}
+        <button
+          onClick={handlePreview}
+          title="Play Animation Preview"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#111827',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '999px',
+            padding: '7px 16px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease, background-color 0.2s ease',
+            fontFamily: "'Google Sans', sans-serif"
+          }}
+          className="hover:scale-[1.03] active:scale-[0.97]"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          Preview
+        </button>
+
         <AnimatedTabs
           tabs={tabs}
           value={activeTab}
@@ -173,11 +244,22 @@ export default function FloatingTopBar() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {screenshotUrl ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <img
-                    src={screenshotUrl}
-                    alt="Preview"
-                    style={{ width: '100%', height: '140px', borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border-color)' }}
-                  />
+                  {screenshot?.type?.startsWith('video/') ? (
+                    <video
+                      src={screenshotUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      style={{ width: '100%', height: '140px', borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border-color)' }}
+                    />
+                  ) : (
+                    <img
+                      src={screenshotUrl}
+                      alt="Preview"
+                      style={{ width: '100%', height: '140px', borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border-color)' }}
+                    />
+                  )}
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {screenshot?.name}
                   </div>
@@ -203,6 +285,11 @@ export default function FloatingTopBar() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
+                  <img
+                    src="/Drag_And_Drop.png"
+                    alt="Drag and drop screenshot"
+                    style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '6px' }}
+                  />
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
                     No media uploaded. Add a screenshot to display on the 3D device mockup.
                   </span>
@@ -232,25 +319,115 @@ export default function FloatingTopBar() {
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '6px 0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 0' }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                    Export your 3D mockup animation into a high-quality video file.
+                    Export your 3D mockup animation into a high-quality MP4 video file.
                   </span>
+
+                  {/* Resolution Selector Pills */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Resolution Quality
+                    </label>
+                    <div style={{ display: 'flex', gap: 6, backgroundColor: 'rgba(0,0,0,0.05)', padding: 3, borderRadius: 8 }}>
+                      <button
+                        onClick={() => dispatch({ resolution: '1080p' })}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: resolution === '1080p' ? '#111827' : 'transparent',
+                          color: resolution === '1080p' ? '#ffffff' : '#4b5563',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        1080p Full HD
+                      </button>
+                      <button
+                        onClick={() => dispatch({ resolution: '4k' })}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: resolution === '4k' ? '#111827' : 'transparent',
+                          color: resolution === '4k' ? '#ffffff' : '#4b5563',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        4K Ultra HD
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* FPS Selector Pills */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Frame Rate (FPS)
+                    </label>
+                    <div style={{ display: 'flex', gap: 6, backgroundColor: 'rgba(0,0,0,0.05)', padding: 3, borderRadius: 8 }}>
+                      <button
+                        onClick={() => setExportFps(30)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: exportFps === 30 ? '#111827' : 'transparent',
+                          color: exportFps === 30 ? '#ffffff' : '#4b5563',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        30 FPS
+                      </button>
+                      <button
+                        onClick={() => setExportFps(60)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: exportFps === 60 ? '#111827' : 'transparent',
+                          color: exportFps === 60 ? '#ffffff' : '#4b5563',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        60 FPS
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     className="show-more-btn"
                     onClick={handleExport}
                     disabled={!canExport}
                     style={{
                       width: '100%',
-                      background: '#000000',
+                      background: '#111827',
                       color: '#ffffff',
                       border: 'none',
                       padding: '10px 16px',
+                      borderRadius: 8,
+                      fontWeight: 700,
                       opacity: canExport ? 1 : 0.5,
                       cursor: canExport ? 'pointer' : 'not-allowed',
+                      marginTop: 4
                     }}
                   >
-                    Export MP4 Video
+                    Export {resolution === '4k' ? '4K' : '1080p'} MP4 ({exportFps} FPS, 1 Cycle)
                   </button>
                 </div>
               )}
