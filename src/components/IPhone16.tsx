@@ -10,9 +10,41 @@ Title: iPhone 16 - Free
 
 import * as THREE from 'three'
 import React from 'react'
-import { useGLTF, useTexture } from '@react-three/drei'
+import { useGLTF, useTexture, useVideoTexture } from '@react-three/drei'
 import { GLTF } from 'three-stdlib'
 import { usePlaceholderTexture } from '@/hooks/usePlaceholderTexture'
+import { useAppState } from '@/store'
+
+function VideoScreenMaterial({ url }: { url: string }) {
+  const texture = useVideoTexture(url, {
+    unsuspend: 'canplay',
+    crossOrigin: 'Anonymous',
+    loop: true,
+    muted: true,
+    start: true,
+  });
+
+  React.useLayoutEffect(() => {
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.flipY = true;
+      texture.needsUpdate = true;
+    }
+  }, [texture]);
+
+  return (
+    <meshStandardMaterial
+      map={texture}
+      metalness={0.1}
+      roughness={0.2}
+      emissive="#111"
+      emissiveMap={texture}
+      emissiveIntensity={0.3}
+    />
+  );
+}
 
 function ScreenMaterial({ url }: { url: string }) {
   const texture = useTexture(url);
@@ -132,6 +164,8 @@ type GLTFResult = GLTF & {
 export function Model({ screenshotUrl, screenRef, texture, ...props }: React.ComponentPropsWithoutRef<'group'> & { screenshotUrl?: string | null, screenRef?: React.RefObject<THREE.Mesh>, texture?: THREE.Texture | null }) {
   const { nodes, materials } = useGLTF('/models/iphone16.gltf') as unknown as GLTFResult
   const placeholderTexture = usePlaceholderTexture();
+  const { state } = useAppState();
+  const isVideo = state.screenshot?.type?.startsWith('video/');
 
   const bodyMaterial = React.useMemo(() => {
     return materials.d79c406d92ac2ea2b462;
@@ -194,7 +228,11 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
               />
             ) : screenshotUrl ? (
               <React.Suspense fallback={<meshStandardMaterial color="#0f0f1a" />}>
-                <ScreenMaterial url={screenshotUrl} />
+                {isVideo ? (
+                  <VideoScreenMaterial url={screenshotUrl} />
+                ) : (
+                  <ScreenMaterial url={screenshotUrl} />
+                )}
               </React.Suspense>
             ) : (
               <meshStandardMaterial

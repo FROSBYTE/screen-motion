@@ -63,7 +63,7 @@ export default function UploadZone() {
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
           onChange={handleChange}
           hidden
           id="screenshot-input"
@@ -80,7 +80,11 @@ export default function UploadZone() {
               className="upload-preview"
               style={{ width: '100%' }}
             >
-              <img src={state.screenshotUrl!} alt="Screenshot preview" />
+              {state.screenshot?.type.startsWith('video/') ? (
+                <video src={state.screenshotUrl!} autoPlay loop muted playsInline style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover' }} />
+              ) : (
+                <img src={state.screenshotUrl!} alt="Screenshot preview" />
+              )}
               <div className="upload-preview-info">
                 <div className="upload-preview-name">{state.screenshot!.name}</div>
                 <div className="upload-preview-size">
@@ -124,13 +128,11 @@ export default function UploadZone() {
               transition={{ duration: 0.15 }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}
             >
-              <div className="upload-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-              </div>
+              <img
+                src="/Drag_And_Drop.png"
+                alt="Drag and drop screenshot"
+                style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '6px', marginBottom: '8px' }}
+              />
               <div className="upload-text">
                 <strong>Click to upload</strong> or drag and drop
               </div>

@@ -99,7 +99,9 @@ export default function RightSidebar() {
 
         {/* Color & Orientation Selector */}
         <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', padding: '0 12px' }}>
-          {/* Device Color Section */}
+          {/* DISABLED_FEATURE_START: Device Color Selection */}
+          {/* DO NOT DELETE: Keeping this code disabled for future reference or reactivation. */}
+          {/*
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>DEVICE COLOR</span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -120,6 +122,8 @@ export default function RightSidebar() {
           </div>
           
           <div style={{ width: 1, background: 'var(--border-color)', margin: '0 12px', alignSelf: 'stretch' }} />
+          */}
+          {/* DISABLED_FEATURE_END: Device Color Selection */}
           
           {/* Shape Section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
@@ -176,13 +180,17 @@ export default function RightSidebar() {
                 </div>
               )}
 
-              {/* Dynamic device mockup that animates depending on card type */}
+              {/* Centered Animation Title (Visible when resting) */}
+              <span className="animation-card-title">
+                {t.name}
+              </span>
+
+              {/* Dynamic device mockup (Reveals on hover/active) */}
               <div 
                 className={`animation-card-device-mock ${state.device}`}
                 style={{
-                  transform: isActive ? 'scale(1.05)' : 'none',
                   borderColor: isActive ? '#000000' : '#111827',
-                  animation: isActive ? `card-anim-${t.id} 3s infinite ease-in-out` : 'none'
+                  animation: `card-anim-${t.id} ${t.duration || 3}s infinite ease-in-out`
                 }}
               />
             </div>
@@ -190,31 +198,69 @@ export default function RightSidebar() {
         })}
       </div>
 
-      {/* CSS keyframe styles injection for animation cards (declared once) */}
+      {/* CSS keyframe styles injection for animation cards (all 15 templates looping infinitely) */}
       <style jsx>{`
         @keyframes card-anim-orbit {
           0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
-          50% { transform: rotateY(45deg) rotateX(10deg); }
+          50% { transform: rotateY(45deg) rotateX(15deg); }
+        }
+        @keyframes card-anim-hero-reveal {
+          0%, 100% { transform: scale(0.85) rotate(-5deg); }
+          50% { transform: scale(1.15) rotate(0deg); }
         }
         @keyframes card-anim-float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-8px) rotate(2deg); }
+          50% { transform: translateY(-8px) rotate(3deg); }
         }
         @keyframes card-anim-flip {
           0%, 100% { transform: rotateY(0deg); }
           50% { transform: rotateY(180deg); }
         }
         @keyframes card-anim-rise {
-          0%, 100% { transform: translateY(12px) scale(0.9); opacity: 0.7; }
-          50% { transform: translateY(0px) scale(1); opacity: 1; }
-        }
-        @keyframes card-anim-zoom-rotate {
-          0%, 100% { transform: scale(0.8) rotate(0deg); }
-          50% { transform: scale(1.1) rotate(15deg); }
+          0%, 100% { transform: translateY(10px) scale(0.9); }
+          50% { transform: translateY(-4px) scale(1.05); }
         }
         @keyframes card-anim-tilt-shift {
-          0%, 100% { transform: skewX(0deg) rotate(0deg); }
-          50% { transform: skewX(8deg) rotate(-5deg); }
+          0%, 100% { transform: rotateX(20deg) rotateY(-15deg); }
+          50% { transform: rotateX(-10deg) rotateY(15deg); }
+        }
+        @keyframes card-anim-bounce-drop {
+          0% { transform: translateY(-30px); }
+          50%, 100% { transform: translateY(0px); }
+        }
+        @keyframes card-anim-slide-in {
+          0%, 100% { transform: translateX(-12px); }
+          50% { transform: translateX(0px); }
+        }
+        @keyframes card-anim-spiral {
+          0%, 100% { transform: rotate(0deg) scale(0.85); }
+          50% { transform: rotate(180deg) scale(1.1); }
+        }
+        @keyframes card-anim-cinematic-pan {
+          0% { transform: translateX(-15px) rotateY(-15deg); }
+          50%, 100% { transform: translateX(0px) rotateY(0deg); }
+        }
+        @keyframes card-anim-slow-pan {
+          0%, 100% { transform: translateX(-8px); }
+          50% { transform: translateX(8px); }
+        }
+        @keyframes card-anim-minimal-sway {
+          0%, 100% { transform: rotate(-6deg); }
+          50% { transform: rotate(6deg); }
+        }
+        @keyframes card-anim-horizontal-slide {
+          0%, 100% { transform: translateX(12px); }
+          50% { transform: translateX(-4px); }
+        }
+        @keyframes card-anim-infinity-loop {
+          0%, 100% { transform: rotate(0deg) translateY(0px) scale(0.9); }
+          25% { transform: rotate(10deg) translateY(-6px) scale(1.05); }
+          50% { transform: rotate(0deg) translateY(4px) scale(0.95); }
+          75% { transform: rotate(-10deg) translateY(-6px) scale(1.05); }
+        }
+        @keyframes card-anim-dynamic-showcase {
+          0%, 100% { transform: rotate(-8px) scale(0.85); }
+          50% { transform: rotate(12px) scale(1.1); }
         }
       `}</style>
         </div>

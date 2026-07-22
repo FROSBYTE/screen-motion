@@ -6,7 +6,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Hud, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppState } from '@/store';
-import Link from 'next/link';
 import PhoneModel from './PhoneModel';
 import FloatingTopBar from './FloatingTopBar';
 import SceneTexts from './SceneTexts';
@@ -51,7 +50,7 @@ function SceneLights() {
 
   return (
     <>
-      <ambientLight intensity={scene.ambientIntensity} />
+      <ambientLight intensity={scene.ambientIntensity * 2} />
       <directionalLight
         color={scene.directionalColor}
         intensity={scene.directionalIntensity}
@@ -133,20 +132,6 @@ export default function Preview3D() {
         style={containerStyle}
       >
 
-      {/* Undo/Redo Controls */}
-      <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 50, display: 'flex', gap: '12px' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#ff4d4d', cursor: 'pointer', opacity: 1, padding: 0 }} title="Go to Home Screen">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-        </Link>
-        <div style={{ width: '1.5px', height: '20px', background: 'var(--border-color)', opacity: 0.8, alignSelf: 'center', margin: '0 4px' }} />
-        <button onClick={undo} disabled={!canUndo} style={{ background: 'transparent', border: 'none', cursor: canUndo ? 'pointer' : 'not-allowed', opacity: canUndo ? 1 : 0.5, color: '#ff4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
-        </button>
-        <button onClick={redo} disabled={!canRedo} style={{ background: 'transparent', border: 'none', cursor: canRedo ? 'pointer' : 'not-allowed', opacity: canRedo ? 1 : 0.5, color: '#ff4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"/></svg>
-        </button>
-      </div>
-
       <Canvas
         camera={{
           fov: 45,
@@ -154,7 +139,10 @@ export default function Preview3D() {
           far: 100,
           position: cameraPosition,
         }}
-        onPointerMissed={() => dispatch({ selectedTextId: null })}
+        // DISABLED_FEATURE_START: Pointer Missed Selected Text Reset
+        // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
+        // onPointerMissed={() => dispatch({ selectedTextId: null })}
+        // DISABLED_FEATURE_END: Pointer Missed Selected Text Reset
         shadows="percentage"
         gl={{
           antialias: true,
@@ -178,8 +166,11 @@ export default function Preview3D() {
           <Hud>
             <PerspectiveCamera makeDefault fov={45} near={0.1} far={100} position={cameraPosition} />
             <HudCameraAdapter />
-            <ambientLight intensity={1} />
-            <SceneTexts />
+            <ambientLight intensity={2} />
+            {/* DISABLED_FEATURE_START: SceneTexts Canvas Element */}
+            {/* DO NOT DELETE: Keeping this code disabled for future reference or reactivation. */}
+            {/* <SceneTexts /> */}
+            {/* DISABLED_FEATURE_END: SceneTexts Canvas Element */}
           </Hud>
 
           <Environment preset="city" environmentIntensity={0.15} />

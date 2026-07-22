@@ -55,27 +55,39 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
     }
   });
 
-  // Restart animation when export recording starts so it records a clean single loop from the beginning
+  // Restart animation only when export rendering begins
   useEffect(() => {
     if (state.exportStatus === 'rendering' && animRef.current) {
       animRef.current.timeline.restart();
     }
   }, [state.exportStatus]);
 
+  // Restart animation when user clicks Preview button
+  useEffect(() => {
+    if (state.previewTrigger && animRef.current) {
+      animRef.current.timeline.restart();
+    }
+  }, [state.previewTrigger]);
+
   return (
-    <group ref={groupRef}>
-      <React.Suspense fallback={null}>
-        <group scale={[0.15, 0.15, 0.15]}>
-          {state.device === 'ios' ? (
-            <IPhone16 screenshotUrl={screenshotUrl} />
-          ) : (
-            <Center>
-              <AndroidModel screenshotUrl={screenshotUrl} />
-            </Center>
-          )}
-        </group>
-      </React.Suspense>
-      
+    <group 
+      position-x={state.scene.offsetX || 0}
+      position-y={state.scene.offsetY || 0}
+      rotation-y={((state.scene.rotationY || 0) * Math.PI) / 180}
+    >
+      <group ref={groupRef}>
+        <React.Suspense fallback={null}>
+          <group scale={[0.15, 0.15, 0.15]}>
+            {state.device === 'ios' ? (
+              <IPhone16 screenshotUrl={screenshotUrl} />
+            ) : (
+              <Center>
+                <AndroidModel screenshotUrl={screenshotUrl} />
+              </Center>
+            )}
+          </group>
+        </React.Suspense>
+      </group>
     </group>
   );
 }

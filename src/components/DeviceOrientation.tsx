@@ -3,6 +3,7 @@
 import React from 'react';
 import { useAppState } from '@/store';
 import { DeviceType, Orientation } from '@/types';
+import { trackMixpanelEvent } from '@/lib/mixpanel';
 
 export default function DeviceOrientation() {
   const { state, dispatch } = useAppState();
@@ -12,7 +13,10 @@ export default function DeviceOrientation() {
       <div className="toggle-group" id="device-selector" style={{ flex: 1 }}>
         <button
           className={`toggle-btn${state.device === 'android' ? ' active' : ''}`}
-          onClick={() => dispatch({ device: 'android' })}
+          onClick={() => {
+            dispatch({ device: 'android' });
+            trackMixpanelEvent('device_selected', { device: 'android' });
+          }}
           id="device-android-btn"
           title="Android Device"
         >
@@ -22,7 +26,10 @@ export default function DeviceOrientation() {
         </button>
         <button
           className={`toggle-btn${state.device === 'ios' ? ' active' : ''}`}
-          onClick={() => dispatch({ device: 'ios' })}
+          onClick={() => {
+            dispatch({ device: 'ios' });
+            trackMixpanelEvent('device_selected', { device: 'ios' });
+          }}
           id="device-ios-btn"
           title="iOS Device"
         >

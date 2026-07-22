@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // Transpile Three.js ecosystem packages
   transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
   

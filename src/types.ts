@@ -2,10 +2,11 @@ export type DeviceType = 'android' | 'ios';
 export type Orientation = 'portrait' | 'landscape';
 export type TemplateName =
   | 'orbit' | 'hero-reveal' | 'float' | 'flip'
-  | 'rise' | 'tilt-shift' | 'carousel' | 'bounce-drop'
+  | 'rise' | 'tilt-shift' | 'bounce-drop'
   | 'slide-in' | 'spiral' | 'cinematic-pan'
   | 'slow-pan' | 'minimal-sway'
-  | 'horizontal-slide' | 'zoom-rotate';
+  | 'horizontal-slide'
+  | 'infinity-loop' | 'dynamic-showcase';
 export type Resolution = '1080p' | '4k';
 export type ExportStatus = 'idle' | 'rendering' | 'encoding' | 'done' | 'error';
 
@@ -42,6 +43,9 @@ export interface SceneSettings {
   directionalColor: string;
   directionalIntensity: number;
   zoom: number; // multiplier for camera distance
+  offsetX?: number; // horizontal device position offset
+  offsetY?: number; // vertical device position offset
+  rotationY?: number; // Y rotation of 3D device in degrees
   textSpeed?: number;
   texts?: TextOverlay[];
 }
@@ -65,6 +69,7 @@ export interface AppState {
   error: string | null;
   orientationMismatch: boolean;
   selectedTextId: string | null;
+  previewTrigger?: number;
 }
 
 export const TEMPLATES: TemplateConfig[] = [
@@ -108,13 +113,6 @@ export const TEMPLATES: TemplateConfig[] = [
     name: 'Tilt Shift',
     description: 'Isometric angle with slow pan',
     icon: '📐',
-    duration: 4,
-  },
-  {
-    id: 'carousel',
-    name: 'Carousel',
-    description: 'Turntable rotation with camera bob',
-    icon: '🎠',
     duration: 4,
   },
   {
@@ -167,11 +165,18 @@ export const TEMPLATES: TemplateConfig[] = [
     duration: 4,
   },
   {
-    id: 'zoom-rotate',
-    name: 'Zoom-In and Rotate',
-    description: 'Camera rapid zoom-in and rotation lock on screen',
-    icon: '🔎',
-    duration: 4,
+    id: 'infinity-loop',
+    name: 'Infinity Loop',
+    description: 'Continuous figure-8 camera motion around the device',
+    icon: '♾️',
+    duration: 5,
+  },
+  {
+    id: 'dynamic-showcase',
+    name: 'Dynamic Showcase',
+    description: 'Sleek multi-angle product reveal with smooth camera lock',
+    icon: '✨',
+    duration: 4.5,
   },
 ];
 
@@ -179,10 +184,11 @@ export const DEFAULT_SCENE: SceneSettings = {
   bgColor: '#fcf9ea',
   bgColor2: '#badfdb',
   bgGradient: true,
-  ambientIntensity: 0.8,
+  ambientIntensity: 1.6,
   directionalColor: '#ffffff',
   directionalIntensity: 1.5,
   zoom: 1.0,
+  offsetX: 0,
   textSpeed: 1.0,
   texts: [],
 };

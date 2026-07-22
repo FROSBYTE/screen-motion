@@ -1,7 +1,7 @@
 import { AnimationBuilder } from './types';
 
 export const buildBounceDrop: AnimationBuilder = (tl, target, orientation, speed) => {
-  const duration = 3.8 / speed;
+  const duration = 3.5 / speed;
   const isPortrait = orientation === 'portrait';
   const camZ = isPortrait ? 4 : 4.5;
   const baseRotZ = isPortrait ? 0 : -Math.PI / 2;
@@ -11,49 +11,22 @@ export const buildBounceDrop: AnimationBuilder = (tl, target, orientation, speed
   target.device.position.set(0, 5, 0);
   target.device.rotation.set(0, 0.4, baseRotZ);
 
-  // 1. Drop down to 0
+  // 1. Drop down cleanly to 0
   tl.to(target.device.position, {
     y: 0,
-    duration: duration * 0.35,
-    ease: 'power2.in',
+    duration: duration * 0.4,
+    ease: 'power2.out',
   }, 0);
 
-  // 2. Bounce up slightly (dampened, single bounce)
-  tl.to(target.device.position, {
-    y: 0.25,
-    duration: duration * 0.12,
-    ease: 'power1.out',
-  }, duration * 0.35);
-
-  // 3. Fall back to 0
-  tl.to(target.device.position, {
-    y: 0,
-    duration: duration * 0.12,
-    ease: 'power1.in',
-  }, duration * 0.47);
-
-  // Rotate to align to center
+  // Rotate to align straight on screen
   tl.to(target.device.rotation, {
     y: 0,
     duration: duration * 0.4,
     ease: 'power2.out',
-  }, duration * 0.1);
+  }, 0);
 
-  // Hold at center
-  tl.to({}, { duration: duration * 0.15 }, duration * 0.59);
-
-  // 4. Return back up to start position (loop seamlessly)
-  tl.to(target.device.position, {
-    y: 5,
-    duration: duration * 0.26,
-    ease: 'power2.in',
-  }, duration * 0.74);
-
-  tl.to(target.device.rotation, {
-    y: 0.4,
-    duration: duration * 0.26,
-    ease: 'power2.in',
-  }, duration * 0.74);
+  // 2. Settle cleanly at center (removed going up / bounce-up part)
+  tl.to({}, { duration: duration * 0.6 }, duration * 0.4);
 
   return duration;
 };

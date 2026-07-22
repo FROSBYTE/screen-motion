@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/store';
 import { TEMPLATES, TemplateName } from '@/types';
+import { trackMixpanelEvent } from '@/lib/mixpanel';
 
 // Helper to map template names to clean minimal SVGs representing their motion
 function TemplateIcon({ name }: { name: TemplateName }) {
@@ -47,16 +48,6 @@ function TemplateIcon({ name }: { name: TemplateName }) {
       return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
           <path d="M4 18L20 6M4 6l16 12M12 2v20" />
-        </svg>
-      );
-    case 'carousel':
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="6" r="1" />
-          <circle cx="12" cy="18" r="1" />
-          <circle cx="6" cy="12" r="1" />
-          <circle cx="18" cy="12" r="1" />
         </svg>
       );
     case 'bounce-drop':
@@ -103,13 +94,6 @@ function TemplateIcon({ name }: { name: TemplateName }) {
           <rect x="7" y="2" width="10" height="15" rx="1.5" />
         </svg>
       );
-    case 'zoom-rotate':
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-          <circle cx="12" cy="12" r="4" />
-        </svg>
-      );
     default:
       return null;
   }
@@ -153,7 +137,14 @@ export default function TemplateSelector() {
             <motion.button
               key={t.id}
               className={`template-card-compact${isActive ? ' active' : ''}`}
-              onClick={() => dispatch({ template: t.id })}
+              onClick={() => {
+                dispatch({ template: t.id });
+                trackMixpanelEvent('template_selected', {
+                  template_id: t.id,
+                  template_name: t.name,
+                  template_duration: t.duration,
+                });
+              }}
               title={`${t.name} (${t.duration}s)`}
               id={`template-${t.id}-btn`}
               whileHover={{ scale: 1.05 }}

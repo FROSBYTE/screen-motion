@@ -13,7 +13,6 @@ import { buildFloat } from './float';
 import { buildFlip } from './flip';
 import { buildRise } from './rise';
 import { buildTiltShift } from './tilt-shift';
-import { buildCarousel } from './carousel';
 import { buildBounceDrop } from './bounce-drop';
 import { buildSlideIn } from './slide-in';
 import { buildSpiral } from './spiral';
@@ -21,7 +20,8 @@ import { buildCinematicPan } from './cinematic-pan';
 import { buildSlowPan } from './slow-pan';
 import { buildMinimalSway } from './minimal-sway';
 import { buildHorizontalSlide } from './horizontal-slide';
-import { buildZoomRotate } from './zoom-rotate';
+import { buildInfinityLoop } from './infinity-loop';
+import { buildDynamicShowcase } from './dynamic-showcase';
 
 /**
  * Registry mapping template names to their builder functions.
@@ -35,7 +35,6 @@ const builders: Record<string, AnimationBuilder> = {
   'flip': buildFlip,
   'rise': buildRise,
   'tilt-shift': buildTiltShift,
-  'carousel': buildCarousel,
   'bounce-drop': buildBounceDrop,
   'slide-in': buildSlideIn,
   'spiral': buildSpiral,
@@ -43,7 +42,8 @@ const builders: Record<string, AnimationBuilder> = {
   'slow-pan': buildSlowPan,
   'minimal-sway': buildMinimalSway,
   'horizontal-slide': buildHorizontalSlide,
-  'zoom-rotate': buildZoomRotate,
+  'infinity-loop': buildInfinityLoop,
+  'dynamic-showcase': buildDynamicShowcase,
 };
 
 export function createAnimation(

@@ -19,6 +19,8 @@ if (typeof window !== 'undefined') {
 
 import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { Home as HomeIcon } from 'lucide-react';
 import { AppProvider, useAppState } from '@/store';
 import RightSidebar from '@/components/RightSidebar';
 
@@ -67,6 +69,17 @@ function AppContent() {
   return (
     <>
       <style>{`html, body { overflow: hidden; }`}</style>
+      
+      {/* Professional Top-Left Home Button */}
+      <Link
+        href="/"
+        className="home-nav-btn"
+        title="Return to Home"
+        aria-label="Home"
+      >
+        <HomeIcon size={18} strokeWidth={2} />
+      </Link>
+
       <div className="app-layout" id="app-container" style={{ position: 'relative' }}>
         <div className="main-container">
           {/* Center Canvas */}

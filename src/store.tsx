@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { trackMixpanelEvent } from '@/lib/mixpanel';
 import {
   AppState,
   DeviceType,
@@ -21,7 +22,7 @@ const initialState: AppState = {
   screenshotOrientation: null,
   device: 'android',
   deviceColor: '#448AFF', // default color based on the array
-  orientation: 'portrait',
+  orientation: 'landscape',
   template: 'orbit',
   speed: 1,
   scene: DEFAULT_SCENE,
@@ -57,8 +58,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const dispatch = (update: AppUpdate | ((prev: AppState) => AppUpdate)) => {
     setState((prev) => {
+      // DISABLED_FEATURE_START: Undo/Redo System History Tracking
+      // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
+      /*
       setHistory((h) => [...h, prev].slice(-20));
       setFuture([]);
+      */
+      // DISABLED_FEATURE_END: Undo/Redo System History Tracking
       const nextPartial = typeof update === 'function' ? update(prev) : update;
       const nextState: AppState = {
         ...prev,
@@ -84,6 +90,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // DISABLED_FEATURE_START: Undo/Redo Actions and States
+  // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
+  /*
   const undo = () => {
     if (history.length === 0) return;
     const prev = history[history.length - 1];
@@ -102,6 +111,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const canUndo = history.length > 0;
   const canRedo = future.length > 0;
+  */
+  const undo = () => {};
+  const redo = () => {};
+  const canUndo = false;
+  const canRedo = false;
+  // DISABLED_FEATURE_END: Undo/Redo Actions and States
 
   // Cleanup object URL
   useEffect(() => {
@@ -111,28 +126,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.screenshotUrl]);
 
   const uploadScreenshot = (file: File) => {
-    const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      dispatch({ error: 'Please upload PNG, JPG, or WEBP' });
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    if (!isImage && !isVideo) {
+      dispatch({ error: 'Please upload a valid image or video (PNG, JPG, WEBP, MP4, WEBM)' });
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      dispatch({ error: 'File must be under 10MB' });
+    if (file.size > 25 * 1024 * 1024) {
+      dispatch({ error: 'File must be under 25MB' });
       return;
     }
 
     const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const orientation: Orientation =
-        img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
-      dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
-    };
-    img.onerror = () => {
-      dispatch({ error: 'Failed to load image. Try another file.' });
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
+
+    if (isVideo) {
+      const video = document.createElement('video');
+      video.onloadedmetadata = () => {
+        const orientation: Orientation =
+          video.videoWidth > video.videoHeight ? 'landscape' : 'portrait';
+        dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
+        trackMixpanelEvent('screenshot_uploaded', {
+          file_type: 'video',
+          file_name: file.name,
+          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
+          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+          orientation,
+        });
+      };
+      video.onerror = () => {
+        dispatch({ error: 'Failed to load video. Try another file.' });
+        URL.revokeObjectURL(url);
+      };
+      video.src = url;
+    } else {
+      const img = new Image();
+      img.onload = () => {
+        const orientation: Orientation =
+          img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
+        dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
+        trackMixpanelEvent('screenshot_uploaded', {
+          file_type: 'image',
+          file_name: file.name,
+          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
+          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+          orientation,
+        });
+      };
+      img.onerror = () => {
+        dispatch({ error: 'Failed to load image. Try another file.' });
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
   };
 
   return (
