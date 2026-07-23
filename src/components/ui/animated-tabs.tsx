@@ -41,12 +41,11 @@ export function AnimatedTabs({
       style={{
         display: 'flex',
         position: 'relative',
-        background: '#ffffff',
+        background: 'transparent',
         borderRadius: '9999px',
-        padding: '8px',
-        gap: '8px',
+        padding: '2px',
+        gap: '2px',
         userSelect: 'none',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
       }}
     >
       {tabs.map((tab) => {
@@ -63,14 +62,14 @@ export function AnimatedTabs({
             style={{
               background: 'transparent',
               border: 'none',
-              padding: '10px 16px',
-              fontSize: '14px',
+              padding: '6px 14px',
+              fontSize: '12.5px',
               fontWeight: 600,
-              color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+              color: isActive ? '#0f172a' : '#64748b',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               position: 'relative',
               borderRadius: '9999px',
               outline: 'none',
@@ -85,12 +84,12 @@ export function AnimatedTabs({
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: variant === 'segment' ? '#ffffff' : 'rgba(0, 0, 0, 0.05)',
+                  background: 'rgba(0, 0, 0, 0.06)',
                   borderRadius: '9999px',
-                  boxShadow: variant === 'segment' ? '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
                   zIndex: -1,
                 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 32 }}
               />
             )}
 

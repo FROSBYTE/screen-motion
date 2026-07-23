@@ -12,17 +12,14 @@ export default function Footer1() {
         product: [
           { name: "3D Editor", url: "/editor" },
           { name: "Templates", url: "#templates" },
-          { name: "Features", url: "#templates" },
         ],
         company: [
-          { name: "About", url: "#" },
-          { name: "Blog", url: "#" },
-          { name: "Careers", url: "#" },
+          { name: "About", url: "https://frosbyte.github.io/Portfolio/" },
+          { name: "Instagram", url: "https://www.instagram.com/frosbyte_studio/" },
         ],
         support: [
-          { name: "Documentation", url: "#" },
-          { name: "Help Center", url: "#" },
-          { name: "Status", url: "#" },
+          { name: "Instagram", url: "https://www.instagram.com/frosbyte_studio/" },
+          { name: "Portfolio", url: "https://frosbyte.github.io/Portfolio/" },
         ],
       }}
     />

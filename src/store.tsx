@@ -53,8 +53,6 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
-  const [history, setHistory] = useState<AppState[]>([]);
-  const [future, setFuture] = useState<AppState[]>([]);
 
   const dispatch = (update: AppUpdate | ((prev: AppState) => AppUpdate)) => {
     setState((prev) => {
@@ -126,10 +124,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.screenshotUrl]);
 
   const uploadScreenshot = (file: File) => {
-    const isVideo = file.type.startsWith('video/');
     const isImage = file.type.startsWith('image/');
-    if (!isImage && !isVideo) {
-      dispatch({ error: 'Please upload a valid image or video (PNG, JPG, WEBP, MP4, WEBM)' });
+    if (!isImage) {
+      dispatch({ error: 'Please upload a valid image (PNG, JPG, WEBP)' });
       return;
     }
     if (file.size > 25 * 1024 * 1024) {
@@ -139,45 +136,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const url = URL.createObjectURL(file);
 
-    if (isVideo) {
-      const video = document.createElement('video');
-      video.onloadedmetadata = () => {
-        const orientation: Orientation =
-          video.videoWidth > video.videoHeight ? 'landscape' : 'portrait';
-        dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
-        trackMixpanelEvent('screenshot_uploaded', {
-          file_type: 'video',
-          file_name: file.name,
-          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
-          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
-          orientation,
-        });
-      };
-      video.onerror = () => {
-        dispatch({ error: 'Failed to load video. Try another file.' });
-        URL.revokeObjectURL(url);
-      };
-      video.src = url;
-    } else {
-      const img = new Image();
-      img.onload = () => {
-        const orientation: Orientation =
-          img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
-        dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
-        trackMixpanelEvent('screenshot_uploaded', {
-          file_type: 'image',
-          file_name: file.name,
-          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
-          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
-          orientation,
-        });
-      };
-      img.onerror = () => {
-        dispatch({ error: 'Failed to load image. Try another file.' });
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
-    }
+    const img = new Image();
+    img.onload = () => {
+      const orientation: Orientation =
+        img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
+      dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
+      trackMixpanelEvent('screenshot_uploaded', {
+        file_type: 'image',
+        file_name: file.name,
+        file_extension: file.name.split('.').pop()?.toLowerCase() || '',
+        file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+        orientation,
+      });
+    };
+    img.onerror = () => {
+      dispatch({ error: 'Failed to load image. Try another file.' });
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   };
 
   return (

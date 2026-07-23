@@ -71,7 +71,7 @@ function AppContent() {
       <style>{`html, body { overflow: hidden; }`}</style>
       
       {/* Professional Top-Left Header Controls with Beta Tag */}
-      <div style={{ position: 'fixed', top: '24px', left: '24px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="editor-top-nav-container" style={{ position: 'fixed', top: '24px', left: '24px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '10px' }}>
         <Link
           href="/"
           className="home-nav-btn"
@@ -81,7 +81,7 @@ function AppContent() {
         >
           <HomeIcon size={18} strokeWidth={2} />
         </Link>
-        <span style={{
+        <span className="editor-beta-tag" style={{
           fontSize: '11px',
           fontWeight: 700,
           letterSpacing: '0.06em',
@@ -90,6 +90,7 @@ function AppContent() {
           borderRadius: '999px',
           backgroundColor: 'rgba(255, 255, 255, 0.85)',
           backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           color: '#111827',
           border: '1px solid rgba(0, 0, 0, 0.08)',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',

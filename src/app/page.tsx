@@ -3,9 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Iridescence from "@/components/Iridescence";
-import SplashCursor from "@/components/SplashCursor";
 import Footer1 from "@/components/smoothui/blocks/footers/footer-1";
 import { AppProvider } from "@/store";
 
@@ -18,26 +17,31 @@ const Preview3D = dynamic(() => import("@/components/Preview3D"), {
   )
 });
 
+const IRIDESCENCE_COLOR: [number, number, number] = [0.9, 0.8, 1.0];
+const SHOWCASE_ANIMATIONS = [
+  { name: "Orbit 3D", id: "orbit" },
+  { name: "Hero Reveal", id: "hero-reveal" },
+  { name: "Floating Drift", id: "float" },
+  { name: "Flip & Land", id: "flip" },
+  { name: "Bounce Drop", id: "bounce-drop" },
+  { name: "Cinematic Pan", id: "cinematic-pan" },
+  { name: "Corkscrew Reveal", id: "corkscrew-reveal" },
+  { name: "Infinity Loop", id: "infinity-loop" },
+  { name: "Depth Zoom", id: "depth-zoom" },
+];
+
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-
   const [showcaseIndex, setShowcaseIndex] = useState(0);
-
-  const showcaseAnimations = [
-    { name: "Orbit 3D", anim: "card-anim-orbit" },
-    { name: "Hero Reveal", anim: "card-anim-hero-reveal" },
-    { name: "Floating Drift", anim: "card-anim-float" },
-    { name: "Tilt Shift", anim: "card-anim-tilt-shift" },
-  ];
 
   React.useEffect(() => {
     const timer = setInterval(() => {
-      setShowcaseIndex((prev) => (prev + 1) % showcaseAnimations.length);
+      setShowcaseIndex((prev) => (prev + 1) % SHOWCASE_ANIMATIONS.length);
     }, 4000);
     return () => clearInterval(timer);
   }, []);
 
-  const currentShowcase = showcaseAnimations[showcaseIndex];
+  const currentShowcase = SHOWCASE_ANIMATIONS[showcaseIndex];
 
   return (
     <div
@@ -52,7 +56,7 @@ export default function LandingPage() {
     >
       {/* Fixed Full Page Live WebGL Iridescence Background */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
-        <Iridescence color={[0.9, 0.8, 1.0]} speed={1.2} amplitude={0.0} mouseReact={false} />
+        <Iridescence color={IRIDESCENCE_COLOR} speed={1.2} amplitude={0.0} mouseReact={false} />
       </div>
 
       {/* Soft transparent vignette overlay */}
@@ -175,18 +179,24 @@ export default function LandingPage() {
           grid-template-columns: repeat(1, minmax(0, 1fr));
           gap: 32px;
         }
-        @media (min-width: 768px) {
-          .bento-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+        @media (max-width: 640px) {
+          .home-waitlist-btn {
+            top: 14px !important;
+            right: 16px !important;
+            padding: 7px 16px !important;
+            font-size: 12px !important;
           }
-          .bento-span-2 {
-            grid-column: span 2 / span 2;
+          .hero-btn-primary, .hero-btn-secondary {
+            padding: 10px 20px !important;
+            font-size: 13.5px !important;
+            width: auto !important;
+            max-width: none !important;
+            white-space: nowrap !important;
           }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+          .hero-btn-container {
+            gap: 10px !important;
+            flex-direction: column !important;
+          }
         }
       `}</style>
 
@@ -196,13 +206,14 @@ export default function LandingPage() {
           href="https://forms.gle/rtfYsFTgRUP9RE79A"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-headline hover:scale-[1.02] active:scale-[0.98]"
+          className="home-waitlist-btn font-headline hover:scale-[1.02] active:scale-[0.98]"
           style={{
             fontSize: "14px",
             fontWeight: 700,
             color: "#111827",
             backgroundColor: "rgba(255, 255, 255, 0.85)",
             backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
             padding: "10px 24px",
             borderRadius: "999px",
             border: "1px solid rgba(255, 255, 255, 0.5)",
@@ -278,8 +289,8 @@ export default function LandingPage() {
               maxWidth: "1050px"
             }}
           >
-            Turn Static Screenshots <br className="hidden sm:inline" />
-            into 3D Motion Videos
+            Cinematic 3D Product Demos <br className="hidden sm:inline" />
+            Built for Apps and Web
           </motion.h1>
 
           {/* Subtitle */}
@@ -292,13 +303,12 @@ export default function LandingPage() {
               fontSize: "clamp(1.1rem, 2vw, 1.35rem)",
               lineHeight: 1.6,
               color: "#4b5563",
-              maxWidth: "680px",
+              maxWidth: "720px",
               margin: 0,
               fontWeight: 400
             }}
           >
-            The fastest way for product creators to design studio-quality 4K <br className="hidden sm:inline" />
-            3D promotional videos directly in the browser.
+            Elevate your product showcases with fluid 3D motion, realistic device frames, and dynamic camera angles. Render crisp 4K videos in seconds.
           </motion.p>
 
           {/* Pill CTA Buttons */}
@@ -306,10 +316,11 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5 }}
+            className="hero-btn-container"
             style={{ paddingTop: "12px", display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center", alignItems: "center" }}
           >
             <Link
-              className="font-headline hover:scale-[1.02] active:scale-[0.98]"
+              className="hero-btn-primary font-headline hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 fontSize: "15px",
                 fontWeight: 700,
@@ -319,8 +330,10 @@ export default function LandingPage() {
                 borderRadius: "999px",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "8px",
                 textDecoration: "none",
+                whiteSpace: "nowrap",
                 boxShadow: "0 10px 25px -5px rgba(17, 24, 39, 0.3)",
                 transition: "all 0.2s ease"
               }}
@@ -331,7 +344,7 @@ export default function LandingPage() {
             </Link>
 
             <a
-              className="font-headline hover:scale-[1.02] active:scale-[0.98]"
+              className="hero-btn-secondary font-headline hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 fontSize: "15px",
                 fontWeight: 700,
@@ -341,13 +354,19 @@ export default function LandingPage() {
                 borderRadius: "999px",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "8px",
                 textDecoration: "none",
+                whiteSpace: "nowrap",
                 border: "1px solid rgba(0, 0, 0, 0.06)",
                 boxShadow: "0 4px 14px rgba(186, 223, 219, 0.4)",
                 transition: "all 0.2s ease"
               }}
               href="#templates"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               Explore Templates
             </a>
@@ -420,9 +439,6 @@ export default function LandingPage() {
                 <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ef4444" }} />
                 <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#f59e0b" }} />
                 <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#10b981" }} />
-                <span style={{ marginLeft: "12px", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
-                  Screen Motion Studio (Video Render Engine)
-                </span>
               </div>
             </div>
 
@@ -439,94 +455,45 @@ export default function LandingPage() {
               overflow: "hidden",
               perspective: "1000px"
             }}>
-              {/* Active 3D Device Model with Continuous Animation */}
-              <div 
-                className="studio-canvas-phone"
-                style={{
-                  animation: `${currentShowcase.anim} 3.8s infinite ease-in-out`
-                }}
-              >
-                {/* Dynamic Island Notch */}
-                <div style={{
-                  position: "absolute",
-                  top: "14px",
-                  width: "44px",
-                  height: "12px",
-                  backgroundColor: "#111827",
-                  borderRadius: "999px",
-                  zIndex: 20
-                }} />
-
-                {/* Animated Inner Screen Content (Slides on screen change) */}
-                <div style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "32px",
-                  overflow: "hidden",
-                  position: "relative"
-                }}>
-                  <motion.div
-                    key={showcaseIndex}
-                    initial={{ x: "100%", opacity: 0 }}
-                    animate={{ x: "0%", opacity: 1 }}
-                    exit={{ x: "-100%", opacity: 0 }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "20px",
-                      gap: "12px",
-                      background: showcaseIndex % 2 === 0
-                        ? "linear-gradient(180deg, #ffffff 0%, #f3e8ff 100%)"
-                        : "linear-gradient(180deg, #ffffff 0%, #e0f2fe 100%)"
-                    }}
-                  >
-                    <div style={{
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "14px",
-                      backgroundColor: showcaseIndex % 2 === 0 ? "#8b5cf6" : "#0284c7",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ffffff",
-                      boxShadow: "0 8px 16px rgba(0,0,0,0.1)"
-                    }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: "24px" }}>
-                        {showcaseIndex === 0 ? "3d_rotation" : showcaseIndex === 1 ? "auto_awesome" : showcaseIndex === 2 ? "movie" : "motion_photos_on"}
-                      </span>
-                    </div>
-
-                    <span style={{
-                      fontFamily: "'Google Sans', sans-serif",
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      color: "#111827",
-                      textAlign: "center"
-                    }}>
-                      {currentShowcase.name}
-                    </span>
-
-                    {/* Progress indicator pills */}
-                    <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
-                      {showcaseAnimations.map((_, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            width: showcaseIndex === i ? "14px" : "6px",
-                            height: "6px",
-                            borderRadius: "999px",
-                            backgroundColor: showcaseIndex === i ? "#111827" : "rgba(0,0,0,0.15)",
-                            transition: "all 0.3s ease"
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
+              <AnimatePresence mode="wait">
+                <motion.video
+                  key={currentShowcase.id}
+                  src={`/animation-card-videos/${currentShowcase.id}-template.webm`}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.6 }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    position: "absolute",
+                    inset: 0,
+                  }}
+                />
+              </AnimatePresence>
+              
+              {/* Overlay UI for showcase progress */}
+              <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                {/* Progress indicator pills */}
+                <div style={{ display: "flex", gap: "6px" }}>
+                  {SHOWCASE_ANIMATIONS.map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: showcaseIndex === i ? "16px" : "6px",
+                        height: "6px",
+                        borderRadius: "999px",
+                        backgroundColor: showcaseIndex === i ? "#ffffff" : "rgba(255,255,255,0.4)",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                        transition: "all 0.3s ease"
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>

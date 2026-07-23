@@ -9,12 +9,14 @@ export function initMixpanel(): void {
 
   try {
     mixpanel.init(MIXPANEL_TOKEN, {
-      debug: process.env.NODE_ENV !== 'production',
+      debug: false,
       autocapture: true,
       record_sessions_percent: 100,
       api_host: 'https://api-eu.mixpanel.com',
       track_pageview: true,
       persistence: 'localStorage',
+      cross_site_cookie: false,
+      secure_cookie: true,
       ignore_dnt: true,
     });
     initialized = true;

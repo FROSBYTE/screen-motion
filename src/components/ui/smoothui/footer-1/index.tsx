@@ -1,69 +1,83 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 
-interface FooterProps {
-  companyName?: string;
-  copyright?: string;
-  description?: string;
-  links?: Record<string, { name: string; url: string }[]>;
+interface FooterLink {
+  name: string;
+  url: string;
+}
+
+interface FooterSimpleProps {
+  companyName: string;
+  description: string;
+  copyright: string;
+  links: {
+    product: FooterLink[];
+    company: FooterLink[];
+    support: FooterLink[];
+  };
 }
 
 export function FooterSimple({
-  companyName = "screen-motion",
-  copyright = `© ${new Date().getFullYear()} screen-motion. All rights reserved.`
-}: FooterProps) {
+  companyName,
+  description,
+  copyright,
+  links,
+}: FooterSimpleProps) {
+  const renderLink = (item: FooterLink, i: number) => {
+    const isExternal = item.url.startsWith("http");
+    return (
+      <li key={i}>
+        <a
+          href={item.url}
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noopener noreferrer" : undefined}
+          style={{ color: "#4b5563", textDecoration: "none", transition: "color 0.2s" }}
+        >
+          {item.name}
+        </a>
+      </li>
+    );
+  };
+
   return (
-    <footer
-      style={{
-        width: "100%",
-        backgroundColor: "rgba(255, 255, 255, 0.4)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderTop: "1px solid rgba(255, 255, 255, 0.4)",
-        padding: "20px 32px",
-        fontFamily: "'Google Sans', sans-serif",
-        position: "relative",
-        zIndex: 10
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1150px",
-          margin: "0 auto",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "16px"
-        }}
-      >
-        {/* Brand */}
-        <div style={{ fontSize: "15px", fontWeight: 800, color: "#111827", letterSpacing: "-0.01em" }}>
-          {companyName}
+    <footer style={{
+      width: "100%",
+      backgroundColor: "transparent",
+      color: "#4b5563",
+      padding: "60px 24px 32px 24px",
+      fontSize: "14px",
+      fontFamily: "'Google Sans', 'Inter', sans-serif",
+      borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+      position: "relative",
+      zIndex: 10
+    }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "40px" }}>
+        <div>
+          <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#111827", marginBottom: "12px" }}>{companyName}</h3>
+          <p style={{ lineHeight: 1.6, color: "#4b5563", maxWidth: "300px" }}>{description}</p>
         </div>
-
-        {/* Minimal Nav Links */}
-        <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-          <Link href="/editor" style={{ fontSize: "13px", fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>
-            Editor
-          </Link>
-          <a href="#templates" style={{ fontSize: "13px", fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>
-            Templates
-          </a>
-          <a href="#" style={{ fontSize: "13px", fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>
-            Twitter
-          </a>
-          <a href="#" style={{ fontSize: "13px", fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>
-            Discord
-          </a>
+        <div>
+          <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Product</h4>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+            {links.product?.map(renderLink)}
+          </ul>
         </div>
-
-        {/* Short Copyright */}
-        <div style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-          {copyright}
+        <div>
+          <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Company</h4>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+            {links.company?.map(renderLink)}
+          </ul>
         </div>
+        <div>
+          <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Connect</h4>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+            {links.support?.map(renderLink)}
+          </ul>
+        </div>
+      </div>
+      <div style={{ maxWidth: "1100px", margin: "40px auto 0 auto", paddingTop: "24px", borderTop: "1px solid rgba(0, 0, 0, 0.08)", textAlign: "center", fontSize: "13px", color: "#6b7280" }}>
+        {copyright}
       </div>
     </footer>
   );

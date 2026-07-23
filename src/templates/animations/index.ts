@@ -18,10 +18,12 @@ import { buildSlideIn } from './slide-in';
 import { buildSpiral } from './spiral';
 import { buildCinematicPan } from './cinematic-pan';
 import { buildSlowPan } from './slow-pan';
-import { buildMinimalSway } from './minimal-sway';
 import { buildHorizontalSlide } from './horizontal-slide';
 import { buildInfinityLoop } from './infinity-loop';
 import { buildDynamicShowcase } from './dynamic-showcase';
+import { buildCorkscrewReveal } from './corkscrew-reveal';
+import { buildDepthZoom } from './depth-zoom';
+import { buildCornerDrop } from './corner-drop';
 
 /**
  * Registry mapping template names to their builder functions.
@@ -40,10 +42,12 @@ const builders: Record<string, AnimationBuilder> = {
   'spiral': buildSpiral,
   'cinematic-pan': buildCinematicPan,
   'slow-pan': buildSlowPan,
-  'minimal-sway': buildMinimalSway,
   'horizontal-slide': buildHorizontalSlide,
   'infinity-loop': buildInfinityLoop,
   'dynamic-showcase': buildDynamicShowcase,
+  'corkscrew-reveal': buildCorkscrewReveal,
+  'depth-zoom': buildDepthZoom,
+  'corner-drop': buildCornerDrop,
 };
 
 export function createAnimation(

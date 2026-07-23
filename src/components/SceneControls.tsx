@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppState } from '@/store';
-import { Play, ChevronDown, ChevronRight, Bold, Trash2 } from 'lucide-react';
+import { Play, ChevronDown, ChevronRight, Bold, Trash2, RotateCcw, Ban } from 'lucide-react';
 import BasicDropdown from './ui/smoothui/basic-dropdown';
 
 const animationItems = [
@@ -23,6 +23,15 @@ const animationItems = [
   { id: 'per-word-crossfade', label: 'Per Word Crossfade' },
   { id: 'reveal-text', label: 'Reveal Text' },
   { id: 'scale-down-fade', label: 'Scale Down Fade' },
+];
+
+const BG_PRESETS = [
+  { id: 'none', label: 'None', url: null },
+  { id: 'bg1', label: 'BG 01', url: '/Background_Images/BG01.png' },
+  { id: 'bg2', label: 'BG 02', url: '/Background_Images/BG02.png' },
+  { id: 'bg3', label: 'BG 03', url: '/Background_Images/BG03.jpeg' },
+  { id: 'bg4', label: 'BG 04', url: '/Background_Images/BG04.jpeg' },
+  { id: 'bg5', label: 'BG 05', url: '/Background_Images/BG05.jpeg' },
 ];
 
 export default function SceneControls() {
@@ -61,7 +70,10 @@ export default function SceneControls() {
           marginTop: "20px",
           marginBottom: "12px",
           paddingTop: "16px",
-          borderTop: "1px solid var(--border-color, rgba(0, 0, 0, 0.08))"
+          borderTop: "1px solid var(--border-color, rgba(0, 0, 0, 0.08))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between"
         }}>
           <h4 style={{
             fontSize: "11px",
@@ -73,57 +85,100 @@ export default function SceneControls() {
           }}>
             Background & Lighting
           </h4>
-        </div>
 
-        {/* Background Gradient Custom Switch */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 14px',
-            borderRadius: '12px',
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            cursor: 'pointer',
-            userSelect: 'none',
-            transition: 'all 0.2s ease',
-          }}
-          onClick={() => dispatch({ scene: { bgGradient: !scene.bgGradient } })}
-          id="bg-gradient-checkbox"
-        >
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-            Background Gradient
-          </span>
-          <div
-            style={{
-              width: '38px',
-              height: '22px',
-              borderRadius: '999px',
-              background: scene.bgGradient ? '#111827' : 'rgba(0,0,0,0.15)',
-              position: 'relative',
-              transition: 'background-color 0.2s ease',
-              padding: '2px',
-              boxSizing: 'border-box',
-            }}
-          >
-            <div
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Gradient Toggle */}
+            <div 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }} 
+              onClick={() => dispatch({ scene: { bgGradient: !scene.bgGradient } })}
+              title="Toggle Background Gradient"
+            >
+              <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>Gradient</span>
+              <div style={{ width: '32px', height: '18px', borderRadius: '99px', background: scene.bgGradient ? '#111827' : 'rgba(0,0,0,0.15)', position: 'relative', transition: 'all 0.2s' }}>
+                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transform: scene.bgGradient ? 'translateX(16px)' : 'translateX(2px)', top: '2px', position: 'absolute', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+              </div>
+            </div>
+
+            {/* Reset Background & Lighting Settings Button */}
+            <button
+              onClick={() => dispatch({
+                scene: {
+                  bgColor: '#fcf9ea',
+                  bgColor2: '#badfdb',
+                  bgGradient: true,
+                  bgImage: null,
+                  ambientIntensity: 1.0,
+                  directionalColor: '#ffffff',
+                  directionalIntensity: 1.0,
+                  zoom: 1.0,
+                }
+              })}
+              title="Reset Background & Lighting to Default"
+              aria-label="Reset Background & Lighting to Default"
               style={{
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                transform: scene.bgGradient ? 'translateX(16px)' : 'translateX(0px)',
-                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                background: "transparent",
+                border: "none",
+                color: "var(--text-secondary, #6b7280)",
+                cursor: "pointer",
+                padding: "4px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
               }}
-            />
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "var(--text-primary, #111827)";
+                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.06)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "var(--text-secondary, #6b7280)";
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              <RotateCcw size={14} />
+            </button>
           </div>
         </div>
 
-        {/* Background Color */}
+        {/* Background Image Presets Swatches */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', padding: '2px 0 6px 0' }}>
+          {BG_PRESETS.map((preset) => {
+            const isSelected = (scene.bgImage || null) === preset.url;
+            return (
+              <button
+                key={preset.id}
+                onClick={() => dispatch({ scene: { bgImage: preset.url } })}
+                title={preset.label}
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  border: isSelected ? '2px solid var(--text-primary)' : '1px solid var(--border-color)',
+                  background: preset.url ? `url(${preset.url}) center/cover no-repeat` : 'linear-gradient(135deg, #fcf9ea 0%, #badfdb 100%)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                }}
+              >
+                {!preset.url && (
+                  <Ban size={16} color="rgba(0,0,0,0.5)" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Background Color / Gradient Top */}
         <div className="color-control" id="bg-color-control">
-          <label>{scene.bgGradient ? 'Gradient Start' : 'Background Color'}</label>
+          <label>{scene.bgGradient ? 'Gradient Top' : 'Background Color'}</label>
           <div className="color-swatch" style={{ backgroundColor: scene.bgColor || '#1c1a16' }}>
             <input
               type="color"
@@ -133,10 +188,10 @@ export default function SceneControls() {
           </div>
         </div>
 
-        {/* Gradient End Color */}
+        {/* Gradient Bottom Color */}
         {scene.bgGradient && (
           <div className="color-control" id="bg-color-2-control">
-            <label>Gradient End</label>
+            <label>Gradient Bottom</label>
             <div className="color-swatch" style={{ backgroundColor: scene.bgColor2 || '#0b0a09' }}>
               <input
                 type="color"
@@ -146,6 +201,18 @@ export default function SceneControls() {
             </div>
           </div>
         )}
+
+        {/* Light Color (formerly Directional Light color) */}
+        <div className="color-control" id="directional-color-control">
+          <label>Light Color</label>
+          <div className="color-swatch" style={{ backgroundColor: scene.directionalColor || '#ffffff' }}>
+            <input
+              type="color"
+              value={scene.directionalColor || '#ffffff'}
+              onChange={(e) => dispatch({ scene: { directionalColor: e.target.value } })}
+            />
+          </div>
+        </div>
 
         {/* Ambient Light */}
         <div className="slider-control" id="ambient-control">
@@ -161,18 +228,6 @@ export default function SceneControls() {
             value={scene.ambientIntensity}
             onChange={(e) => dispatch({ scene: { ambientIntensity: parseFloat(e.target.value) } })}
           />
-        </div>
-
-        {/* Directional Light */}
-        <div className="color-control" id="directional-color-control">
-          <label>Directional Light</label>
-          <div className="color-swatch" style={{ backgroundColor: scene.directionalColor || '#ffffff' }}>
-            <input
-              type="color"
-              value={scene.directionalColor || '#ffffff'}
-              onChange={(e) => dispatch({ scene: { directionalColor: e.target.value } })}
-            />
-          </div>
         </div>
 
         <div className="slider-control" id="directional-intensity-control">
@@ -211,7 +266,10 @@ export default function SceneControls() {
           marginTop: "20px",
           marginBottom: "12px",
           paddingTop: "16px",
-          borderTop: "1px solid var(--border-color, rgba(0, 0, 0, 0.08))"
+          borderTop: "1px solid var(--border-color, rgba(0, 0, 0, 0.08))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between"
         }}>
           <h4 style={{
             fontSize: "11px",
@@ -223,6 +281,34 @@ export default function SceneControls() {
           }}>
             Device Settings
           </h4>
+
+          <button
+            onClick={() => dispatch({ scene: { offsetX: 0, rotationX: -5, rotationY: 0 } })}
+            title="Reset Device Position & Rotation"
+            aria-label="Reset Device Position & Rotation"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--text-secondary, #6b7280)",
+              cursor: "pointer",
+              padding: "4px",
+              borderRadius: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--text-primary, #111827)";
+              e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.06)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-secondary, #6b7280)";
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            <RotateCcw size={14} />
+          </button>
         </div>
 
         {/* X Position */}
@@ -238,6 +324,22 @@ export default function SceneControls() {
             step="0.05"
             value={scene.offsetX || 0}
             onChange={(e) => dispatch({ scene: { offsetX: parseFloat(e.target.value) } })}
+          />
+        </div>
+
+        {/* X Rotation */}
+        <div className="slider-control" id="rotation-x-control">
+          <div className="slider-header">
+            <span className="slider-label">X Rotation</span>
+            <span className="slider-value">{(scene.rotationX ?? -5).toFixed(0)}°</span>
+          </div>
+          <input
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value={scene.rotationX ?? -5}
+            onChange={(e) => dispatch({ scene: { rotationX: parseFloat(e.target.value) } })}
           />
         </div>
 

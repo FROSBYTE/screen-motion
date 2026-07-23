@@ -51,13 +51,14 @@ void main() {
 export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude = 0.1, mouseReact = true, ...rest }) {
   const ctnDom = useRef(null);
   const mousePos = useRef({ x: 0.5, y: 0.5 });
+  const colorKey = Array.isArray(color) ? color.join(',') : String(color);
 
   useEffect(() => {
     if (!ctnDom.current) return;
     const ctn = ctnDom.current;
-    const renderer = new Renderer();
+    const renderer = new Renderer({ alpha: true });
     const gl = renderer.gl;
-    gl.clearColor(1, 1, 1, 1);
+    gl.clearColor(0, 0, 0, 0);
 
     let program;
 
@@ -120,10 +121,13 @@ export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude 
       if (mouseReact) {
         ctn.removeEventListener('mousemove', handleMouseMove);
       }
-      ctn.removeChild(gl.canvas);
+      if (gl.canvas && gl.canvas.parentNode === ctn) {
+        ctn.removeChild(gl.canvas);
+      }
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [color, speed, amplitude, mouseReact]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colorKey, speed, amplitude, mouseReact]);
 
   return <div ref={ctnDom} className="iridescence-container" {...rest} />;
 }

@@ -8,7 +8,6 @@ import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates
 import { Model as IPhone16 } from './IPhone16';
 import { Model as AndroidModel } from './AndroidModel';
 import { Center } from '@react-three/drei';
-import SceneTexts from './SceneTexts';
 
 function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   const { state } = useAppState();
@@ -31,7 +30,11 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
     groupRef.current.scale.setScalar(1);
 
     // Retrieve screen mesh dynamically from the GLTF children for opacity transitions
-    const screenMesh = groupRef.current.getObjectByName('Object_18') as THREE.Mesh || groupRef.current.getObjectByName('Object_9') as THREE.Mesh || null;
+    const screenMesh = groupRef.current.getObjectByName('Object_18') as THREE.Mesh 
+      || groupRef.current.getObjectByName('Object_9') as THREE.Mesh 
+      || groupRef.current.getObjectByName('S22_Ultra001_2') as THREE.Mesh 
+      || groupRef.current.getObjectByName('Display_ActiveArea') as THREE.Mesh 
+      || null;
 
     const target: AnimationTarget = {
       camera: cameraRef.current,
@@ -76,6 +79,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
           <React.Suspense fallback={null}>
             <group 
               scale={[0.15, 0.15, 0.15]}
+              rotation-x={((state.scene.rotationX || 0) * Math.PI) / 180}
               rotation-y={((state.scene.rotationY || 0) * Math.PI) / 180}
             >
             {state.device === 'ios' ? (

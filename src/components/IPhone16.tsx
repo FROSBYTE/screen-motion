@@ -10,41 +10,10 @@ Title: iPhone 16 - Free
 
 import * as THREE from 'three'
 import React from 'react'
-import { useGLTF, useTexture, useVideoTexture } from '@react-three/drei'
+import { useGLTF, useTexture } from '@react-three/drei'
 import { GLTF } from 'three-stdlib'
 import { usePlaceholderTexture } from '@/hooks/usePlaceholderTexture'
 import { useAppState } from '@/store'
-
-function VideoScreenMaterial({ url }: { url: string }) {
-  const texture = useVideoTexture(url, {
-    unsuspend: 'canplay',
-    crossOrigin: 'Anonymous',
-    loop: true,
-    muted: true,
-    start: true,
-  });
-
-  React.useLayoutEffect(() => {
-    if (texture) {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      texture.flipY = true;
-      texture.needsUpdate = true;
-    }
-  }, [texture]);
-
-  return (
-    <meshStandardMaterial
-      map={texture}
-      metalness={0.1}
-      roughness={0.2}
-      emissive="#111"
-      emissiveMap={texture}
-      emissiveIntensity={0.3}
-    />
-  );
-}
 
 function ScreenMaterial({ url }: { url: string }) {
   const texture = useTexture(url);
@@ -165,17 +134,28 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
   const { nodes, materials } = useGLTF('/models/iphone16.gltf') as unknown as GLTFResult
   const placeholderTexture = usePlaceholderTexture();
   const { state } = useAppState();
-  const isVideo = state.screenshot?.type?.startsWith('video/');
+
+  const initialColors = React.useRef<Record<string, THREE.Color>>({});
 
   const bodyMaterial = React.useMemo(() => {
-    // Create a clone or apply directly to materials
-    Object.values(materials).forEach((mat) => {
-      // Safely check if material has a color property
+    // Store initial colors on first pass
+    if (Object.keys(initialColors.current).length === 0) {
+      Object.entries(materials).forEach(([name, mat]) => {
+        if ('color' in mat && mat.color) {
+          initialColors.current[name] = (mat as any).color.clone();
+        }
+      });
+    }
+
+    Object.entries(materials).forEach(([name, mat]) => {
       if ('color' in mat && mat.color) {
         const color = (mat as any).color as THREE.Color;
+        const initialColor = initialColors.current[name];
         
-        // Skip if it's already a very dark/black material (like camera lenses)
-        if (color.r < 0.1 && color.g < 0.1 && color.b < 0.1 && !(mat as any).map) {
+        // Skip if it's already a very dark/black material (like camera lenses, or notch) originally
+        if (initialColor && initialColor.r < 0.1 && initialColor.g < 0.1 && initialColor.b < 0.1 && !(mat as any).map) {
+          // Explicitly ensure it stays black
+          color.set('#000000');
           return;
         }
         
@@ -191,6 +171,7 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
         if ((mat as any).map) {
           (mat as any).map = null;
         }
+        (mat as any).needsUpdate = true;
       }
     });
     return materials.d79c406d92ac2ea2b462;
@@ -253,11 +234,7 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
               />
             ) : screenshotUrl ? (
               <React.Suspense fallback={<meshStandardMaterial color="#0f0f1a" />}>
-                {isVideo ? (
-                  <VideoScreenMaterial url={screenshotUrl} />
-                ) : (
-                  <ScreenMaterial url={screenshotUrl} />
-                )}
+                <ScreenMaterial url={screenshotUrl} />
               </React.Suspense>
             ) : (
               <meshStandardMaterial

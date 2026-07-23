@@ -4,9 +4,9 @@ export type TemplateName =
   | 'orbit' | 'hero-reveal' | 'float' | 'flip'
   | 'rise' | 'tilt-shift' | 'bounce-drop'
   | 'slide-in' | 'spiral' | 'cinematic-pan'
-  | 'slow-pan' | 'minimal-sway'
-  | 'horizontal-slide'
-  | 'infinity-loop' | 'dynamic-showcase';
+  | 'slow-pan' | 'horizontal-slide'
+  | 'infinity-loop' | 'dynamic-showcase'
+  | 'corkscrew-reveal' | 'depth-zoom' | 'corner-drop';
 export type Resolution = '1080p' | '4k';
 export type ExportStatus = 'idle' | 'rendering' | 'encoding' | 'done' | 'error';
 
@@ -39,12 +39,14 @@ export interface SceneSettings {
   bgColor: string;
   bgColor2?: string;
   bgGradient?: boolean;
+  bgImage?: string | null; // Background image preset or null for color/gradient
   ambientIntensity: number;
   directionalColor: string;
   directionalIntensity: number;
   zoom: number; // multiplier for camera distance
   offsetX?: number; // horizontal device position offset
   offsetY?: number; // vertical device position offset
+  rotationX?: number; // X rotation of 3D device in degrees
   rotationY?: number; // Y rotation of 3D device in degrees
   textSpeed?: number;
   texts?: TextOverlay[];
@@ -67,116 +69,131 @@ export interface AppState {
   exportStatus: ExportStatus;
   exportProgress: number;
   error: string | null;
-  orientationMismatch: boolean;
-  selectedTextId: string | null;
+  orientationMismatch?: boolean;
   previewTrigger?: number;
+  selectedTextId?: string | null;
 }
 
 export const TEMPLATES: TemplateConfig[] = [
   {
     id: 'orbit',
-    name: 'Orbit',
-    description: 'Camera orbits around the device',
-    icon: '🌀',
-    duration: 3,
+    name: 'Orbit 3D',
+    description: 'Smooth 360-degree rotation around the 3D device',
+    icon: '3d_rotation',
+    duration: 5,
   },
   {
     id: 'hero-reveal',
     name: 'Hero Reveal',
-    description: 'Camera zooms in with reveal effect',
-    icon: '✨',
-    duration: 3.5,
-  },
-  {
-    id: 'float',
-    name: 'Float',
-    description: 'Device gently bobs and tilts',
-    icon: '🫧',
+    description: 'Swoops up from bottom angle to center hero framing',
+    icon: 'north_west',
     duration: 4,
   },
   {
+    id: 'float',
+    name: 'Floating Drift',
+    description: 'Gentle weightless hover with dynamic shadow drift',
+    icon: 'air',
+    duration: 6,
+  },
+  {
     id: 'flip',
-    name: 'Flip',
-    description: 'Dramatic back-to-front card flip',
-    icon: '🃏',
-    duration: 2,
+    name: 'Flip & Land',
+    description: 'Full 360 flip transition ending in crisp focus',
+    icon: 'flip',
+    duration: 4,
   },
   {
     id: 'rise',
-    name: 'Rise',
-    description: 'Device rises from below frame',
-    icon: '🚀',
-    duration: 3,
+    name: 'Vertical Rise',
+    description: 'Elevates smoothly from bottom to eye level',
+    icon: 'arrow_upward',
+    duration: 4,
   },
   {
     id: 'tilt-shift',
     name: 'Tilt Shift',
-    description: 'Isometric angle with slow pan',
-    icon: '📐',
-    duration: 4,
+    description: 'Dynamic multi-axis angular camera pan',
+    icon: 'screen_rotation',
+    duration: 5,
   },
   {
     id: 'bounce-drop',
     name: 'Bounce Drop',
-    description: 'Drops in from above and bounces',
-    icon: '⬇️',
-    duration: 2.5,
+    description: 'Playful impact drop with elastic bounce settle',
+    icon: 'south',
+    duration: 3.5,
   },
   {
     id: 'slide-in',
-    name: 'Slide In',
-    description: 'Slides in from the side with ease',
-    icon: '➡️',
-    duration: 2.5,
+    name: 'Side Slide',
+    description: 'Glides horizontally into center frame',
+    icon: 'east',
+    duration: 4,
   },
   {
     id: 'spiral',
-    name: 'Spiral',
-    description: 'Camera spirals inward to device',
-    icon: '🌪️',
-    duration: 4,
+    name: 'Spiral In',
+    description: 'Spirals into position with perspective zoom',
+    icon: 'cyclone',
+    duration: 5,
   },
   {
     id: 'cinematic-pan',
     name: 'Cinematic Pan',
-    description: 'Wide horizontal dolly shot',
-    icon: '🎥',
-    duration: 4.5,
+    description: 'Slow dramatic sweep with focal depth accent',
+    icon: 'movie',
+    duration: 6,
   },
   {
     id: 'slow-pan',
     name: 'Slow Pan',
-    description: 'Slow elegant side-to-side camera pan',
-    icon: '↔️',
-    duration: 5,
+    description: 'Ultra-subtle, elegant slow lateral drift',
+    icon: 'pan_tool',
+    duration: 6,
   },
-  {
-    id: 'minimal-sway',
-    name: 'Minimal Sway',
-    description: 'Subtle swaying product rotation',
-    icon: '⚖️',
-    duration: 4,
-  },
+
   {
     id: 'horizontal-slide',
     name: 'Horizontal Slide',
-    description: 'Phone slides in from the right side and stays on screen',
-    icon: '↔️',
+    description: 'Clean parallel horizontal sweep across scene',
+    icon: 'swap_horiz',
     duration: 4,
   },
   {
     id: 'infinity-loop',
     name: 'Infinity Loop',
-    description: 'Continuous figure-8 camera motion around the device',
-    icon: '♾️',
-    duration: 5,
+    description: 'Figure-8 looping rotation path',
+    icon: 'all_inclusive',
+    duration: 8,
   },
   {
     id: 'dynamic-showcase',
     name: 'Dynamic Showcase',
-    description: 'Sleek multi-angle product reveal with smooth camera lock',
-    icon: '✨',
+    description: 'Multi-stage promotional animation sequence',
+    icon: 'auto_awesome',
+    duration: 7,
+  },
+  {
+    id: 'corkscrew-reveal',
+    name: 'Corkscrew Reveal',
+    description: '3D multi-axis spiral entry with smooth power curve',
+    icon: 'cyclone',
+    duration: 4,
+  },
+  {
+    id: 'depth-zoom',
+    name: 'Depth Zoom',
+    description: 'Dolly-zoom camera sweep across diagonal perspective',
+    icon: 'zoom_in',
     duration: 4.5,
+  },
+  {
+    id: 'corner-drop',
+    name: 'Corner Drop',
+    description: 'Top-corner drop with overshoot bounce & hover',
+    icon: 'south_west',
+    duration: 3.8,
   },
 ];
 
@@ -184,11 +201,15 @@ export const DEFAULT_SCENE: SceneSettings = {
   bgColor: '#fcf9ea',
   bgColor2: '#badfdb',
   bgGradient: true,
-  ambientIntensity: 1.6,
+  bgImage: null,
+  ambientIntensity: 1.0,
   directionalColor: '#ffffff',
-  directionalIntensity: 1.5,
+  directionalIntensity: 1.0,
   zoom: 1.0,
   offsetX: 0,
+  offsetY: 0,
+  rotationX: -5,
+  rotationY: 0,
   textSpeed: 1.0,
   texts: [],
 };
