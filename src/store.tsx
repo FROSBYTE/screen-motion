@@ -54,6 +54,16 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const templateParam = params.get('template') || params.get('animation');
+      if (templateParam) {
+        setState((prev) => ({ ...prev, template: templateParam as TemplateName }));
+      }
+    }
+  }, []);
+
   const dispatch = (update: AppUpdate | ((prev: AppState) => AppUpdate)) => {
     setState((prev) => {
       // DISABLED_FEATURE_START: Undo/Redo System History Tracking

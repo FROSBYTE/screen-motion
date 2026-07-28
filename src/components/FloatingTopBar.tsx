@@ -46,7 +46,7 @@ export default function FloatingTopBar() {
   }, [activeTab]);
 
   const isExporting = exportStatus === 'rendering' || exportStatus === 'encoding';
-  const canExport = !!screenshotUrl && !isExporting;
+  const canExport = !isExporting;
 
   const handleUploadClick = (e?: React.MouseEvent) => {
     if (e) {

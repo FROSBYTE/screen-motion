@@ -35,7 +35,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Screen Motion — 3D Device Mockup Generator",
+  title: "Screen Motion: 3D Device Mockup Generator",
   description:
     "Generate stunning 3D Android & iOS device mockup videos. Upload a screenshot, choose a template, and export professional MP4 animations in seconds.",
 };

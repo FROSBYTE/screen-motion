@@ -15,7 +15,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null!);
   const animRef = useRef<TemplateAnimation | null>(null);
 
-  // Create / recreate animation when template, orientation, or speed changes
+  // Create / recreate animation when template, orientation, or device changes
   useEffect(() => {
     if (!groupRef.current || !cameraRef.current) return;
 
@@ -49,7 +49,14 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
     return () => {
       anim.timeline.kill();
     };
-  }, [state.template, state.orientation, state.speed, state.device]);
+  }, [state.template, state.orientation, state.device]);
+
+  // Dynamically update timescale when speed slider changes without restarting or auto-playing
+  useEffect(() => {
+    if (animRef.current) {
+      animRef.current.timeline.timeScale(state.speed);
+    }
+  }, [state.speed]);
 
   // Update camera to match R3F camera
   useFrame(({ camera }) => {

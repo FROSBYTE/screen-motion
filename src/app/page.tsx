@@ -30,18 +30,75 @@ const SHOWCASE_ANIMATIONS = [
   { name: "Depth Zoom", id: "depth-zoom" },
 ];
 
+const TEMPLATE_CARDS = [
+  { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #38bdf8 100%)" },
+  { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
+  { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/animation-card-videos/corkscrew-reveal-template.webm", gradient: "#050509" },
+  { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #38bdf8 50%, #f97316 100%)" },
+  { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" },
+  { id: "slow-pan", animationName: "Slow Studio Pan", video: "/animation-card-videos/slow-pan-template.webm", gradient: "linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%)" },
+  { id: "horizontal-slide", animationName: "Landscape Slide", video: "/animation-card-videos/horizontal-slide-template.webm", gradient: "linear-gradient(135deg, #0093E9 0%, #80D0C7 100%)" },
+  { id: "bounce-drop", animationName: "Bounce Drop", video: "/animation-card-videos/bounce-drop-template.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
+  { id: "flip", animationName: "Flip & Land", video: "/animation-card-videos/flip-template.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" }
+];
+
+const WORKFLOW_STEPS = [
+  {
+    step: 1,
+    title: "Add your design",
+    description: "ScreenMotion supports PNG, JPG, and WEBP image uploads. Video uploads coming soon.",
+    video: "/animation-card-videos/hero-reveal-template.webm"
+  },
+  {
+    step: 2,
+    title: "Make it yours",
+    description: "Customize camera angles, 3D device models, lighting, and motion timelines for studio-quality Renders.",
+    video: "/animation-card-videos/orbit-template.webm"
+  },
+  {
+    step: 3,
+    title: "Get your mockup",
+    description: "Export your final 3D device mockup in ultra-crisp 4K video or high resolution PNG image formats.",
+    video: "/animation-card-videos/dynamic-showcase-template.webm"
+  }
+];
+
+const USE_CASES = [
+  { title: "Landing Pages", desc: "Hero 3D animations that boost website conversions." },
+  { title: "Pitch Decks", desc: "Studio Renders tailored for investor presentations." },
+  { title: "App Store Previews", desc: "High fidelity promo videos for iOS and Play Store listings." },
+  { title: "Social Media Ads", desc: "Attention grabbing motion clips for Instagram, Twitter, and LinkedIn." },
+  { title: "Content Marketing", desc: "Engaging product walkthroughs and feature announcements." },
+  { title: "Product Promos", desc: "Cinematic 4K videos for launch campaigns and web demos." }
+];
+
+const FAQ_ITEMS = [
+  {
+    question: "What file formats does ScreenMotion support?",
+    answer: "PNG, JPG, and WEBP images. Video uploads are coming soon."
+  },
+  {
+    question: "Do I need 3D design experience to create mockups?",
+    answer: "No. Choose a template, upload your screenshot, and export your video."
+  },
+  {
+    question: "Can I export high resolution 4K videos?",
+    answer: "Yes, you can export in 4K video and high-resolution PNG formats directly in your browser."
+  },
+  {
+    question: "What devices are available in the 3D engine?",
+    answer: "iPhone and Android models. More devices will be added soon."
+  },
+  {
+    question: "Is there a free trial or beta access?",
+    answer: "Yes, you can test all 3D animation templates for free directly in the browser."
+  }
+];
+
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showcaseIndex, setShowcaseIndex] = useState(0);
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setShowcaseIndex((prev) => (prev + 1) % SHOWCASE_ANIMATIONS.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const currentShowcase = SHOWCASE_ANIMATIONS[showcaseIndex];
+  const [activeStep, setActiveStep] = useState(0);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   return (
     <div
@@ -198,6 +255,45 @@ export default function LandingPage() {
             flex-direction: column !important;
           }
         }
+        a:hover .card-hover-cta {
+          opacity: 1 !important;
+        }
+        .template-3x3-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 28px;
+        }
+        @media (max-width: 1024px) {
+          .template-3x3-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 640px) {
+          .template-3x3-grid {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+          }
+        }
+
+        .use-cases-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 20px;
+        }
+        @media (min-width: 1025px) {
+          .use-cases-card-center-start {
+            grid-column-start: 2;
+          }
+        }
+        @media (max-width: 1024px) {
+          .use-cases-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 640px) {
+          .use-cases-grid {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+          }
+        }
       `}</style>
 
       {/* Fixed Top Right Header Button */}
@@ -246,7 +342,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          style={{ position: "relative", zIndex: 10, maxWidth: "1050px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}
+          style={{ position: "relative", zIndex: 10, maxWidth: "1440px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}
         >
           {/* Badge */}
           <motion.div
@@ -280,17 +376,19 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.3 }}
             className="font-headline"
             style={{
-              fontSize: "clamp(2.75rem, 5.5vw, 4.5rem)",
-              lineHeight: 1.12,
+              fontSize: "clamp(1.85rem, 3.8vw, 3.75rem)",
+              lineHeight: 1.18,
               fontWeight: 800,
               letterSpacing: "-0.03em",
               color: "#111827",
               margin: 0,
-              maxWidth: "1050px"
+              maxWidth: "1440px",
+              width: "100%"
             }}
           >
-            Cinematic 3D Product Demos <br className="hidden sm:inline" />
-            Built for Apps and Web
+            <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>Turn Your App Screenshots Into Animated</span>
+            <br className="hidden sm:inline" />
+            <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>3D Device Videos</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -302,13 +400,13 @@ export default function LandingPage() {
             style={{
               fontSize: "clamp(1.1rem, 2vw, 1.35rem)",
               lineHeight: 1.6,
-              color: "#4b5563",
-              maxWidth: "720px",
+              color: "#111827",
+              maxWidth: "760px",
               margin: 0,
               fontWeight: 400
             }}
           >
-            Elevate your product showcases with fluid 3D motion, realistic device frames, and dynamic camera angles. Render crisp 4K videos in seconds.
+            Upload your app UI, choose from ready-made 3D motion templates, and export studio-quality 4K mockup videos directly in your web browser. No 3D design skills required.
           </motion.p>
 
           {/* Pill CTA Buttons */}
@@ -374,18 +472,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Glowing Glassmorphic Section Separator Line */}
-      <div style={{
-        width: "100%",
-        maxWidth: "1050px",
-        height: "1px",
-        margin: "0 auto",
-        background: "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%)",
-        position: "relative",
-        zIndex: 10
-      }} />
-
-      {/* Templates Section (Studio Showcase + Full Bleed Horizontal Scroll) */}
+      {/* Templates Section (3D Device Animations Made Simple) */}
       <section id="templates" style={{
         paddingTop: "80px",
         paddingBottom: "120px",
@@ -393,112 +480,565 @@ export default function LandingPage() {
         overflow: "hidden",
         position: "relative"
       }}>
-        {/* Centered Heading */}
+        {/* Header & Subtitle */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6 }}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "40px", paddingLeft: "24px", paddingRight: "24px" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            marginBottom: "48px",
+            paddingLeft: "24px",
+            paddingRight: "24px"
+          }}
         >
-          <h2 className="font-headline" style={{ fontSize: "clamp(2rem, 4vw, 2.75rem)", fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>
-            Explore Templates
+          <h2 className="font-headline" style={{
+            fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
+            fontWeight: 800,
+            color: "#111827",
+            margin: "0 0 12px 0",
+            letterSpacing: "-0.03em"
+          }}>
+            3D Device Animations Made Simple
           </h2>
+          <p className="font-body" style={{
+            fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
+            color: "#111827",
+            margin: 0,
+            maxWidth: "680px",
+            lineHeight: 1.6
+          }}>
+            Generate crisp creative assets lightning fast and without headaches
+          </p>
         </motion.div>
 
-        {/* Studio Window Showcase Card (From User Screenshot) */}
+        {/* 3x3 Template Grid */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.7 }}
           style={{
-            maxWidth: "1050px",
-            margin: "0 auto 48px auto",
+            maxWidth: "1440px",
+            margin: "0 auto",
             paddingLeft: "24px",
             paddingRight: "24px"
           }}
         >
-          {/* macOS Studio Showcase Frame */}
-          <div style={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            borderRadius: "28px",
-            border: "1px solid rgba(209, 207, 165, 0.4)",
-            boxShadow: "0 20px 50px -10px rgba(0, 0, 0, 0.08)",
-            overflow: "hidden"
-          }}>
-            {/* macOS Window Controls Header */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "14px 20px",
-              borderBottom: "1px solid rgba(0, 0, 0, 0.04)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ef4444" }} />
-                <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#f59e0b" }} />
-                <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#10b981" }} />
-              </div>
-            </div>
-
-            {/* Gradient Studio Canvas */}
-            <div style={{
-              aspectRatio: "16 / 9",
-              minHeight: "420px",
-              width: "100%",
-              background: "linear-gradient(135deg, #f0f7f4 0%, #fcf4f5 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-              overflow: "hidden",
-              perspective: "1000px"
-            }}>
-              <AnimatePresence mode="wait">
-                <motion.video
-                  key={currentShowcase.id}
-                  src={`/animation-card-videos/${currentShowcase.id}-template.webm`}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.6 }}
+          <div className="template-3x3-grid">
+            {TEMPLATE_CARDS.map((card) => (
+              <Link
+                key={card.id}
+                href={`/editor?template=${card.id}`}
+                style={{ textDecoration: "none", color: "inherit", display: "block" }}
+              >
+                <motion.div
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    position: "absolute",
-                    inset: 0,
+                    position: "relative",
+                    borderRadius: "20px",
+                    overflow: "hidden",
+                    background: card.gradient,
+                    aspectRatio: "16 / 10",
+                    boxShadow: "0 12px 32px -8px rgba(0, 0, 0, 0.12)",
+                    border: "1.5px solid rgba(0, 0, 0, 0.16)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
                   }}
-                />
-              </AnimatePresence>
-              
-              {/* Overlay UI for showcase progress */}
-              <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                {/* Progress indicator pills */}
-                <div style={{ display: "flex", gap: "6px" }}>
-                  {SHOWCASE_ANIMATIONS.map((_, i) => (
-                    <div
-                      key={i}
+                >
+                  {/* Video preview */}
+                  <video
+                    src={card.video}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 1
+                    }}
+                  />
+
+                  {/* Hover Overlay with Animation Name & Use Template CTA */}
+                  <div
+                    className="card-hover-cta"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 3,
+                      backgroundColor: "rgba(0, 0, 0, 0.35)",
+                      backdropFilter: "blur(3px)",
+                      WebkitBackdropFilter: "blur(3px)",
+                      opacity: 0,
+                      transition: "opacity 0.25s ease",
+                      display: "flex",
+                      alignItems: "flex-end",
+                      justifyContent: "space-between",
+                      padding: "16px 20px"
+                    }}
+                  >
+                    <div style={{ color: "#ffffff", fontWeight: 700, fontSize: "15px", textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>
+                      {card.animationName}
+                    </div>
+                    <span
                       style={{
-                        width: showcaseIndex === i ? "16px" : "6px",
-                        height: "6px",
+                        backgroundColor: "#ffffff",
+                        color: "#111827",
+                        fontWeight: 700,
+                        fontSize: "12px",
+                        padding: "7px 16px",
                         borderRadius: "999px",
-                        backgroundColor: showcaseIndex === i ? "#ffffff" : "rgba(255,255,255,0.4)",
-                        boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
-                        transition: "all 0.3s ease"
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)"
                       }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+                    >
+                      Use Template
+                    </span>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
           </div>
         </motion.div>
+      </section>
+
+      {/* 3 Steps to Studio-Grade Mockups Section */}
+      <section style={{
+        paddingTop: "100px",
+        paddingBottom: "100px",
+        width: "100%",
+        position: "relative",
+        zIndex: 10
+      }}>
+        <div style={{
+          maxWidth: "1280px",
+          margin: "0 auto",
+          paddingLeft: "24px",
+          paddingRight: "24px"
+        }}>
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.6 }}
+            style={{ marginBottom: "48px", maxWidth: "780px" }}
+          >
+            <h2 className="font-headline" style={{
+              fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
+              fontWeight: 800,
+              color: "#111827",
+              margin: "0 0 16px 0",
+              letterSpacing: "-0.03em",
+              lineHeight: 1.15
+            }}>
+              How it works
+            </h2>
+
+            <p className="font-body" style={{
+              fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
+              color: "#111827",
+              margin: 0,
+              lineHeight: 1.6,
+              maxWidth: "680px"
+            }}>
+              We simplified the process to fit perfectly into your workflow. So even if you're 5 minutes away from a big presentation, you can get a stunning mockup that will blow them away.
+            </p>
+          </motion.div>
+
+          {/* Grid Layout: Left Step Cards + Right Interactive Mac Studio Frame */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+            gap: "36px",
+            alignItems: "stretch"
+          }}>
+            {/* Left Steps Column */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", justifyContent: "center" }}>
+              {WORKFLOW_STEPS.map((item, idx) => {
+                const isActive = activeStep === idx;
+                return (
+                  <motion.div
+                    key={item.step}
+                    onClick={() => setActiveStep(idx)}
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      padding: "24px 28px",
+                      borderRadius: "20px",
+                      backgroundColor: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.65)",
+                      border: isActive ? "2px solid #3b82f6" : "1px solid rgba(0, 0, 0, 0.06)",
+                      boxShadow: isActive ? "0 12px 32px -8px rgba(59, 130, 246, 0.18)" : "0 4px 14px rgba(0, 0, 0, 0.03)",
+                      cursor: "pointer",
+                      transition: "all 0.25s ease"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+                      {/* Step Number Circle */}
+                      <span style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        backgroundColor: isActive ? "#1e293b" : "#e2e8f0",
+                        color: isActive ? "#ffffff" : "#475569",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        marginTop: "2px"
+                      }}>
+                        {item.step}
+                      </span>
+
+                      <div>
+                        <h3 className="font-headline" style={{
+                          fontSize: "18px",
+                          fontWeight: 800,
+                          color: "#111827",
+                          margin: "0 0 6px 0",
+                          letterSpacing: "-0.01em"
+                        }}>
+                          {item.title}
+                        </h3>
+
+                        {isActive && (
+                          <motion.p
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            transition={{ duration: 0.3 }}
+                            className="font-body"
+                            style={{
+                              fontSize: "14px",
+                              color: "#4b5563",
+                              margin: 0,
+                              lineHeight: 1.55
+                            }}
+                          >
+                            {item.description}
+                          </motion.p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Right Interactive Mockup Video Frame */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.6 }}
+              style={{
+                borderRadius: "24px",
+                overflow: "hidden",
+                boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.25)",
+                border: "1px solid rgba(255, 255, 255, 0.4)",
+                position: "relative",
+                minHeight: "420px",
+                background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+              }}
+            >
+              {/* Control Header with Coming Soon Badge */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "12px 18px",
+                backgroundColor: "#1e293b",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.08)"
+              }}>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8" }}>
+                  {WORKFLOW_STEPS[activeStep].title}
+                </span>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "3px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(59, 130, 246, 0.15)",
+                  color: "#60a5fa",
+                  fontSize: "10.5px",
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  border: "1px solid rgba(96, 165, 250, 0.3)"
+                }}>
+                  Coming Soon
+                </span>
+              </div>
+
+              {/* Studio Canvas Placeholder (No Video Preview) */}
+              <div style={{
+                width: "100%",
+                height: "calc(100% - 41px)",
+                minHeight: "380px",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "32px",
+                textAlign: "center",
+                background: "radial-gradient(ellipse at center, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)"
+              }}>
+                <div style={{
+                  width: "64px",
+                  height: "64px",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(59, 130, 246, 0.1)",
+                  border: "1px solid rgba(96, 165, 250, 0.25)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "20px",
+                  boxShadow: "0 0 30px rgba(59, 130, 246, 0.2)"
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "28px", color: "#60a5fa" }}>
+                    play_circle
+                  </span>
+                </div>
+
+                <h3 className="font-headline" style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  margin: "0 0 8px 0"
+                }}>
+                  Interactive Preview
+                </h3>
+
+                <p className="font-body" style={{
+                  fontSize: "14px",
+                  color: "#94a3b8",
+                  margin: 0,
+                  maxWidth: "320px",
+                  lineHeight: 1.5
+                }}>
+                  Live video workflow previews are coming soon
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases & Applications Section */}
+      <section style={{
+        paddingTop: "60px",
+        paddingBottom: "100px",
+        width: "100%",
+        position: "relative",
+        zIndex: 10
+      }}>
+        <div style={{
+          maxWidth: "1280px",
+          margin: "0 auto",
+          paddingLeft: "24px",
+          paddingRight: "24px"
+        }}>
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.6 }}
+            style={{ textAlign: "center", marginBottom: "48px" }}
+          >
+            <h2 className="font-headline" style={{
+              fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
+              fontWeight: 800,
+              color: "#111827",
+              margin: "0 0 16px 0",
+              letterSpacing: "-0.03em"
+            }}>
+              Built for Every Stage of Your Product Journey
+            </h2>
+            <p className="font-body" style={{
+              fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
+              color: "#111827",
+              maxWidth: "760px",
+              margin: "0 auto",
+              lineHeight: 1.6
+            }}>
+              Fluid 3D motion captures user attention faster than static images, making your product presentations instantly memorable.
+            </p>
+          </motion.div>
+
+          <div className="use-cases-grid">
+            {USE_CASES.map((uc, idx) => (
+              <motion.div
+                key={uc.title}
+                className={idx === 4 ? "use-cases-card-center-start" : undefined}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-30px" }}
+                transition={{ duration: 0.4, delay: idx * 0.06 }}
+                whileHover={{ y: -4 }}
+                style={{
+                  padding: "24px 28px",
+                  borderRadius: "20px",
+                  backgroundColor: "rgba(255, 255, 255, 0.85)",
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.03)",
+                  transition: "all 0.25s ease"
+                }}
+              >
+                <h3 className="font-headline" style={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  color: "#111827",
+                  margin: "0 0 8px 0"
+                }}>
+                  {uc.title}
+                </h3>
+                <p className="font-body" style={{
+                  fontSize: "14px",
+                  color: "#4b5563",
+                  margin: 0,
+                  lineHeight: 1.55
+                }}>
+                  {uc.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section style={{
+        paddingTop: "60px",
+        paddingBottom: "120px",
+        width: "100%",
+        position: "relative",
+        zIndex: 10
+      }}>
+        <div style={{
+          maxWidth: "960px",
+          margin: "0 auto",
+          paddingLeft: "24px",
+          paddingRight: "24px"
+        }}>
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.6 }}
+            style={{ textAlign: "center", marginBottom: "48px" }}
+          >
+            <h2 className="font-headline" style={{
+              fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
+              fontWeight: 800,
+              color: "#111827",
+              margin: "0 0 12px 0",
+              letterSpacing: "-0.03em"
+            }}>
+              FAQ
+            </h2>
+            <p className="font-body" style={{
+              fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
+              color: "#111827",
+              margin: 0
+            }}>
+              Everything you need to know about ScreenMotion and 3D device mockups
+            </p>
+          </motion.div>
+
+          {/* Accordion List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {FAQ_ITEMS.map((faq, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-20px" }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  style={{
+                    borderRadius: "16px",
+                    backgroundColor: "rgba(255, 255, 255, 0.85)",
+                    border: "1px solid rgba(0, 0, 0, 0.08)",
+                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.03)",
+                    overflow: "hidden",
+                    transition: "all 0.25s ease"
+                  }}
+                >
+                  <button
+                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                    style={{
+                      width: "100%",
+                      padding: "20px 24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <span className="font-headline" style={{
+                      fontSize: "17px",
+                      fontWeight: 700,
+                      color: "#111827"
+                    }}>
+                      {faq.question}
+                    </span>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontSize: "22px",
+                        color: "#6b7280",
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.3s ease"
+                      }}
+                    >
+                      expand_more
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <div
+                          className="font-body"
+                          style={{
+                            padding: "0 24px 20px 24px",
+                            fontSize: "14.5px",
+                            lineHeight: 1.6,
+                            color: "#4b5563"
+                          }}
+                        >
+                          {faq.answer}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
       {/* SmoothUI Footer1 Component */}

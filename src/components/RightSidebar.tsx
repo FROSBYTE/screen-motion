@@ -182,16 +182,17 @@ export default function RightSidebar() {
             <div className="sidebar-device-color-box" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>DEVICE COLOR</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {['#333333', '#6b7280', '#991b1b', '#448AFF', '#69F0AE'].map((color, i) => (
+                {['#333333', '#ffffff', '#6b7280', '#e3d5ca', '#991b1b', '#448AFF', '#69F0AE'].map((color, i) => (
                   <button 
                     key={i} 
-                    title="Device Color" 
+                    title={`Device Color ${color}`} 
                     onClick={() => dispatch({ deviceColor: color })}
                     style={{ 
                       width: 24, height: 24, borderRadius: '50%', background: color, cursor: 'pointer',
-                      border: state.deviceColor === color ? '2px solid var(--text-primary)' : '1px solid rgba(0,0,0,0.1)',
+                      border: state.deviceColor === color ? '2px solid var(--text-primary)' : '1px solid rgba(0,0,0,0.18)',
                       transform: state.deviceColor === color ? 'scale(1.12)' : 'scale(1)',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      boxShadow: color === '#ffffff' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none'
                     }} 
                   />
                 ))}
