@@ -1,6 +1,6 @@
 'use client';
 
-// Suppress three.js deprecation warnings coming from react-three-fiber internals
+// Suppress three.js deprecation & HMR development warnings coming from react-three-fiber and Turbopack internals
 if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -9,7 +9,9 @@ if (typeof window !== 'undefined') {
     if (
       typeof message === 'string' &&
       (message.includes('THREE.Clock: This module has been deprecated.') ||
-       message.includes('THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated.'))
+       message.includes('THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated.') ||
+       message.includes('Unexpected import of module') ||
+       message.includes('deleted by an HMR update'))
     ) {
       return;
     }

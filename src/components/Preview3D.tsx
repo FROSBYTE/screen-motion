@@ -9,6 +9,7 @@ import { useAppState } from '@/store';
 import PhoneModel from './PhoneModel';
 import FloatingTopBar from './FloatingTopBar';
 import ModelLoaderOverlay from './ModelLoaderOverlay';
+import SceneTexts from './SceneTexts';
 
 const textureCache = new Map<string, THREE.Texture>();
 
@@ -283,6 +284,11 @@ export default function Preview3D() {
       <div 
         className={`preview-canvas-container${isFullscreen ? ' is-fullscreen' : ''}`}
         id="preview-3d" 
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'CANVAS') {
+            dispatch({ selectedTextId: null });
+          }
+        }}
         style={{
           ...containerStyle,
           position: isFullscreen ? 'fixed' : 'relative',
@@ -320,15 +326,12 @@ export default function Preview3D() {
 
           <PhoneModel screenshotUrl={state.screenshotUrl} />
           
-          <Hud>
-            <PerspectiveCamera makeDefault fov={45} near={0.1} far={100} position={cameraPosition} />
-            <HudCameraAdapter />
-            <ambientLight intensity={2} />
-          </Hud>
-
           <Environment preset="city" environmentIntensity={0.15} />
         </Suspense>
       </Canvas>
+
+      {/* 2D HTML Text Overlay Layer */}
+      <SceneTexts />
 
       {/* Zoom / Fullscreen Button */}
       <button 

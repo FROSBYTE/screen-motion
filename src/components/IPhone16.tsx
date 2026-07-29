@@ -10,10 +10,11 @@ Title: iPhone 16 - Free
 
 import * as THREE from 'three'
 import React from 'react'
-import { useGLTF, useTexture } from '@react-three/drei'
+import { useGLTF, useTexture, useVideoTexture } from '@react-three/drei'
 import { GLTF } from 'three-stdlib'
 import { usePlaceholderTexture } from '@/hooks/usePlaceholderTexture'
 import { useAppState } from '@/store'
+import type { MediaType } from '@/types'
 
 function ScreenMaterial({ url }: { url: string }) {
   const texture = useTexture(url);
@@ -30,6 +31,49 @@ function ScreenMaterial({ url }: { url: string }) {
       texture.needsUpdate = true;
     }
   }, [texture]);
+
+  return (
+    <meshStandardMaterial
+      map={texture}
+      metalness={0.1}
+      roughness={0.2}
+      emissive="#111"
+      emissiveMap={texture}
+      emissiveIntensity={0.3}
+    />
+  );
+}
+
+function VideoScreenMaterial({ url, onTextureReady }: { url: string; onTextureReady?: (restart: () => void) => void }) {
+  const texture = useVideoTexture(url, {
+    loop: false,
+    start: true,
+    muted: true,
+    playsInline: true,
+  });
+
+  React.useLayoutEffect(() => {
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.flipY = true;
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.repeat.set(1, 1);
+      texture.offset.set(0, 0);
+      texture.needsUpdate = true;
+    }
+  }, [texture]);
+
+  React.useEffect(() => {
+    if (onTextureReady && texture && texture.image) {
+      const video = texture.image as HTMLVideoElement;
+      onTextureReady(() => {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      });
+    }
+  }, [onTextureReady, texture]);
 
   return (
     <meshStandardMaterial
@@ -130,7 +174,7 @@ type GLTFResult = GLTF & {
   }
 }
 
-export function Model({ screenshotUrl, screenRef, texture, ...props }: React.ComponentPropsWithoutRef<'group'> & { screenshotUrl?: string | null, screenRef?: React.RefObject<THREE.Mesh>, texture?: THREE.Texture | null }) {
+export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRestart, ...props }: React.ComponentPropsWithoutRef<'group'> & { screenshotUrl?: string | null, screenRef?: React.RefObject<THREE.Mesh>, texture?: THREE.Texture | null, mediaType?: MediaType, onVideoRestart?: (restart: () => void) => void }) {
   const { nodes, materials } = useGLTF('/models/iphone16.gltf') as unknown as GLTFResult
   const placeholderTexture = usePlaceholderTexture();
   const { state } = useAppState();
@@ -232,6 +276,10 @@ export function Model({ screenshotUrl, screenRef, texture, ...props }: React.Com
                 emissiveMap={texture}
                 emissiveIntensity={0.3}
               />
+            ) : screenshotUrl && mediaType === 'video' ? (
+              <React.Suspense fallback={<meshStandardMaterial color="#0f0f1a" />}>
+                <VideoScreenMaterial url={screenshotUrl} onTextureReady={onVideoRestart} />
+              </React.Suspense>
             ) : screenshotUrl ? (
               <React.Suspense fallback={<meshStandardMaterial color="#0f0f1a" />}>
                 <ScreenMaterial url={screenshotUrl} />

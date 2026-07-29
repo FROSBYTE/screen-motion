@@ -2,8 +2,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAppState } from '@/store';
-import { Html } from '@react-three/drei';
-import * as THREE from 'three';
 import type { TextOverlay } from '@/types';
 import { TextAnimate } from '@/components/ui/text-animate';
 import { TypingAnimation } from '@/components/ui/typing-animation';
@@ -38,297 +36,279 @@ const smoothAnimMap: Record<string, React.FC<any>> = {
   'scale-down-fade': ScaleDownFade,
 };
 
-function AnimatedText({
+function OverlayText({
   config,
-  speed,
   isSelected,
   onSelect,
   updateConfig,
-  index: textIndex
+  containerRef,
+  globalPreviewTrigger,
 }: {
   config: TextOverlay;
-  speed: number;
   isSelected: boolean;
   onSelect: () => void;
   updateConfig: (updates: Partial<TextOverlay> & { delete?: boolean }) => void;
-  index: number;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  globalPreviewTrigger?: number;
 }) {
-  const meshRef = useRef<any>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isRotating, setIsRotating] = useState(false);
-  const rotateStart = useRef({ x: 0, y: 0, rotZ: 0 });
-  
-  // HTML size tracking for 3D hitbox
-  const htmlDivRef = useRef<HTMLDivElement>(null);
-  const [htmlSize, setHtmlSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    if (!htmlDivRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setHtmlSize({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
-        });
-      }
-    });
-    observer.observe(htmlDivRef.current);
-    return () => observer.disconnect();
-  }, [htmlDivRef.current, isEditing, config.text, config.fontSize, isSelected]);
-
-  // Sync position/rotation to mesh
-  useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.position.set(...config.position);
-      meshRef.current.rotation.set(...config.rotation);
-    }
-  }, [config.position, config.rotation]);
-
   const [isDragging, setIsDragging] = useState(false);
-  const dragOffset = useRef(new THREE.Vector3());
+  const [isHovered, setIsHovered] = useState(false);
+  const dragStart = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
 
-  // Global mouse release listener when dragging is active without pointer capture
-  useEffect(() => {
-    if (isDragging) {
-      const handleGlobalPointerUp = () => {
-        setIsDragging(false);
-      };
-      window.addEventListener('pointerup', handleGlobalPointerUp);
-      return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
-    }
-  }, [isDragging]);
-
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation();
     onSelect();
-    if (!isEditing) {
-      setIsDragging(true);
-      
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -config.position[2]);
-      const intersection = new THREE.Vector3();
-      if (e.ray.intersectPlane(plane, intersection)) {
-        dragOffset.current.set(
-          config.position[0] - intersection.x,
-          config.position[1] - intersection.y,
-          0
-        );
-      }
-    }
+    setIsDragging(true);
+    dragStart.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      posX: config.position[0],
+      posY: config.position[1],
+    };
   };
 
-  const handlePointerMove = (e: any) => {
-    if (isDragging) {
-      e.stopPropagation();
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -config.position[2]);
-      const intersection = new THREE.Vector3();
-      if (e.ray.intersectPlane(plane, intersection)) {
-        updateConfig({
-          position: [
-            intersection.x + dragOffset.current.x,
-            intersection.y + dragOffset.current.y,
-            config.position[2]
-          ]
-        });
-      }
-    }
-  };
+  useEffect(() => {
+    if (!isDragging) return;
 
-  const handlePointerUp = (e: any) => {
-    if (isDragging) {
-      e.stopPropagation();
+    const handlePointerMove = (e: PointerEvent) => {
+      const container = containerRef.current;
+      const rect = container ? container.getBoundingClientRect() : { width: 800, height: 600 };
+      const aspect = rect.height > 0 ? rect.width / rect.height : 1.777;
+
+      const viewHeight = 3.3;
+      const viewWidth = 3.3 * aspect;
+
+      const dx = (e.clientX - dragStart.current.mouseX) * (viewWidth / rect.width);
+      const dy = -(e.clientY - dragStart.current.mouseY) * (viewHeight / rect.height);
+
+      updateConfig({
+        position: [
+          dragStart.current.posX + dx,
+          dragStart.current.posY + dy,
+          config.position[2],
+        ],
+      });
+    };
+
+    const handlePointerUp = () => {
       setIsDragging(false);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDragging, config.position, containerRef, updateConfig]);
+
+  const container = containerRef.current;
+  const rect = container ? container.getBoundingClientRect() : { width: 800, height: 600 };
+  const aspect = rect.height > 0 ? rect.width / rect.height : 1.777;
+  const viewHeight = 3.3;
+  const viewWidth = 3.3 * aspect;
+
+  // Convert 3D position [x, y, z] to percentage relative to container center
+  const leftPercent = 50 + (config.position[0] / viewWidth) * 100;
+  const topPercent = 50 - (config.position[1] / viewHeight) * 100;
+  const rotZDeg = ((config.rotation?.[2] || 0) * 180) / Math.PI;
+
+  const fontSizePx = Math.max(0.01, Math.abs(config.fontSize)) * 3.2;
+  const showSelectionUI = isHovered || isSelected || isDragging;
+  
+  const globalTrigger = globalPreviewTrigger || 0;
+  const localTrigger = config.previewTrigger || 0;
+  const animTrigger = Math.max(globalTrigger, localTrigger);
+
+  const delaySec = config.delay || 0;
+  const isEditingNow = !!(config.textUpdatedAt && config.textUpdatedAt > animTrigger);
+  const shouldAnimate = config.animationType && config.animationType !== 'none' && !isEditingNow;
+
+  const [isDelayPassed, setIsDelayPassed] = useState(() => !shouldAnimate || delaySec <= 0);
+
+  useEffect(() => {
+    if (!shouldAnimate || delaySec <= 0) {
+      setIsDelayPassed(true);
+      return;
     }
-  };
-
-  const handleDoubleClick = (e: any) => {
-    e.stopPropagation();
-    setIsEditing(true);
-  };
-
-  const fontSizePx = Math.max(0.01, Math.abs(config.fontSize)) * 87.8;
-  const lines = config.text.split('\n');
-  const maxLineLength = Math.max(...lines.map(line => line.length), 1);
-  const calculatedWidth = Math.max(150, maxLineLength * fontSizePx * 0.6);
-  // We use scale 0.01, so 3D dimensions are width * 0.01
-  const planeWidth = Math.max(0.1, htmlSize.width * 0.01);
-  const planeHeight = Math.max(0.1, htmlSize.height * 0.01);
+    setIsDelayPassed(false);
+    const timer = setTimeout(() => {
+      setIsDelayPassed(true);
+    }, delaySec * 1000);
+    return () => clearTimeout(timer);
+  }, [animTrigger, shouldAnimate, delaySec]);
 
   return (
-    <>
-      {/* Invisible 3D Hitbox */}
-      <mesh
-        ref={meshRef}
-        position={config.position}
-        rotation={config.rotation}
-        renderOrder={textIndex + 1}
+    <div
+      style={{
+        position: 'absolute',
+        left: `${leftPercent}%`,
+        top: `${topPercent}%`,
+        transform: `translate(-50%, -50%) rotate(${rotZDeg}deg)`,
+        pointerEvents: 'none',
+        zIndex: isSelected ? 20 : 10,
+      }}
+    >
+      <div
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onDoubleClick={handleDoubleClick}
+        onPointerEnter={() => setIsHovered(true)}
+        onPointerLeave={() => setIsHovered(false)}
+        style={{
+          position: 'relative',
+          display: 'inline-block',
+          width: 'fit-content',
+          pointerEvents: 'auto',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          border: showSelectionUI ? '2px dashed #a855f7' : '2px solid transparent',
+          boxShadow: showSelectionUI ? '0 0 14px rgba(168, 85, 247, 0.4)' : 'none',
+          borderRadius: '4px',
+          color: config.color,
+          fontSize: `${fontSizePx}px`,
+          fontWeight: config.isBold !== false ? 800 : 400,
+          fontStyle: config.isItalic ? 'italic' : 'normal',
+          textDecoration: config.isUnderline ? 'underline' : 'none',
+          textAlign: 'center',
+          fontFamily: config.fontFamily || '"Plus Jakarta Sans", "Google Sans", "Inter", sans-serif',
+          whiteSpace: 'pre',
+          padding: '6px 12px',
+          boxSizing: 'border-box',
+          userSelect: 'none',
+          touchAction: 'none',
+          transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+        }}
       >
-        <planeGeometry args={[planeWidth, planeHeight]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
-      </mesh>
+        {/* 4 Corner Selection Points */}
+        {showSelectionUI && (
+          <>
+            <div style={{ position: 'absolute', top: -5, left: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: -5, right: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -5, left: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -5, right: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+          </>
+        )}
 
-      {/* HTML Overlay */}
-      <Html 
-        position={config.position} 
-        rotation={config.rotation} 
-        scale={0.01} 
-        center 
-        transform 
-        pointerEvents="none" 
-        zIndexRange={[100, 0]} 
-        style={{ display: 'flex', justifyContent: 'center' }}
-      >
-        <div 
-          ref={htmlDivRef} 
-          style={{ 
-            position: 'relative',
-            border: (isSelected && !isEditing) ? '6px solid #a855f7' : '6px solid transparent',
-            color: config.color,
-            fontSize: `${fontSizePx}px`, 
-            fontWeight: config.isBold !== false ? 800 : 400, 
-            fontStyle: config.isItalic ? 'italic' : 'normal', 
-            textDecoration: config.isUnderline ? 'underline' : 'none', 
-            textAlign: 'center', 
-            fontFamily: '"Google Sans", sans-serif', 
-             whiteSpace: 'pre',
-             padding: '4px 8px', // Slight padding so the border doesn't clip the text
-             boxSizing: 'border-box'
-           }}
-         >
-           {isEditing ? (
-             <textarea
-               autoFocus
-               value={config.text}
-               rows={config.text.split('\n').length}
-               onPointerDown={(e) => { e.stopPropagation(); (e.target as HTMLTextAreaElement).focus(); }}
-               onChange={(e) => updateConfig({ text: e.target.value })}
-               onBlur={() => setIsEditing(false)}
-               style={{
-                 background: 'transparent',
-                 border: 'none',
-                 color: config.color,
-                 fontSize: `${fontSizePx}px`,
-                 fontWeight: config.isBold !== false ? 800 : 400,
-                 fontStyle: config.isItalic ? 'italic' : 'normal', 
-                 textDecoration: config.isUnderline ? 'underline' : 'none', 
-                 textAlign: 'center',
-                 outline: 'none',
-                 fontFamily: 'inherit',
-                 minWidth: '150px',
-                 width: `${calculatedWidth}px`,
-                 resize: 'none',
-                 whiteSpace: 'pre',
-                 overflow: 'hidden',
-                 lineHeight: '1.2',
-                 pointerEvents: 'auto'
-               }}
-             />
-          ) : (
-            (() => {
-              const SmoothComp = smoothAnimMap[config.animationType as string];
-              if (SmoothComp) {
-                return <SmoothComp key={config.previewTrigger}>{config.text}</SmoothComp>;
-              }
+        <div style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
+          {(() => {
+            const displayText = (config.text && config.text.trim().length > 0) ? config.text : 'None';
 
-              if (config.animationType === 'text-animate') {
-                return <TextAnimate key={config.previewTrigger} animation="fadeIn" duration={2 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{config.text}</TextAnimate>;
-              }
+            if (!shouldAnimate) {
+              return <span>{displayText}</span>;
+            }
 
-              if (config.animationType === 'typing-animation') {
-                return <TypingAnimation key={config.previewTrigger} duration={100 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{config.text}</TypingAnimation>;
-              }
+            if (!isDelayPassed) {
+              return <span data-delay-pending="true" style={{ opacity: 0, visibility: 'hidden' }}>{displayText}</span>;
+            }
 
-              if (config.animationType === 'dia-text-reveal') {
-                return <TextReveal key={config.previewTrigger} duration={3000 / (config.animationSpeed ?? 1)}>{config.text}</TextReveal>;
-              }
+            const legacyMap: Record<string, string> = {
+              'fade': 'fade-through',
+              'slide-up': 'mask-reveal-up',
+              'typewriter': 'typing-animation',
+              'scale': 'micro-scale-fade',
+            };
+            const effectiveType = legacyMap[config.animationType] || config.animationType;
+            const animDelayMs = (config.delay || 0) * 1000;
 
-              return <span>{config.text}</span>;
-            })()
-          )}
+            const SmoothComp = smoothAnimMap[effectiveType];
+            if (SmoothComp) {
+              return <SmoothComp key={`${animTrigger}-${effectiveType}`}>{displayText}</SmoothComp>;
+            }
 
-          {/* Render Icons inside the same HTML box if selected */}
-          {isSelected && !isEditing && (
-            <>
-              {/* Rotate Icon */}
-              <div
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                  setIsRotating(true);
-                  rotateStart.current = { x: e.clientX, y: e.clientY, rotZ: config.rotation[2] };
-                }}
-                onPointerMove={(e) => {
-                  if (isRotating) {
-                    e.stopPropagation();
-                    const dx = e.clientX - rotateStart.current.x;
-                    const newRotZ = rotateStart.current.rotZ - (dx * 0.02);
-                    updateConfig({ rotation: [config.rotation[0], config.rotation[1], newRotZ] });
-                  }
-                }}
-                onPointerUp={(e) => {
-                  if (isRotating) {
-                    e.stopPropagation();
-                    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-                    setIsRotating(false);
-                  }
-                }}
-                style={{ position: 'absolute', top: -14, left: -14, width: 28, height: 28, background: '#ffffff', borderRadius: '50%', cursor: isRotating ? 'ew-resize' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', color: '#000', pointerEvents: 'auto' }}
-                title="Drag to Rotate"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6" /><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /></svg>
-              </div>
+            if (effectiveType === 'text-animate') {
+              return <TextAnimate key={`${animTrigger}-${effectiveType}`} animation="fadeIn" duration={2 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
+            }
 
-              {/* Delete Icon */}
-              <div
-                onPointerDown={(e) => { e.stopPropagation(); updateConfig({ delete: true } as any); }}
-                style={{ position: 'absolute', top: -14, right: -14, width: 28, height: 28, background: '#ff4d4d', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', color: '#fff', pointerEvents: 'auto' }}
-                title="Delete"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </div>
-            </>
-          )}
+            if (effectiveType === 'typing-animation') {
+              return <TypingAnimation key={`${animTrigger}-${effectiveType}`} duration={100 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{displayText}</TypingAnimation>;
+            }
+
+            if (effectiveType === 'dia-text-reveal') {
+              return <TextReveal key={`${animTrigger}-${effectiveType}`} duration={3000 / (config.animationSpeed ?? 1)}>{displayText}</TextReveal>;
+            }
+
+            return <TextAnimate key={`${animTrigger}-${effectiveType}`} animation="fadeIn" duration={2 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
+          })()}
         </div>
-      </Html>
-
-      {/* 3D Transform Controls Removed - Using native dragging */}
-    </>
+      </div>
+    </div>
   );
 }
 
 export default function SceneTexts() {
-  // DISABLED_FEATURE_START: SceneTexts Rendering Component
-  // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
-  return null;
-  /*
   const { state, dispatch } = useAppState();
-  const { texts, textSpeed = 1.0 } = state.scene;
-  const { selectedTextId } = state;
+  const { texts } = state.scene;
+  const { selectedTextId, previewTrigger: globalPreviewTrigger, exportStatus } = state;
+  const isExporting = exportStatus === 'rendering' || exportStatus === 'encoding';
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard shortcut: Delete or Backspace key deletes selected text overlay
+  useEffect(() => {
+    if (!selectedTextId) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        const newTexts = (texts || []).filter((t) => t.id !== selectedTextId);
+        dispatch({ scene: { texts: newTexts }, selectedTextId: null });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedTextId, texts, dispatch]);
 
   if (!texts || texts.length === 0) return null;
 
   return (
-    <>
-      {texts.map((t, i) => (
-        <AnimatedText
+    <div
+      id="text-overlay-layer"
+      ref={containerRef}
+      onPointerDown={(e) => {
+        if (e.target === containerRef.current) {
+          dispatch({ selectedTextId: null });
+        }
+      }}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: isExporting ? 'none' : 'auto',
+        opacity: 1,
+        overflow: 'hidden',
+        zIndex: 10,
+      }}
+    >
+      {texts.map((t) => (
+        <OverlayText
           key={t.id}
           config={t}
-          speed={textSpeed}
           isSelected={selectedTextId === t.id}
           onSelect={() => dispatch({ selectedTextId: t.id })}
-          index={i}
           updateConfig={(updates) => {
-            if (updates.delete) { dispatch({ scene: { texts: texts.filter(text => text.id !== t.id) } }); return; } const newTexts = texts.map(text => text.id === t.id ? { ...text, ...updates } : text);
+            if (updates.delete) {
+              dispatch({ scene: { texts: texts.filter((text) => text.id !== t.id) } });
+              return;
+            }
+            const newTexts = texts.map((text) =>
+              text.id === t.id ? { ...text, ...updates } : text
+            );
             dispatch({ scene: { texts: newTexts } });
           }}
+          containerRef={containerRef}
+          globalPreviewTrigger={globalPreviewTrigger}
         />
       ))}
-    </>
+    </div>
   );
-  */
-  // DISABLED_FEATURE_END: SceneTexts Rendering Component
 }

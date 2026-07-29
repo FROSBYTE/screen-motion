@@ -58,20 +58,41 @@ export default function BasicDropdown({ items, value, onChange, placeholder = 'S
       </button>
 
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
-          zIndex: 99,
-          maxHeight: '200px',
-          overflowY: 'auto',
-          backgroundColor: '#ffffff',
-          border: '1px solid rgba(0,0,0,0.1)',
-          borderRadius: '8px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-          padding: '4px'
-        }}>
+        <div
+          className="dropdown-menu-scrollable"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            zIndex: 99,
+            maxHeight: '220px',
+            overflowY: 'auto',
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(0,0,0,0.12)',
+            borderRadius: '8px',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+            padding: '4px 6px 4px 4px',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#9ca3af rgba(0,0,0,0.04)',
+          }}
+        >
+          <style jsx>{`
+            .dropdown-menu-scrollable::-webkit-scrollbar {
+              width: 6px;
+            }
+            .dropdown-menu-scrollable::-webkit-scrollbar-track {
+              background: rgba(0, 0, 0, 0.04);
+              border-radius: 4px;
+            }
+            .dropdown-menu-scrollable::-webkit-scrollbar-thumb {
+              background: #9ca3af;
+              border-radius: 4px;
+            }
+            .dropdown-menu-scrollable::-webkit-scrollbar-thumb:hover {
+              background: #6b7280;
+            }
+          `}</style>
           {items.map((item) => (
             <div
               key={item.id}

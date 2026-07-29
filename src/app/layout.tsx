@@ -62,11 +62,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Bricolage+Grotesk:opsz,wght@12..96,600;12..96,700&family=Roboto:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+        <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@300..500,0..1&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body style={{ fontFamily: "var(--font-inter, var(--font-sans))" }}>
+      <body style={{ fontFamily: '"Plus Jakarta Sans", "Google Sans", "Inter", sans-serif' }}>
         <MixpanelInit />
         {children}
       </body>

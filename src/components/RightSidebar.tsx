@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAppState } from '@/store';
 import { TEMPLATES, TemplateName, Orientation, DeviceType } from '@/types';
 import type { TextAnimationType } from '@/types';
-import { Settings } from 'lucide-react';
+import { Settings, Laptop } from 'lucide-react';
 import SceneControls from './SceneControls';
 
 function TemplatePreviewCard({ t, isActive, dispatch, device }: { t: any, isActive: boolean, dispatch: any, device: string }) {
@@ -129,8 +129,8 @@ export default function RightSidebar() {
                 className="platform-btn"
                 style={{
                   flex: 1,
-                  fontSize: '13px',
-                  padding: '8px 12px',
+                  fontSize: '12px',
+                  padding: '8px 8px',
                   borderRadius: '9999px',
                   cursor: 'pointer',
                   border: '1px solid var(--border-color)',
@@ -141,19 +141,19 @@ export default function RightSidebar() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px'
+                  gap: '4px'
                 }}
                 onClick={() => dispatch({ device: 'ios' })}
               >
-                <svg viewBox="0 0 384 512" width="13" height="13" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                <svg viewBox="0 0 384 512" width="12" height="12" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
                 iPhone
               </button>
               <button
                 className="platform-btn"
                 style={{
                   flex: 1,
-                  fontSize: '13px',
-                  padding: '8px 12px',
+                  fontSize: '12px',
+                  padding: '8px 8px',
                   borderRadius: '9999px',
                   cursor: 'pointer',
                   border: '1px solid var(--border-color)',
@@ -164,12 +164,38 @@ export default function RightSidebar() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px'
+                  gap: '4px'
                 }}
                 onClick={() => dispatch({ device: 'android' })}
               >
-                <svg viewBox="0 0 576 512" width="13" height="13" fill="currentColor"><path d="M420.55,301.93a24,24,0,1,1,24-24,24,24,0,0,1-24,24m-265.1,0a24,24,0,1,1,24-24,24,24,0,0,1-24,24m273.7-144.48,47.94-83a10,10,0,1,0-17.27-10h0l-48.54,84.07a301.25,301.25,0,0,0-246.56,0L116.18,64.45a10,10,0,1,0-17.27,10h0l48,83.24C73.68,196.83,24,266.79,24,352H552c0-85.21-49.68-155.17-122.85-194.55"/></svg>
+                <svg viewBox="0 0 576 512" width="12" height="12" fill="currentColor"><path d="M420.55,301.93a24,24,0,1,1,24-24,24,24,0,0,1-24,24m-265.1,0a24,24,0,1,1,24-24,24,24,0,0,1-24,24m273.7-144.48,47.94-83a10,10,0,1,0-17.27-10h0l-48.54,84.07a301.25,301.25,0,0,0-246.56,0L116.18,64.45a10,10,0,1,0-17.27,10h0l48,83.24C73.68,196.83,24,266.79,24,352H552c0-85.21-49.68-155.17-122.85-194.55"/></svg>
                 Android
+              </button>
+              <button
+                className="platform-btn disabled"
+                disabled
+                title="Laptop 3D mockups coming soon"
+                style={{
+                  flex: 1,
+                  fontSize: '11px',
+                  padding: '8px 6px',
+                  borderRadius: '9999px',
+                  cursor: 'not-allowed',
+                  border: '1px solid var(--border-color)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary, #9ca3af)',
+                  fontWeight: 600,
+                  opacity: 0.55,
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px'
+                }}
+              >
+                <Laptop size={12} />
+                <span>Laptop</span>
+                <span style={{ fontSize: '8px', background: 'rgba(0,0,0,0.08)', color: 'var(--text-secondary)', padding: '1px 4px', borderRadius: '9999px', fontWeight: 700, textTransform: 'uppercase' }}>Soon</span>
               </button>
             </div>
           </div>

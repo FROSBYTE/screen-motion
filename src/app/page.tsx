@@ -46,7 +46,7 @@ const WORKFLOW_STEPS = [
   {
     step: 1,
     title: "Add your design",
-    description: "ScreenMotion supports PNG, JPG, and WEBP image uploads. Video uploads coming soon.",
+    description: "ScreenMotion supports PNG, JPG, and WEBP image uploads, plus MP4, WEBM, and MOV video files displayed directly on the 3D device screen.",
     video: "/animation-card-videos/hero-reveal-template.webm"
   },
   {
@@ -75,7 +75,7 @@ const USE_CASES = [
 const FAQ_ITEMS = [
   {
     question: "What file formats does ScreenMotion support?",
-    answer: "PNG, JPG, and WEBP images. Video uploads are coming soon."
+    answer: "PNG, JPG, and WEBP images, plus MP4, WEBM, and MOV video files. Videos play directly on the 3D device screen."
   },
   {
     question: "Do I need 3D design experience to create mockups?",
@@ -431,7 +431,7 @@ export default function LandingPage() {
               fontWeight: 400
             }}
           >
-            Upload your app UI, choose from ready-made 3D motion templates, and export studio-quality 4K mockup videos directly in your web browser. No 3D design skills required.
+            Upload your app UI or screen recording, choose from ready-made 3D motion templates, and export studio-quality 4K mockup videos directly in your web browser. No 3D design skills required.
           </motion.p>
 
           {/* Pill CTA Buttons */}

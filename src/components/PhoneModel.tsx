@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppState } from '@/store';
@@ -14,6 +14,11 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   const groupRef = useRef<THREE.Group>(null!);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null!);
   const animRef = useRef<TemplateAnimation | null>(null);
+  const videoRestartRef = useRef<(() => void) | null>(null);
+
+  const handleVideoRestart = useCallback((restart: () => void) => {
+    videoRestartRef.current = restart;
+  }, []);
 
   // Create / recreate animation when template, orientation, or device changes
   useEffect(() => {
@@ -69,6 +74,10 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   useEffect(() => {
     if (state.exportStatus === 'rendering' && animRef.current) {
       animRef.current.timeline.restart();
+      // Also restart video if present
+      if (videoRestartRef.current) {
+        videoRestartRef.current();
+      }
     }
   }, [state.exportStatus]);
 
@@ -76,6 +85,10 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   useEffect(() => {
     if (state.previewTrigger && animRef.current) {
       animRef.current.timeline.restart();
+      // Also restart video if present
+      if (videoRestartRef.current) {
+        videoRestartRef.current();
+      }
     }
   }, [state.previewTrigger]);
 
@@ -90,10 +103,10 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
               rotation-y={((state.scene.rotationY || 0) * Math.PI) / 180}
             >
             {state.device === 'ios' ? (
-              <IPhone16 screenshotUrl={screenshotUrl} />
+              <IPhone16 screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
             ) : (
               <Center>
-                <AndroidModel screenshotUrl={screenshotUrl} />
+                <AndroidModel screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
               </Center>
             )}
           </group>

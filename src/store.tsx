@@ -12,6 +12,7 @@ import {
   SceneSettings,
   DEFAULT_SCENE,
   ActiveTool,
+  MediaType,
 } from '@/types';
 
 // ---------- Initial State ----------
@@ -20,6 +21,7 @@ const initialState: AppState = {
   screenshot: null,
   screenshotUrl: null,
   screenshotOrientation: null,
+  mediaType: 'image',
   device: 'ios',
   deviceColor: '#6b7280', // default grey color
   orientation: 'landscape',
@@ -126,44 +128,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const canRedo = false;
   // DISABLED_FEATURE_END: Undo/Redo Actions and States
 
-  // Cleanup object URL
-  useEffect(() => {
-    return () => {
-      if (state.screenshotUrl) URL.revokeObjectURL(state.screenshotUrl);
-    };
-  }, [state.screenshotUrl]);
-
   const uploadScreenshot = (file: File) => {
     const isImage = file.type.startsWith('image/');
-    if (!isImage) {
-      dispatch({ error: 'Please upload a valid image (PNG, JPG, WEBP)' });
+    const isVideo = file.type.startsWith('video/');
+    if (!isImage && !isVideo) {
+      dispatch({ error: 'Please upload an image (PNG, JPG, WEBP) or video (MP4, WEBM, MOV)' });
       return;
     }
-    if (file.size > 25 * 1024 * 1024) {
-      dispatch({ error: 'File must be under 25MB' });
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+      dispatch({ error: isVideo ? 'Video must be under 100MB' : 'Image must be under 25MB' });
       return;
+    }
+
+    if (state.screenshotUrl) {
+      URL.revokeObjectURL(state.screenshotUrl);
     }
 
     const url = URL.createObjectURL(file);
 
-    const img = new Image();
-    img.onload = () => {
-      const orientation: Orientation =
-        img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
-      dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, error: null });
-      trackMixpanelEvent('screenshot_uploaded', {
-        file_type: 'image',
-        file_name: file.name,
-        file_extension: file.name.split('.').pop()?.toLowerCase() || '',
-        file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
-        orientation,
-      });
-    };
-    img.onerror = () => {
-      dispatch({ error: 'Failed to load image. Try another file.' });
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
+    if (isVideo) {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        const orientation: Orientation =
+          video.videoWidth > video.videoHeight ? 'landscape' : 'portrait';
+        dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, mediaType: 'video', error: null });
+        trackMixpanelEvent('screenshot_uploaded', {
+          file_type: 'video',
+          file_name: file.name,
+          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
+          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+          orientation,
+        });
+      };
+      video.onerror = () => {
+        dispatch({ error: 'Failed to load video. Try another file.' });
+        URL.revokeObjectURL(url);
+      };
+      video.src = url;
+    } else {
+      const img = new Image();
+      img.onload = () => {
+        const orientation: Orientation =
+          img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
+        dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, mediaType: 'image', error: null });
+        trackMixpanelEvent('screenshot_uploaded', {
+          file_type: 'image',
+          file_name: file.name,
+          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
+          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+          orientation,
+        });
+      };
+      img.onerror = () => {
+        dispatch({ error: 'Failed to load image. Try another file.' });
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
   };
 
   return (

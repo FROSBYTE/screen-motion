@@ -29,10 +29,13 @@ export interface TextOverlay {
   fontSize: number;
   animationType: TextAnimationType;
   previewTrigger?: number;
+  textUpdatedAt?: number;
+  delay?: number;
   animationSpeed: number;
   isBold?: boolean;
   isItalic?: boolean;
   isUnderline?: boolean;
+  fontFamily?: string;
 }
 
 export interface SceneSettings {
@@ -53,12 +56,14 @@ export interface SceneSettings {
 }
 
 export type ActiveTool = 'upload' | 'scene' | 'export' | null;
+export type MediaType = 'image' | 'video';
 
 export interface AppState {
   activeTool: ActiveTool;
   screenshot: File | null;
   screenshotUrl: string | null;
   screenshotOrientation: Orientation | null;
+  mediaType: MediaType;
   device: DeviceType;
   deviceColor: string;
   orientation: Orientation;

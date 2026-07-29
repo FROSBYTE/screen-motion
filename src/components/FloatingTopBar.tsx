@@ -88,11 +88,65 @@ export default function FloatingTopBar() {
       }
 
       const templateConfig = TEMPLATES.find((t) => t.id === state.template) || { duration: 3 };
-      const baseDuration = templateConfig.duration || 3;
-      const actualDurationMs = (baseDuration / state.speed) * 1000;
+      const deviceDurationSec = (templateConfig.duration || 3) / (state.speed || 1);
 
-      const chunks: Blob[] = [];
-      const stream = canvas.captureStream(exportFps);
+      // Compute maximum text animation completion time (delay + duration)
+      let maxTextDurationSec = 0;
+      (state.scene.texts || []).forEach((t) => {
+        if (t.animationType && t.animationType !== 'none') {
+          const delaySec = t.delay || 0;
+          const speed = t.animationSpeed ?? 1;
+          const textStr = (t.text || '').trim();
+          const textLength = textStr.length;
+          const numWords = textStr.split(/\\s+/).length;
+          const numLines = textStr.split('\\n').length;
+          let animDurSec = 0;
+          
+          const legacyMap: Record<string, string> = {
+            'fade': 'fade-through',
+            'slide-up': 'mask-reveal-up',
+            'typewriter': 'typing-animation',
+            'scale': 'micro-scale-fade',
+          };
+          const effectiveType = legacyMap[t.animationType!] || t.animationType;
+          
+          if (effectiveType === 'dia-text-reveal') {
+            animDurSec = 3.0 / speed;
+          } else if (effectiveType === 'typing-animation') {
+            animDurSec = (textLength * 0.1) / speed;
+          } else if (effectiveType === 'text-animate') {
+            // SceneTexts passes duration={2/speed} and it has a 0.3s transition on the last element
+            animDurSec = (2.0 / speed) + 0.3;
+          } else {
+            // smoothAnimMap variants (e.g. per-character-rise, per-word-crossfade, etc)
+            // They stagger by char (~24ms), word (~70ms), or line (~90ms), and transition ~0.7s
+            const charBased = textLength * 0.025 + 0.7;
+            const wordBased = numWords * 0.07 + 0.7;
+            const lineBased = numLines * 0.09 + 0.76;
+            const singleBlock = 0.6; // e.g. micro-scale-fade
+            // Take the max to safely cover the stagger sequence without excessive padding
+            animDurSec = Math.max(charBased, wordBased, lineBased, singleBlock) / speed;
+          }
+          
+          const endTimeSec = delaySec + animDurSec;
+          if (endTimeSec > maxTextDurationSec) {
+            maxTextDurationSec = endTimeSec;
+          }
+        }
+      });
+
+      // Dynamic total export duration: max of device motion vs text animation completion
+      const totalExportDurationSec = Math.max(deviceDurationSec, maxTextDurationSec);
+      const actualDurationMs = totalExportDurationSec * 1000;
+
+      // Create offscreen composite canvas to merge 3D Canvas + Text Overlays
+      const compositeCanvas = document.createElement('canvas');
+      compositeCanvas.width = canvas.width;
+      compositeCanvas.height = canvas.height;
+      const ctx = compositeCanvas.getContext('2d')!;
+
+      // Internal canvas recording stream (no browser permissions or screen record prompts required)
+      const stream = compositeCanvas.captureStream(exportFps);
       
       let mimeType = 'video/mp4;codecs=avc1.42E01E';
       if (typeof MediaRecorder !== 'undefined') {
@@ -112,6 +166,111 @@ export default function FloatingTopBar() {
           : { videoBitsPerSecond: targetBitrate }
       );
 
+      const chunks: Blob[] = [];
+
+      let animFrameId: number;
+      const startExportTime = Date.now();
+
+      const renderCompositeFrame = () => {
+        // 1. Clear offscreen composite canvas and draw 3D WebGL Canvas
+        ctx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+        ctx.drawImage(canvas, 0, 0, compositeCanvas.width, compositeCanvas.height);
+
+        // 2. Render Text Overlays directly onto composite 2D Canvas context
+        const container = document.querySelector('#preview-3d') as HTMLElement;
+        if (container && state.scene.texts && state.scene.texts.length > 0) {
+          const containerRect = container.getBoundingClientRect();
+          const scaleX = compositeCanvas.width / containerRect.width;
+          const scaleY = compositeCanvas.height / containerRect.height;
+
+          const textElements = container.querySelectorAll('#text-overlay-layer > div');
+          textElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const textInner = htmlEl.querySelector('div') as HTMLElement;
+            if (!textInner) return;
+
+            // Check if text is currently pending delay
+            const pendingSpan = textInner.querySelector('[data-delay-pending="true"]');
+            if (pendingSpan) return;
+
+            // We need to parse rotation of the entire text overlay container if any
+            const outerStyle = window.getComputedStyle(htmlEl);
+            let rotation = 0;
+            if (outerStyle.transform && outerStyle.transform !== 'none') {
+              try {
+                const matrix = new DOMMatrix(outerStyle.transform);
+                rotation = Math.atan2(matrix.b, matrix.a);
+              } catch (e) {
+                // Ignore DOMMatrix parsing errors
+              }
+            }
+
+            // Recursive function to draw each text node
+            const drawTextNodes = (node: Node) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent?.trim();
+                if (!text) return;
+                
+                const parent = node.parentElement;
+                if (!parent) return;
+
+                const style = window.getComputedStyle(parent);
+                let currentOpacity = parseFloat(style.opacity || '1');
+                let currentEl: HTMLElement | null = parent;
+                
+                // Traverse up to textInner to multiply opacities
+                while (currentEl && currentEl !== htmlEl.parentElement) {
+                  if (currentEl !== parent) {
+                     const pStyle = window.getComputedStyle(currentEl);
+                     currentOpacity *= parseFloat(pStyle.opacity || '1');
+                  }
+                  currentEl = currentEl.parentElement;
+                }
+                
+                if (style.visibility === 'hidden' || currentOpacity <= 0) return;
+
+                const rect = parent.getBoundingClientRect();
+                const centerX = (rect.left + rect.width / 2 - containerRect.left) * scaleX;
+                const centerY = (rect.top + rect.height / 2 - containerRect.top) * scaleY;
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                if (rotation !== 0) ctx.rotate(rotation);
+                ctx.globalAlpha = currentOpacity;
+                if (style.filter && style.filter !== 'none') {
+                  ctx.filter = style.filter;
+                }
+
+                const fontSize = parseFloat(style.fontSize || '16') * scaleY;
+                const fontFamily = style.fontFamily || 'sans-serif';
+                const fontWeight = style.fontWeight || '700';
+                const fontStyle = style.fontStyle || 'normal';
+                ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+                ctx.fillStyle = style.color || '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const lines = text.split('\\n');
+                const lineHeight = fontSize * 1.2;
+                const startY = -((lines.length - 1) * lineHeight) / 2;
+
+                lines.forEach((line, idx) => {
+                  ctx.fillText(line, 0, startY + idx * lineHeight);
+                });
+                
+                ctx.restore();
+              } else if (node.nodeType === Node.ELEMENT_NODE) {
+                node.childNodes.forEach(drawTextNodes);
+              }
+            };
+
+            drawTextNodes(textInner);
+          });
+        }
+
+        animFrameId = requestAnimationFrame(renderCompositeFrame);
+      };
+
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           chunks.push(e.data);
@@ -119,6 +278,9 @@ export default function FloatingTopBar() {
       };
 
       recorder.onstop = () => {
+        cancelAnimationFrame(animFrameId);
+        stream.getTracks().forEach((t) => t.stop());
+
         const blob = new Blob(chunks, { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -144,26 +306,37 @@ export default function FloatingTopBar() {
         }, 3000);
       };
 
-      dispatch({ previewTrigger: Date.now(), exportStatus: 'rendering', exportProgress: 5 });
-      recorder.start();
+      // Reset UI selections and trigger scene preview restart
+      dispatch({ 
+        selectedTextId: null, 
+        previewTrigger: Date.now(), 
+        exportStatus: 'rendering', 
+        exportProgress: 0 
+      });
 
-      const updateInterval = 100;
-      let elapsed = 0;
-      const interval = setInterval(() => {
-        elapsed += updateInterval;
-        const progress = Math.min(Math.floor((elapsed / actualDurationMs) * 90) + 10, 99);
-        dispatch({
-          exportStatus: elapsed < actualDurationMs * 0.7 ? 'rendering' : 'encoding',
-          exportProgress: progress,
-        });
-      }, updateInterval);
+      // Start recording immediately after React completes rendering frame 0
+      requestAnimationFrame(() => {
+        recorder.start();
+        renderCompositeFrame();
 
-      setTimeout(() => {
-        clearInterval(interval);
-        if (recorder.state === 'recording') {
-          recorder.stop();
-        }
-      }, actualDurationMs);
+        const updateInterval = 100;
+        let elapsed = 0;
+        const interval = setInterval(() => {
+          elapsed += updateInterval;
+          const progress = Math.min(Math.floor((elapsed / actualDurationMs) * 90) + 10, 99);
+          dispatch({
+            exportStatus: elapsed < actualDurationMs * 0.7 ? 'rendering' : 'encoding',
+            exportProgress: progress,
+          });
+        }, updateInterval);
+
+        setTimeout(() => {
+          clearInterval(interval);
+          if (recorder.state === 'recording') {
+            recorder.stop();
+          }
+        }, actualDurationMs);
+      });
 
     } catch (err) {
       console.error(err);
@@ -257,7 +430,7 @@ export default function FloatingTopBar() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
           onChange={handleFileChange}
           style={{ display: 'none', pointerEvents: 'auto' }}
         />
@@ -320,11 +493,22 @@ export default function FloatingTopBar() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {screenshotUrl ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <img
-                    src={screenshotUrl}
-                    alt="Preview"
-                    style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
-                  />
+                  {state.mediaType === 'video' ? (
+                    <video
+                      src={screenshotUrl}
+                      muted
+                      loop
+                      autoPlay
+                      playsInline
+                      style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                    />
+                  ) : (
+                    <img
+                      src={screenshotUrl}
+                      alt="Preview"
+                      style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                    />
+                  )}
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {screenshot?.name}
                   </div>
@@ -339,7 +523,7 @@ export default function FloatingTopBar() {
                     <button
                       className="show-more-btn"
                       onClick={() => {
-                        dispatch({ screenshot: null, screenshotUrl: null, screenshotOrientation: null, orientationMismatch: false });
+                        dispatch({ screenshot: null, screenshotUrl: null, screenshotOrientation: null, mediaType: 'image', orientationMismatch: false });
                         setActiveTab(null);
                       }}
                       style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 8, fontWeight: 600 }}
@@ -373,7 +557,7 @@ export default function FloatingTopBar() {
                     style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '8px', pointerEvents: 'none' }}
                   />
                   <span style={{ fontSize: 12, color: '#64748b', textAlign: 'center', pointerEvents: 'none' }}>
-                    Click or drag & drop a screenshot to display on the 3D device mockup.
+                    Click or drag & drop a screenshot or video to display on the 3D device mockup.
                   </span>
                   <button
                     className="show-more-btn"
@@ -383,7 +567,7 @@ export default function FloatingTopBar() {
                     }}
                     style={{ background: '#0f172a', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
                   >
-                    Upload Screenshot
+                    Upload Media
                   </button>
                 </div>
               )}
