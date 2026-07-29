@@ -254,6 +254,18 @@ export default function LandingPage() {
             gap: 10px !important;
             flex-direction: column !important;
           }
+          .faq-question-text {
+            font-size: 14.5px !important;
+          }
+          .use-case-title {
+            font-size: 17px !important;
+          }
+        }
+        .faq-question-text {
+          font-size: 17px;
+        }
+        .use-case-title {
+          font-size: 18px;
         }
         a:hover .card-hover-cta {
           opacity: 1 !important;
@@ -270,7 +282,8 @@ export default function LandingPage() {
         }
         @media (max-width: 640px) {
           .template-3x3-grid {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
           }
         }
 
@@ -291,7 +304,19 @@ export default function LandingPage() {
         }
         @media (max-width: 640px) {
           .use-cases-grid {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+          }
+          .use-cases-card {
+            padding: 16px 12px !important;
+            aspect-ratio: 16 / 11;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          .use-cases-card p {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
           }
         }
       `}</style>
@@ -386,9 +411,9 @@ export default function LandingPage() {
               width: "100%"
             }}
           >
-            <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>Turn Your App Screenshots Into Animated</span>
+            <span style={{ display: "inline-block" }}>Turn Your App Screenshots Into Animated</span>
             <br className="hidden sm:inline" />
-            <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>3D Device Videos</span>
+            <span style={{ display: "inline-block" }}>3D Device Videos</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -612,6 +637,7 @@ export default function LandingPage() {
       </section>
 
       {/* 3 Steps to Studio-Grade Mockups Section */}
+      {false && (
       <section style={{
         paddingTop: "100px",
         paddingBottom: "100px",
@@ -833,6 +859,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Use Cases & Applications Section */}
       <section style={{
@@ -879,7 +906,7 @@ export default function LandingPage() {
             {USE_CASES.map((uc, idx) => (
               <motion.div
                 key={uc.title}
-                className={idx === 4 ? "use-cases-card-center-start" : undefined}
+                className={`use-cases-card ${idx === 4 ? "use-cases-card-center-start" : ""}`.trim()}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-30px" }}
@@ -894,8 +921,7 @@ export default function LandingPage() {
                   transition: "all 0.25s ease"
                 }}
               >
-                <h3 className="font-headline" style={{
-                  fontSize: "18px",
+                <h3 className="font-headline use-case-title" style={{
                   fontWeight: 700,
                   color: "#111827",
                   margin: "0 0 8px 0"
@@ -991,8 +1017,7 @@ export default function LandingPage() {
                       textAlign: "left"
                     }}
                   >
-                    <span className="font-headline" style={{
-                      fontSize: "17px",
+                    <span className="font-headline faq-question-text" style={{
                       fontWeight: 700,
                       color: "#111827"
                     }}>

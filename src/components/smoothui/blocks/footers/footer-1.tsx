@@ -17,10 +17,7 @@ export default function Footer1() {
           { name: "About", url: "https://frosbyte.github.io/Portfolio/" },
           { name: "Instagram", url: "https://www.instagram.com/frosbyte_studio/" },
         ],
-        support: [
-          { name: "Instagram", url: "https://www.instagram.com/frosbyte_studio/" },
-          { name: "Portfolio", url: "https://frosbyte.github.io/Portfolio/" },
-        ],
+        support: [],
       }}
     />
   );

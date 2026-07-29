@@ -57,24 +57,30 @@ export function FooterSimple({
           <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#111827", marginBottom: "12px" }}>{companyName}</h3>
           <p style={{ lineHeight: 1.6, color: "#4b5563", maxWidth: "300px" }}>{description}</p>
         </div>
-        <div>
-          <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Product</h4>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-            {links.product?.map(renderLink)}
-          </ul>
-        </div>
-        <div>
-          <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Company</h4>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-            {links.company?.map(renderLink)}
-          </ul>
-        </div>
-        <div>
-          <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Connect</h4>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-            {links.support?.map(renderLink)}
-          </ul>
-        </div>
+        {links.product && links.product.length > 0 && (
+          <div>
+            <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Product</h4>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+              {links.product.map(renderLink)}
+            </ul>
+          </div>
+        )}
+        {links.company && links.company.length > 0 && (
+          <div>
+            <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Company</h4>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+              {links.company.map(renderLink)}
+            </ul>
+          </div>
+        )}
+        {links.support && links.support.length > 0 && (
+          <div>
+            <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#111827", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Connect</h4>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+              {links.support.map(renderLink)}
+            </ul>
+          </div>
+        )}
       </div>
       <div style={{ maxWidth: "1100px", margin: "40px auto 0 auto", paddingTop: "24px", borderTop: "1px solid rgba(0, 0, 0, 0.08)", textAlign: "center", fontSize: "13px", color: "#6b7280" }}>
         {copyright}
