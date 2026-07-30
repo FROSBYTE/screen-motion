@@ -33,12 +33,12 @@ const SHOWCASE_ANIMATIONS = [
 const TEMPLATE_CARDS = [
   { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #38bdf8 100%)" },
   { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
-  { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/animation-card-videos/corkscrew-reveal-template.webm", gradient: "#050509" },
+  { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/showcase-videos/screen-motion-1080p-corkscrew-reveal-1785452727399.webm", gradient: "#050509" },
   { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #38bdf8 50%, #f97316 100%)" },
   { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" },
   { id: "slow-pan", animationName: "Slow Studio Pan", video: "/animation-card-videos/slow-pan-template.webm", gradient: "linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%)" },
   { id: "horizontal-slide", animationName: "Landscape Slide", video: "/animation-card-videos/horizontal-slide-template.webm", gradient: "linear-gradient(135deg, #0093E9 0%, #80D0C7 100%)" },
-  { id: "bounce-drop", animationName: "Bounce Drop", video: "/animation-card-videos/bounce-drop-template.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
+  { id: "bounce-drop", animationName: "Bounce Drop", video: "/showcase-videos/screen-motion-1080p-bounce-drop-1785438886976.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
   { id: "flip", animationName: "Flip & Land", video: "/animation-card-videos/flip-template.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" }
 ];
 
@@ -569,7 +569,7 @@ export default function LandingPage() {
                     borderRadius: "20px",
                     overflow: "hidden",
                     background: card.gradient,
-                    aspectRatio: "16 / 10",
+                    aspectRatio: "16 / 9",
                     boxShadow: "0 12px 32px -8px rgba(0, 0, 0, 0.12)",
                     border: "1.5px solid rgba(0, 0, 0, 0.16)",
                     display: "flex",
@@ -587,7 +587,7 @@ export default function LandingPage() {
                     style={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
+                      objectFit: "contain",
                       position: "absolute",
                       inset: 0,
                       zIndex: 1

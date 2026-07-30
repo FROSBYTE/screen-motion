@@ -6,7 +6,8 @@ export type TemplateName =
   | 'slide-in' | 'spiral' | 'cinematic-pan'
   | 'slow-pan' | 'horizontal-slide'
   | 'infinity-loop' | 'dynamic-showcase'
-  | 'corkscrew-reveal' | 'depth-zoom' | 'corner-drop';
+  | 'corkscrew-reveal' | 'depth-zoom' | 'corner-drop'
+  | '3d-spin-flip' | 'perspective-float' | 'zoom-pulse';
 export type Resolution = '1080p' | '4k';
 export type ExportStatus = 'idle' | 'rendering' | 'encoding' | 'done' | 'error';
 
@@ -36,6 +37,22 @@ export interface TextOverlay {
   isItalic?: boolean;
   isUnderline?: boolean;
   fontFamily?: string;
+  order?: number;
+}
+
+export type ImageAnimationType = 'fade-in-out' | 'bounce' | 'spin' | 'none';
+
+export interface ImageOverlay {
+  id: string;
+  url: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: number;
+  animationType: ImageAnimationType;
+  animationSpeed: number;
+  delay?: number;
+  previewTrigger?: number;
+  order?: number;
 }
 
 export interface SceneSettings {
@@ -53,6 +70,7 @@ export interface SceneSettings {
   rotationY?: number; // Y rotation of 3D device in degrees
   textSpeed?: number;
   texts?: TextOverlay[];
+  images?: ImageOverlay[];
 }
 
 export type ActiveTool = 'upload' | 'scene' | 'export' | null;
@@ -200,11 +218,32 @@ export const TEMPLATES: TemplateConfig[] = [
     icon: 'south_west',
     duration: 3.8,
   },
+  {
+    id: '3d-spin-flip',
+    name: '3D Spin Flip',
+    description: 'Dynamic 360-degree spin twist with elastic bounce',
+    icon: 'autorenew',
+    duration: 4.0,
+  },
+  {
+    id: 'perspective-float',
+    name: 'Perspective Float',
+    description: 'Floating isometric 3D angle with weightless drift',
+    icon: 'view_in_ar',
+    duration: 6.0,
+  },
+  {
+    id: 'zoom-pulse',
+    name: 'Zoom Pulse',
+    description: 'Dolly-zoom push-in focus highlight to reveal UI detail',
+    icon: 'center_focus_weak',
+    duration: 4.5,
+  },
 ];
 
 export const DEFAULT_SCENE: SceneSettings = {
-  bgColor: '#fcf9ea',
-  bgColor2: '#badfdb',
+  bgColor: '#000000',
+  bgColor2: '#ffffff',
   bgGradient: true,
   bgImage: null,
   ambientIntensity: 1.0,
@@ -213,8 +252,9 @@ export const DEFAULT_SCENE: SceneSettings = {
   zoom: 1.0,
   offsetX: 0,
   offsetY: 0,
-  rotationX: -5,
+  rotationX: 0,
   rotationY: 0,
   textSpeed: 1.0,
   texts: [],
+  images: [],
 };

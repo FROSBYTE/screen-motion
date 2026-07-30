@@ -9,6 +9,7 @@ export interface FadeThroughProps {
   interval?: number;
   phrases?: string[];
   children?: string;
+  speed?: number;
 }
 
 const ENTER_DURATION_S = 0.42;
@@ -26,6 +27,7 @@ export default function FadeThrough({
   children,
   className = "",
   interval = 2500,
+  speed = 1,
 }: FadeThroughProps) {
   const shouldReduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
@@ -38,9 +40,9 @@ export default function FadeThrough({
     }
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % (phrases.length || 1));
-    }, interval);
+    }, interval / speed);
     return () => clearInterval(id);
-  }, [shouldReduceMotion, phrases, interval]);
+  }, [shouldReduceMotion, phrases, interval, speed]);
 
   const current = phrases[index] ?? "";
 
@@ -58,7 +60,7 @@ export default function FadeThrough({
             y: -4,
             scale: 1,
             filter: "blur(0px)",
-            transition: { duration: EXIT_DURATION_S, ease: EXIT_EASE },
+            transition: { duration: EXIT_DURATION_S / speed, ease: EXIT_EASE },
           }}
           initial={
             shouldReduceMotion
@@ -70,7 +72,7 @@ export default function FadeThrough({
           transition={
             shouldReduceMotion
               ? { duration: 0 }
-              : { duration: ENTER_DURATION_S, ease: ENTER_EASE }
+              : { duration: ENTER_DURATION_S / speed, ease: ENTER_EASE }
           }
         >
           {current}

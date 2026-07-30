@@ -6,6 +6,7 @@ export interface RevealTextProps {
   className?: string;
   delay?: number;
   direction?: "up" | "down" | "left" | "right";
+  speed?: number;
   triggerOnView?: boolean;
 }
 
@@ -23,6 +24,7 @@ const RevealText: React.FC<RevealTextProps> = ({
   children,
   direction = "up",
   delay = 0,
+  speed = 1,
   triggerOnView = false,
   className = "",
 }) => {
@@ -48,7 +50,7 @@ const RevealText: React.FC<RevealTextProps> = ({
         shouldReduceMotion
           ? { duration: 0 }
           : {
-              duration: REVEAL_ANIMATION_DURATION_S,
+              duration: REVEAL_ANIMATION_DURATION_S / speed,
               delay: delay / MILLISECONDS_TO_SECONDS,
             }
       }

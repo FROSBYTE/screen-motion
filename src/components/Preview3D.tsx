@@ -5,11 +5,12 @@ import React, { Suspense, useRef, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Hud, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { useAppState } from '@/store';
+import { useAppState, AppContext } from '@/store';
 import PhoneModel from './PhoneModel';
 import FloatingTopBar from './FloatingTopBar';
 import ModelLoaderOverlay from './ModelLoaderOverlay';
 import SceneTexts from './SceneTexts';
+import SceneImages from './SceneImages';
 
 const textureCache = new Map<string, THREE.Texture>();
 
@@ -110,21 +111,61 @@ function SceneLights() {
 
   return (
     <>
-      <ambientLight intensity={scene.ambientIntensity * 3} />
+      {/* Ambient Base Light */}
+      <ambientLight intensity={Math.max(0.2, scene.ambientIntensity * 0.35)} />
+
+      {/* Key Light: Main directional source with shadow mapping */}
       <directionalLight
-        color={scene.directionalColor}
-        intensity={scene.directionalIntensity * 1.5}
-        position={[5, 5, 5]}
+        color={scene.directionalColor || '#fffef8'}
+        intensity={(scene.directionalIntensity || 1.0) * 2.2}
+        position={[6, 8, 6]}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-0.0001}
+      />
+
+      {/* Fill Light: Soft cool-tinted fill from opposite angle */}
+      <directionalLight
+        color="#818cf8"
+        intensity={0.65}
+        position={[-6, 3, 5]}
+      />
+
+      {/* Cinematic Rim / Backlight 1: Electric Cyan Edge Highlight */}
+      <pointLight
+        color="#38bdf8"
+        intensity={2.2}
+        distance={25}
+        position={[-5, 5, -4]}
+      />
+
+      {/* Cinematic Rim / Backlight 2: Warm Specular Highlight */}
+      <pointLight
+        color="#fb7185"
+        intensity={1.8}
+        distance={25}
+        position={[5, 6, -4]}
+      />
+
+      {/* High-Key Studio Overhead Spotlight */}
+      <spotLight
+        color="#ffffff"
+        intensity={2.0}
+        position={[0, 9, 4]}
+        angle={0.65}
+        penumbra={0.75}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
 
-      {/* Fill light */}
+      {/* Under/Bounce Soft Light */}
       <pointLight
-        color="#4488ff"
-        intensity={0.3}
-        position={[3, -2, 2]}
+        color="#a78bfa"
+        intensity={0.45}
+        distance={15}
+        position={[0, -5, 3]}
       />
     </>
   );
@@ -168,7 +209,8 @@ function HudCameraAdapter() {
 }
 
 export default function Preview3D() {
-  const { state, dispatch } = useAppState();
+  const appContext = useAppState();
+  const { state, dispatch } = appContext;
   const [isFullscreen, setIsFullscreen] = React.useState(false);
 
   React.useEffect(() => {
@@ -311,66 +353,33 @@ export default function Preview3D() {
           alpha: false,
           powerPreference: 'high-performance',
           preserveDrawingBuffer: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.15,
         }}
         dpr={[1, 2]}
       >
-        <SceneBackground
-          color1={state.scene.bgColor || '#1c1a16'}
-          color2={state.scene.bgColor2 || '#0b0a09'}
-          enabled={!!state.scene.bgGradient}
-          bgImage={state.scene.bgImage}
-        />
-        <CameraZoomController />
-        <Suspense fallback={null}>
-          <SceneLights />
+        <AppContext.Provider value={appContext}>
+          <SceneBackground
+            color1={state.scene.bgColor || '#000000'}
+            color2={state.scene.bgColor2 || '#ffffff'}
+            enabled={!!state.scene.bgGradient}
+            bgImage={state.scene.bgImage}
+          />
+          <CameraZoomController />
+          <Suspense fallback={null}>
+            <SceneLights />
 
-          <PhoneModel screenshotUrl={state.screenshotUrl} />
-          
-          <Environment preset="city" environmentIntensity={0.15} />
-        </Suspense>
+            <PhoneModel screenshotUrl={state.screenshotUrl} />
+            
+            <Environment preset="city" environmentIntensity={0.35} />
+          </Suspense>
+        </AppContext.Provider>
       </Canvas>
 
       {/* 2D HTML Text Overlay Layer */}
       <SceneTexts />
+      <SceneImages />
 
-      {/* Zoom / Fullscreen Button */}
-      <button 
-        style={{
-          position: 'absolute',
-          bottom: '24px',
-          right: '24px',
-          background: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          color: '#000000',
-          width: '44px',
-          height: '44px',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          zIndex: 10,
-          transition: 'all 0.2s ease'
-        }}
-        title={isFullscreen ? "Exit Zoom / Fullscreen" : "Zoom Out / Fullscreen"}
-        aria-label="Zoom / Fullscreen toggle"
-        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        onClick={toggleFullscreen}
-      >
-        {isFullscreen ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-          </svg>
-        )}
-      </button>
 
     </div>
     </>

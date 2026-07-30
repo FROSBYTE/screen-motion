@@ -8,6 +8,8 @@ export interface ScaleDownFadeProps {
   className?: string;
   /** Delay before the animation starts, in milliseconds. */
   delay?: number;
+  /** Animation speed multiplier. */
+  speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
 }
@@ -26,6 +28,7 @@ export default function ScaleDownFade({
   children,
   className = "",
   delay = 0,
+  speed = 1,
   triggerOnView = false,
 }: ScaleDownFadeProps) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -47,7 +50,7 @@ export default function ScaleDownFade({
         shouldReduceMotion
           ? { duration: 0 }
           : {
-              duration: DURATION_S,
+              duration: DURATION_S / speed,
               delay: delay / MS,
               ease: EASE,
             }

@@ -112,7 +112,7 @@ export default function RightSidebar() {
           onClick={() => setActiveTab('scenes')}
         >
           <Settings size={15} strokeWidth={2} />
-          Settings
+          Customisation
         </h2>
       </div>
 
@@ -123,7 +123,7 @@ export default function RightSidebar() {
         <div className="sidebar-controls-container">
           {/* Sub-selector for Mobile (iOS vs Android) */}
           <div className="platform-selector-box" style={{ padding: '0 12px 12px 12px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>PLATFORM</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: 6, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>PLATFORM</label>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
                 className="platform-btn"
@@ -206,9 +206,9 @@ export default function RightSidebar() {
           <div className="options-selector-box" style={{ display: 'flex', flexDirection: 'row', gap: '16px', padding: '0 12px', justifyContent: 'space-between', flexWrap: 'wrap' }}>
             {/* Device Color Selection */}
             <div className="sidebar-device-color-box" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>DEVICE COLOR</span>
+              <span style={{ fontSize: '12.2px', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>DEVICE COLOR</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {['#333333', '#ffffff', '#6b7280', '#e3d5ca', '#991b1b', '#448AFF', '#69F0AE'].map((color, i) => (
+                {['#ffffff', '#333333', '#6b7280', '#e3d5ca', '#991b1b', '#448AFF'].map((color, i) => (
                   <button 
                     key={i} 
                     title={`Device Color ${color}`} 
@@ -227,7 +227,7 @@ export default function RightSidebar() {
             
             {/* Shape Section */}
             <div className="sidebar-shape-box" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>SHAPE</span>
+              <span style={{ fontSize: '12.2px', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>SHAPE</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
                   style={{
@@ -235,7 +235,7 @@ export default function RightSidebar() {
                     background: currentOrientation === 'vertical' ? 'var(--bg-card-hover)' : 'transparent',
                     border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer',
                     color: currentOrientation === 'vertical' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    fontWeight: 600, fontSize: '12.5px', padding: '5px 10px'
+                    fontWeight: 600, fontSize: '13.8px', padding: '5px 10px'
                   }}
                   onClick={() => handleOrientationChange('vertical')}
                 >
@@ -330,6 +330,19 @@ export default function RightSidebar() {
         @keyframes card-anim-dynamic-showcase {
           0%, 100% { transform: rotate(-8px) scale(0.85); }
           50% { transform: rotate(12px) scale(1.1); }
+        }
+        @keyframes card-anim-3d-spin-flip {
+          0% { transform: rotateY(0deg); }
+          50% { transform: rotateY(180deg) scale(1.08); }
+          100% { transform: rotateY(360deg); }
+        }
+        @keyframes card-anim-perspective-float {
+          0%, 100% { transform: rotateX(25deg) rotateY(-25deg) translateY(0px); }
+          50% { transform: rotateX(15deg) rotateY(-15deg) translateY(-8px); }
+        }
+        @keyframes card-anim-zoom-pulse {
+          0%, 100% { transform: scale(0.85); }
+          50% { transform: scale(1.2); }
         }
       `}</style>
         </div>

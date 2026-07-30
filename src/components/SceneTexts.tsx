@@ -36,6 +36,21 @@ const smoothAnimMap: Record<string, React.FC<any>> = {
   'scale-down-fade': ScaleDownFade,
 };
 
+export const ENABLED_ANIMATIONS = new Set<string>([
+  'mask-reveal-up',
+  'typing-animation',
+  'focus-blur-resolve',
+  'depth-parallax-words',
+  'per-word-crossfade',
+]);
+
+const legacyMap: Record<string, string> = {
+  'fade': 'fade-through',
+  'slide-up': 'mask-reveal-up',
+  'typewriter': 'typing-animation',
+  'scale': 'micro-scale-fade',
+};
+
 function OverlayText({
   config,
   isSelected,
@@ -67,9 +82,15 @@ function OverlayText({
     };
   };
 
+  const configRef = useRef(config);
+  configRef.current = config;
+  const updateConfigRef = useRef(updateConfig);
+  updateConfigRef.current = updateConfig;
+
   useEffect(() => {
     if (!isDragging) return;
 
+    let rafId: number;
     const handlePointerMove = (e: PointerEvent) => {
       const container = containerRef.current;
       const rect = container ? container.getBoundingClientRect() : { width: 800, height: 600 };
@@ -81,17 +102,21 @@ function OverlayText({
       const dx = (e.clientX - dragStart.current.mouseX) * (viewWidth / rect.width);
       const dy = -(e.clientY - dragStart.current.mouseY) * (viewHeight / rect.height);
 
-      updateConfig({
-        position: [
-          dragStart.current.posX + dx,
-          dragStart.current.posY + dy,
-          config.position[2],
-        ],
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        updateConfigRef.current({
+          position: [
+            dragStart.current.posX + dx,
+            dragStart.current.posY + dy,
+            configRef.current.position[2],
+          ],
+        });
       });
     };
 
     const handlePointerUp = () => {
       setIsDragging(false);
+      if (rafId) cancelAnimationFrame(rafId);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -99,8 +124,9 @@ function OverlayText({
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [isDragging, config.position, containerRef, updateConfig]);
+  }, [isDragging, containerRef]);
 
   const container = containerRef.current;
   const rect = container ? container.getBoundingClientRect() : { width: 800, height: 600 };
@@ -122,7 +148,9 @@ function OverlayText({
 
   const delaySec = config.delay || 0;
   const isEditingNow = !!(config.textUpdatedAt && config.textUpdatedAt > animTrigger);
-  const shouldAnimate = config.animationType && config.animationType !== 'none' && !isEditingNow;
+  const effectiveType = legacyMap[config.animationType] || config.animationType;
+  const isAnimEnabled = ENABLED_ANIMATIONS.has(effectiveType);
+  const shouldAnimate = config.animationType && config.animationType !== 'none' && isAnimEnabled && !isEditingNow;
 
   const [isDelayPassed, setIsDelayPassed] = useState(() => !shouldAnimate || delaySec <= 0);
 
@@ -140,13 +168,15 @@ function OverlayText({
 
   return (
     <div
+      data-overlay-type="text"
+      data-order={config.order ?? 0}
       style={{
         position: 'absolute',
         left: `${leftPercent}%`,
         top: `${topPercent}%`,
         transform: `translate(-50%, -50%) rotate(${rotZDeg}deg)`,
         pointerEvents: 'none',
-        zIndex: isSelected ? 20 : 10,
+        zIndex: isSelected ? 100 + (config.order ?? 0) : (10 + (config.order ?? 0)),
       }}
     >
       <div
@@ -206,26 +236,26 @@ function OverlayText({
               'scale': 'micro-scale-fade',
             };
             const effectiveType = legacyMap[config.animationType] || config.animationType;
-            const animDelayMs = (config.delay || 0) * 1000;
+            const animSpeed = config.animationSpeed ?? 1;
 
             const SmoothComp = smoothAnimMap[effectiveType];
             if (SmoothComp) {
-              return <SmoothComp key={`${animTrigger}-${effectiveType}`}>{displayText}</SmoothComp>;
+              return <SmoothComp key={`${animTrigger}-${effectiveType}-${animSpeed}`} speed={animSpeed}>{displayText}</SmoothComp>;
             }
 
             if (effectiveType === 'text-animate') {
-              return <TextAnimate key={`${animTrigger}-${effectiveType}`} animation="fadeIn" duration={2 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
+              return <TextAnimate key={`${animTrigger}-${effectiveType}-${animSpeed}`} animation="fadeIn" duration={2 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
             }
 
             if (effectiveType === 'typing-animation') {
-              return <TypingAnimation key={`${animTrigger}-${effectiveType}`} duration={100 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{displayText}</TypingAnimation>;
+              return <TypingAnimation key={`${animTrigger}-${effectiveType}-${animSpeed}`} duration={100 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TypingAnimation>;
             }
 
             if (effectiveType === 'dia-text-reveal') {
-              return <TextReveal key={`${animTrigger}-${effectiveType}`} duration={3000 / (config.animationSpeed ?? 1)}>{displayText}</TextReveal>;
+              return <TextReveal key={`${animTrigger}-${effectiveType}-${animSpeed}`} duration={3000 / animSpeed}>{displayText}</TextReveal>;
             }
 
-            return <TextAnimate key={`${animTrigger}-${effectiveType}`} animation="fadeIn" duration={2 / (config.animationSpeed ?? 1)} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
+            return <TextAnimate key={`${animTrigger}-${effectiveType}-${animSpeed}`} animation="fadeIn" duration={2 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
           })()}
         </div>
       </div>
@@ -257,9 +287,12 @@ export default function SceneTexts() {
       }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        const newTexts = (texts || []).filter((t) => t.id !== selectedTextId);
-        dispatch({ scene: { texts: newTexts }, selectedTextId: null });
+        const matchingText = (texts || []).find((t) => t.id === selectedTextId);
+        if (matchingText) {
+          e.preventDefault();
+          const newTexts = (texts || []).filter((t) => t.id !== selectedTextId);
+          dispatch({ scene: { texts: newTexts }, selectedTextId: null });
+        }
       }
     };
 
@@ -283,10 +316,9 @@ export default function SceneTexts() {
       style={{
         position: 'absolute',
         inset: 0,
-        pointerEvents: isExporting ? 'none' : 'auto',
+        pointerEvents: 'none',
         opacity: 1,
         overflow: 'hidden',
-        zIndex: 10,
       }}
     >
       {texts.map((t) => (

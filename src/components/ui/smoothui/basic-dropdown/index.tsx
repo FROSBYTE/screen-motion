@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react';
 interface DropdownItem {
   id: string;
   label: string;
+  fontFamily?: string;
 }
 
 interface BasicDropdownProps {
@@ -13,9 +14,10 @@ interface BasicDropdownProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  compact?: boolean;
 }
 
-export default function BasicDropdown({ items, value, onChange, placeholder = 'Select...' }: BasicDropdownProps) {
+export default function BasicDropdown({ items, value, onChange, placeholder = 'Select...', compact = false }: BasicDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -41,20 +43,22 @@ export default function BasicDropdown({ items, value, onChange, placeholder = 'S
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 12px',
-          fontSize: '13px',
+          padding: compact ? '6px 10px' : '8px 12px',
+          fontSize: compact ? '11.5px' : '13px',
           fontWeight: 600,
           color: 'var(--text-primary, #111827)',
           backgroundColor: 'var(--bg-secondary, #f3f4f6)',
           border: '1px solid var(--border-color, #e5e7eb)',
-          borderRadius: '8px',
+          borderRadius: '7px',
           cursor: 'pointer',
           fontFamily: '"Google Sans", sans-serif',
           transition: 'all 0.15s ease'
         }}
       >
-        <span>{selectedItem ? selectedItem.label : placeholder}</span>
-        <ChevronDown size={14} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: selectedItem?.fontFamily || 'inherit' }}>
+          {selectedItem ? selectedItem.label : placeholder}
+        </span>
+        <ChevronDown size={compact ? 12 : 14} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0, marginLeft: 4 }} />
       </button>
 
       {isOpen && (
@@ -101,9 +105,10 @@ export default function BasicDropdown({ items, value, onChange, placeholder = 'S
                 setIsOpen(false);
               }}
               style={{
-                padding: '6px 10px',
-                fontSize: '13px',
+                padding: compact ? '5px 8px' : '6px 10px',
+                fontSize: compact ? '11.5px' : '13px',
                 fontWeight: item.id === value ? 700 : 500,
+                fontFamily: item.fontFamily || 'inherit',
                 color: item.id === value ? '#111827' : '#4b5563',
                 backgroundColor: item.id === value ? 'rgba(0,0,0,0.05)' : 'transparent',
                 borderRadius: '6px',

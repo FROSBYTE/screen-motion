@@ -1,68 +1,55 @@
 import { AnimationBuilder } from './types';
+import { Orientation } from '@/types';
+
+function getZoomPulseConfig(orientation: Orientation) {
+  if (orientation === 'portrait') {
+    return {
+      camStartZ: 7.0,
+      camPulseZ: 2.8,
+      camEndZ: 4.0,
+    };
+  }
+  return {
+    camStartZ: 7.5,
+    camPulseZ: 3.2,
+    camEndZ: 4.5,
+  };
+}
 
 export const buildZoomPulse: AnimationBuilder = (tl, target, orientation, speed) => {
-  const duration = 3 / speed;
-  const isPortrait = orientation === 'portrait';
-  const camZBase = isPortrait ? 4 : 4.5;
-  const baseRotZ = isPortrait ? 0 : -Math.PI / 2;
+  const cfg = getZoomPulseConfig(orientation);
+  const duration = 4.5 / speed;
+  const baseRotZ = orientation === 'landscape' ? -Math.PI / 2 : 0;
 
-  target.camera.position.set(0, 0, camZBase);
+  target.camera.position.set(0, 0, cfg.camStartZ);
   target.camera.lookAt(0, 0, 0);
   target.device.rotation.set(0, 0, baseRotZ);
 
-  const pulse = duration / 3;
+  // Phase 1: Fast zoom-in towards screen
+  tl.to(
+    target.camera.position,
+    { z: cfg.camPulseZ, duration: duration * 0.4, ease: 'power3.inOut' },
+    0
+  );
 
-  // Pulse 1: zoom in
-  tl.to(target.camera.position, {
-    z: camZBase - 1.2,
-    duration: pulse / 2,
-    ease: 'power2.in',
-  }, 0);
-  tl.to(target.camera.position, {
-    z: camZBase,
-    duration: pulse / 2,
-    ease: 'power2.out',
-  }, pulse / 2);
+  // Phase 2: Hold focus with slight rotation tilt
+  tl.to(
+    target.device.rotation,
+    { y: 0.12, duration: duration * 0.3, ease: 'sine.inOut' },
+    duration * 0.4
+  );
 
-  // Pulse 2: zoom in deeper with tilt
-  tl.to(target.camera.position, {
-    z: camZBase - 1.5,
-    duration: pulse / 2,
-    ease: 'power2.in',
-  }, pulse);
-  tl.to(target.camera.position, {
-    z: camZBase,
-    duration: pulse / 2,
-    ease: 'power2.out',
-  }, pulse * 1.5);
-  tl.to(target.device.rotation, {
-    y: 0.15,
-    duration: pulse / 2,
-    ease: 'sine.inOut',
-    yoyo: true,
-    repeat: 1,
-  }, pulse);
-
-  // Pulse 3: final zoom to close-up
-  tl.to(target.camera.position, {
-    z: camZBase - 1.8,
-    duration: pulse / 2,
-    ease: 'power3.in',
-  }, pulse * 2);
-  tl.to(target.camera.position, {
-    z: camZBase,
-    duration: pulse / 2,
-    ease: 'power2.out',
-  }, pulse * 2.5);
-
-  // Gentle scale pulse throughout
-  tl.to(target.device.scale, {
-    x: 1.02, y: 1.02, z: 1.02,
-    duration: pulse,
-    ease: 'sine.inOut',
-    yoyo: true,
-    repeat: 2,
-  }, 0);
+  // Phase 3: Smooth pull-back into main hero position
+  tl.to(
+    target.camera.position,
+    { z: cfg.camEndZ, duration: duration * 0.3, ease: 'power2.out' },
+    duration * 0.7
+  );
+  tl.to(
+    target.device.rotation,
+    { y: 0, duration: duration * 0.3, ease: 'power2.out' },
+    duration * 0.7
+  );
 
   return duration;
 };

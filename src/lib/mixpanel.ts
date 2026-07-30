@@ -4,8 +4,14 @@ const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || '434d5c9a662994
 
 let initialized = false;
 
+const isLocalhost = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === '::1'
+);
+
 export function initMixpanel(): void {
-  if (typeof window === 'undefined' || initialized) return;
+  if (typeof window === 'undefined' || initialized || isLocalhost) return;
 
   try {
     mixpanel.init(MIXPANEL_TOKEN, {
@@ -26,7 +32,7 @@ export function initMixpanel(): void {
 }
 
 export function trackMixpanelEvent(eventName: string, properties?: Record<string, any>): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || isLocalhost) return;
 
   try {
     if (!initialized) {

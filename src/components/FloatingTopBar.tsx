@@ -92,14 +92,15 @@ export default function FloatingTopBar() {
 
       // Compute maximum text animation completion time (delay + duration)
       let maxTextDurationSec = 0;
+      const ENABLED_ANIMATIONS = new Set(['mask-reveal-up', 'typing-animation', 'focus-blur-resolve', 'depth-parallax-words', 'per-word-crossfade']);
       (state.scene.texts || []).forEach((t) => {
         if (t.animationType && t.animationType !== 'none') {
           const delaySec = t.delay || 0;
           const speed = t.animationSpeed ?? 1;
           const textStr = (t.text || '').trim();
           const textLength = textStr.length;
-          const numWords = textStr.split(/\\s+/).length;
-          const numLines = textStr.split('\\n').length;
+          const numWords = textStr.split(/\s+/).length;
+          const numLines = textStr.split('\n').length;
           let animDurSec = 0;
           
           const legacyMap: Record<string, string> = {
@@ -109,6 +110,7 @@ export default function FloatingTopBar() {
             'scale': 'micro-scale-fade',
           };
           const effectiveType = legacyMap[t.animationType!] || t.animationType;
+          if (!ENABLED_ANIMATIONS.has(effectiveType)) return;
           
           if (effectiveType === 'dia-text-reveal') {
             animDurSec = 3.0 / speed;
@@ -135,7 +137,24 @@ export default function FloatingTopBar() {
         }
       });
 
-      // Dynamic total export duration: max of device motion vs text animation completion
+      (state.scene.images || []).forEach((img) => {
+        if (img.animationType && img.animationType !== 'none') {
+          const delaySec = img.delay || 0;
+          const speed = img.animationSpeed ?? 1;
+          let animDurSec = 1.0 / speed;
+          if (img.animationType === 'bounce') {
+            animDurSec = 1.2 / speed;
+          } else if (img.animationType === 'spin') {
+            animDurSec = 1.5 / speed;
+          }
+          const endTimeSec = delaySec + animDurSec;
+          if (endTimeSec > maxTextDurationSec) {
+            maxTextDurationSec = endTimeSec;
+          }
+        }
+      });
+
+      // Dynamic total export duration: max of device motion vs overlay animation completion
       const totalExportDurationSec = Math.max(deviceDurationSec, maxTextDurationSec);
       const actualDurationMs = totalExportDurationSec * 1000;
 
@@ -176,96 +195,141 @@ export default function FloatingTopBar() {
         ctx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
         ctx.drawImage(canvas, 0, 0, compositeCanvas.width, compositeCanvas.height);
 
-        // 2. Render Text Overlays directly onto composite 2D Canvas context
+        // 2. Render Text and Image Overlays in correct layer order directly onto composite 2D Canvas context
         const container = document.querySelector('#preview-3d') as HTMLElement;
-        if (container && state.scene.texts && state.scene.texts.length > 0) {
-          const containerRect = container.getBoundingClientRect();
-          const scaleX = compositeCanvas.width / containerRect.width;
-          const scaleY = compositeCanvas.height / containerRect.height;
+        if (container) {
+          const hasTexts = state.scene.texts && state.scene.texts.length > 0;
+          const hasImages = state.scene.images && state.scene.images.length > 0;
+          if (hasTexts || hasImages) {
+            const containerRect = container.getBoundingClientRect();
+            const scaleX = compositeCanvas.width / containerRect.width;
+            const scaleY = compositeCanvas.height / containerRect.height;
 
-          const textElements = container.querySelectorAll('#text-overlay-layer > div');
-          textElements.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            const textInner = htmlEl.querySelector('div') as HTMLElement;
-            if (!textInner) return;
+            const textEls = Array.from(container.querySelectorAll('#text-overlay-layer > div')) as HTMLElement[];
+            const imgEls = Array.from(container.querySelectorAll('#image-overlay-layer > div')) as HTMLElement[];
+            
+            const allElements = [...textEls, ...imgEls].sort((a, b) => {
+              const orderA = parseFloat(a.getAttribute('data-order') || '0');
+              const orderB = parseFloat(b.getAttribute('data-order') || '0');
+              return orderA - orderB;
+            });
 
-            // Check if text is currently pending delay
-            const pendingSpan = textInner.querySelector('[data-delay-pending="true"]');
-            if (pendingSpan) return;
+            allElements.forEach((htmlEl) => {
+              const type = htmlEl.getAttribute('data-overlay-type');
 
-            // We need to parse rotation of the entire text overlay container if any
-            const outerStyle = window.getComputedStyle(htmlEl);
-            let rotation = 0;
-            if (outerStyle.transform && outerStyle.transform !== 'none') {
-              try {
-                const matrix = new DOMMatrix(outerStyle.transform);
-                rotation = Math.atan2(matrix.b, matrix.a);
-              } catch (e) {
-                // Ignore DOMMatrix parsing errors
+              // Check outer element transform rotation
+              const outerStyle = window.getComputedStyle(htmlEl);
+              let rotation = 0;
+              if (outerStyle.transform && outerStyle.transform !== 'none') {
+                try {
+                  const matrix = new DOMMatrix(outerStyle.transform);
+                  rotation = Math.atan2(matrix.b, matrix.a);
+                } catch (e) {
+                  // Ignore DOMMatrix parsing errors
+                }
               }
-            }
 
-            // Recursive function to draw each text node
-            const drawTextNodes = (node: Node) => {
-              if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent?.trim();
-                if (!text) return;
-                
-                const parent = node.parentElement;
-                if (!parent) return;
+              if (type === 'image' || htmlEl.parentElement?.id === 'image-overlay-layer') {
+                const imgEl = htmlEl.querySelector('img') as HTMLImageElement;
+                if (!imgEl || !imgEl.complete || imgEl.naturalWidth === 0) return;
 
-                const style = window.getComputedStyle(parent);
-                let currentOpacity = parseFloat(style.opacity || '1');
-                let currentEl: HTMLElement | null = parent;
-                
-                // Traverse up to textInner to multiply opacities
+                const imgStyle = window.getComputedStyle(imgEl);
+                let currentOpacity = parseFloat(imgStyle.opacity || '1');
+                let currentEl: HTMLElement | null = imgEl;
+
                 while (currentEl && currentEl !== htmlEl.parentElement) {
-                  if (currentEl !== parent) {
-                     const pStyle = window.getComputedStyle(currentEl);
-                     currentOpacity *= parseFloat(pStyle.opacity || '1');
+                  if (currentEl !== imgEl) {
+                    const pStyle = window.getComputedStyle(currentEl);
+                    currentOpacity *= parseFloat(pStyle.opacity || '1');
                   }
                   currentEl = currentEl.parentElement;
                 }
-                
-                if (style.visibility === 'hidden' || currentOpacity <= 0) return;
 
-                const rect = parent.getBoundingClientRect();
+                if (imgStyle.visibility === 'hidden' || currentOpacity <= 0) return;
+
+                const rect = imgEl.getBoundingClientRect();
                 const centerX = (rect.left + rect.width / 2 - containerRect.left) * scaleX;
                 const centerY = (rect.top + rect.height / 2 - containerRect.top) * scaleY;
+                const drawWidth = rect.width * scaleX;
+                const drawHeight = rect.height * scaleY;
 
                 ctx.save();
                 ctx.translate(centerX, centerY);
                 if (rotation !== 0) ctx.rotate(rotation);
                 ctx.globalAlpha = currentOpacity;
-                if (style.filter && style.filter !== 'none') {
-                  ctx.filter = style.filter;
+                if (imgStyle.filter && imgStyle.filter !== 'none') {
+                  ctx.filter = imgStyle.filter;
                 }
-
-                const fontSize = parseFloat(style.fontSize || '16') * scaleY;
-                const fontFamily = style.fontFamily || 'sans-serif';
-                const fontWeight = style.fontWeight || '700';
-                const fontStyle = style.fontStyle || 'normal';
-                ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-                ctx.fillStyle = style.color || '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-
-                const lines = text.split('\\n');
-                const lineHeight = fontSize * 1.2;
-                const startY = -((lines.length - 1) * lineHeight) / 2;
-
-                lines.forEach((line, idx) => {
-                  ctx.fillText(line, 0, startY + idx * lineHeight);
-                });
-                
+                ctx.drawImage(imgEl, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
                 ctx.restore();
-              } else if (node.nodeType === Node.ELEMENT_NODE) {
-                node.childNodes.forEach(drawTextNodes);
-              }
-            };
+              } else {
+                const textInner = htmlEl.querySelector('div') as HTMLElement;
+                if (!textInner) return;
 
-            drawTextNodes(textInner);
-          });
+                const pendingSpan = textInner.querySelector('[data-delay-pending="true"]');
+                if (pendingSpan) return;
+
+                const drawTextNodes = (node: Node) => {
+                  if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent?.trim();
+                    if (!text) return;
+
+                    const parent = node.parentElement;
+                    if (!parent) return;
+
+                    const style = window.getComputedStyle(parent);
+                    let currentOpacity = parseFloat(style.opacity || '1');
+                    let currentEl: HTMLElement | null = parent;
+
+                    while (currentEl && currentEl !== htmlEl.parentElement) {
+                      if (currentEl !== parent) {
+                        const pStyle = window.getComputedStyle(currentEl);
+                        currentOpacity *= parseFloat(pStyle.opacity || '1');
+                      }
+                      currentEl = currentEl.parentElement;
+                    }
+
+                    if (style.visibility === 'hidden' || currentOpacity <= 0) return;
+
+                    const rect = parent.getBoundingClientRect();
+                    const centerX = (rect.left + rect.width / 2 - containerRect.left) * scaleX;
+                    const centerY = (rect.top + rect.height / 2 - containerRect.top) * scaleY;
+
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    if (rotation !== 0) ctx.rotate(rotation);
+                    ctx.globalAlpha = currentOpacity;
+                    if (style.filter && style.filter !== 'none') {
+                      ctx.filter = style.filter;
+                    }
+
+                    const fontSize = parseFloat(style.fontSize || '16') * scaleY;
+                    const fontFamily = style.fontFamily || 'sans-serif';
+                    const fontWeight = style.fontWeight || '700';
+                    const fontStyle = style.fontStyle || 'normal';
+                    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+                    ctx.fillStyle = style.color || '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const lines = text.split('\n');
+                    const lineHeight = fontSize * 1.2;
+                    const startY = -((lines.length - 1) * lineHeight) / 2;
+
+                    lines.forEach((line, idx) => {
+                      ctx.fillText(line, 0, startY + idx * lineHeight);
+                    });
+
+                    ctx.restore();
+                  } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    node.childNodes.forEach(drawTextNodes);
+                  }
+                };
+
+                drawTextNodes(textInner);
+              }
+            });
+          }
         }
 
         animFrameId = requestAnimationFrame(renderCompositeFrame);

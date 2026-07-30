@@ -1392,15 +1392,13 @@ input[type="range"]::-webkit-slider-thumb:active {
 
 /* ===== Scene Controls UI Improvements ===== */
 .section-title {
-  font-size: 16px !important;
+  font-size: 15.5px !important;
   font-weight: 700 !important;
 }
 .slider-label, .color-control label, .slider-value {
-  font-size: 14px !important;
+  font-size: 13px !important;
   color: var(--text-primary) !important;
-}
-.slider-value {
-  font-weight: 600 !important;
+  font-weight: 700 !important;
 }
 
 @theme inline {

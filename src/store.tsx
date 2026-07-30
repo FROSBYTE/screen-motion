@@ -23,7 +23,7 @@ const initialState: AppState = {
   screenshotOrientation: null,
   mediaType: 'image',
   device: 'ios',
-  deviceColor: '#6b7280', // default grey color
+  deviceColor: '#ffffff', // default white color
   orientation: 'landscape',
   template: 'orbit',
   speed: 1,
@@ -51,7 +51,7 @@ interface AppContextValue {
   uploadScreenshot: (file: File) => void;
 }
 
-const AppContext = createContext<AppContextValue | null>(null);
+export const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);

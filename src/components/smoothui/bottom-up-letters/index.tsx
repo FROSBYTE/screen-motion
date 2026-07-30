@@ -10,6 +10,8 @@ export interface BottomUpLettersProps {
   delay?: number;
   /** Per-character stagger, in milliseconds. */
   stagger?: number;
+  /** Animation speed multiplier. */
+  speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
 }
@@ -29,6 +31,7 @@ export default function BottomUpLetters({
   className = "",
   delay = 0,
   stagger = 88,
+  speed = 1,
   triggerOnView = false,
 }: BottomUpLettersProps) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -51,8 +54,8 @@ export default function BottomUpLetters({
             shouldReduceMotion
               ? { duration: 0 }
               : {
-                  duration: DURATION_S,
-                  delay: delay / MS + (index * stagger) / MS,
+                  duration: DURATION_S / speed,
+                  delay: delay / MS + (index * (stagger / speed)) / MS,
                   ease: EASE,
                 }
           }

@@ -7,7 +7,9 @@ export interface KineticCenterBuildProps {
   className?: string;
   /** Interval between phrase completions in milliseconds. */
   interval?: number;
-  phrases: string[];
+  phrases?: string[];
+  children?: string;
+  speed?: number;
 }
 
 const BUILD_EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -19,15 +21,18 @@ const EXIT_EASE = [0.4, 0, 0.2, 1] as const;
  * From the animate-text catalog (`kinetic-center-build`).
  */
 export default function KineticCenterBuild({
-  phrases,
+  phrases: phrasesProp,
+  children,
   className = "",
   interval = 2500,
+  speed = 1,
 }: KineticCenterBuildProps) {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [wordCount, setWordCount] = useState(1);
   const [exiting, setExiting] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
+  const phrases = phrasesProp ?? (children ? [children] : []);
   const currentPhrase = phrases[phraseIndex] ?? "";
   const words = currentPhrase.split(" ");
 
@@ -35,8 +40,8 @@ export default function KineticCenterBuild({
   useEffect(() => {
     if (shouldReduceMotion) {
       const holdId = setTimeout(() => {
-        setPhraseIndex((prev) => (prev + 1) % phrases.length);
-      }, interval);
+        setPhraseIndex((prev) => (prev + 1) % (phrases.length || 1));
+      }, interval / speed);
       return () => clearTimeout(holdId);
     }
 
@@ -49,19 +54,19 @@ export default function KineticCenterBuild({
       buildTimers.push(
         setTimeout(() => {
           setWordCount(i + 1);
-        }, i * 430)
+        }, (i * 430) / speed)
       );
     }
 
-    const totalBuild = (words.length - 1) * 430 + 340;
+    const totalBuild = ((words.length - 1) * 430 + 340) / speed;
     const holdId = setTimeout(() => {
       setExiting(true);
       setTimeout(() => {
-        setPhraseIndex((prev) => (prev + 1) % phrases.length);
+        setPhraseIndex((prev) => (prev + 1) % (phrases.length || 1));
         setWordCount(1);
         setExiting(false);
-      }, 260 + 220);
-    }, totalBuild + interval);
+      }, (260 + 220) / speed);
+    }, totalBuild + interval / speed);
 
     buildTimers.push(holdId);
     return () => {
@@ -69,7 +74,7 @@ export default function KineticCenterBuild({
         clearTimeout(t);
       }
     };
-  }, [phraseIndex, phrases.length, interval, shouldReduceMotion, words.length]);
+  }, [phraseIndex, phrases.length, interval, speed, shouldReduceMotion, words.length]);
 
   const visibleWords = shouldReduceMotion ? words : words.slice(0, wordCount);
   const restingAnimate = shouldReduceMotion
@@ -79,7 +84,7 @@ export default function KineticCenterBuild({
     opacity: 0,
     y: -6,
     filter: "blur(2.5px)",
-    transition: { duration: 0.26, ease: EXIT_EASE },
+    transition: { duration: 0.26 / speed, ease: EXIT_EASE },
   };
 
   return (
@@ -111,9 +116,9 @@ export default function KineticCenterBuild({
               shouldReduceMotion
                 ? { duration: 0 }
                 : {
-                    duration: i === 0 ? 0.34 : 0.43,
+                    duration: (i === 0 ? 0.34 : 0.43) / speed,
                     ease: BUILD_EASE,
-                    layout: { duration: 0.43, ease: BUILD_EASE },
+                    layout: { duration: 0.43 / speed, ease: BUILD_EASE },
                   }
             }
           >
