@@ -18,14 +18,9 @@ export interface BottomUpLettersProps {
 
 const DURATION_S = 0.4;
 const MS = 1000;
-// Pronounced ease-out for a tall, staged lift from below.
-const EASE = [0.18, 1, 0.32, 1] as const;
+const EASE: [number, number, number, number] = [0.18, 1, 0.32, 1];
+const SMOOTH_EASE: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
 
-/**
- * BottomUpLetters — letters rise from below in a pronounced staircase,
- * one symbol at a time, with zero blur. Best for short single words or
- * compact headlines at 40px+. From the animate-text catalog (`bottom-up-letters`).
- */
 export default function BottomUpLetters({
   children,
   className = "",
@@ -39,6 +34,9 @@ export default function BottomUpLetters({
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
   const characters = Array.from(children);
+  const effectiveSpeed = Math.max(speed, 0.3);
+  const effectiveEase = speed < 1 ? SMOOTH_EASE : EASE;
+  const effectiveStagger = Math.min(stagger / effectiveSpeed, 250);
 
   return (
     <span aria-label={children} className={className} ref={ref}>
@@ -54,9 +52,9 @@ export default function BottomUpLetters({
             shouldReduceMotion
               ? { duration: 0 }
               : {
-                  duration: DURATION_S / speed,
-                  delay: delay / MS + (index * (stagger / speed)) / MS,
-                  ease: EASE,
+                  duration: DURATION_S / effectiveSpeed,
+                  delay: delay / MS + (index * effectiveStagger) / MS,
+                  ease: effectiveEase,
                 }
           }
         >

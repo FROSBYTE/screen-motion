@@ -9,11 +9,12 @@ import SceneOverlaysPanel from './SceneOverlaysPanel';
 
 const animationItems = [
   { id: 'none', label: 'None (Static)' },
+  { id: 'bottom-up-letters', label: 'Bottom Up Letters' },
+  { id: 'kinetic-center-build', label: 'Kinetic Center Build' },
+  { id: 'line-by-line-slide', label: 'Line By Line Slide' },
   { id: 'mask-reveal-up', label: 'Mask Reveal Up' },
-  { id: 'typing-animation', label: 'Typing Animation' },
-  { id: 'focus-blur-resolve', label: 'Focus Blur Resolve' },
-  { id: 'depth-parallax-words', label: 'Depth Parallax Words' },
-  { id: 'per-word-crossfade', label: 'Per Word Crossfade' },
+  { id: 'reveal-text', label: 'Reveal Text' },
+  { id: 'short-slide-down', label: 'Short Slide Down' },
 ];
 
 const imageAnimationItems = [

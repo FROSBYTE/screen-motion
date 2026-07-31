@@ -2,27 +2,38 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAppState } from '@/store';
-import type { ImageOverlay } from '@/types';
+import type { ImageOverlay, ElementBounds3D } from '@/types';
+import { calculateSnapPosition, getElementBounds3D } from '@/lib/alignment';
+import { useAlignmentGuides } from '@/context/AlignmentContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function OverlayImage({
   config,
+  allTexts,
+  allImages,
   isSelected,
   onSelect,
   updateConfig,
   containerRef,
   globalPreviewTrigger,
+  setActiveGuides,
+  clearGuides,
 }: {
   config: ImageOverlay;
+  allTexts: any[];
+  allImages: ImageOverlay[];
   isSelected: boolean;
   onSelect: () => void;
   updateConfig: (updates: Partial<ImageOverlay> & { delete?: boolean }) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   globalPreviewTrigger?: number;
+  setActiveGuides: (guides: any[]) => void;
+  clearGuides: () => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const dragStart = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
+  const elementRef = useRef<HTMLDivElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -40,6 +51,14 @@ function OverlayImage({
   configRef.current = config;
   const updateConfigRef = useRef(updateConfig);
   updateConfigRef.current = updateConfig;
+  const allTextsRef = useRef(allTexts);
+  allTextsRef.current = allTexts;
+  const allImagesRef = useRef(allImages);
+  allImagesRef.current = allImages;
+  const setActiveGuidesRef = useRef(setActiveGuides);
+  setActiveGuidesRef.current = setActiveGuides;
+  const clearGuidesRef = useRef(clearGuides);
+  clearGuidesRef.current = clearGuides;
 
   useEffect(() => {
     if (!isDragging) return;
@@ -53,15 +72,49 @@ function OverlayImage({
       const viewHeight = 3.3;
       const viewWidth = 3.3 * aspect;
 
-      const dx = (e.clientX - dragStart.current.mouseX) * (viewWidth / rect.width);
-      const dy = -(e.clientY - dragStart.current.mouseY) * (viewHeight / rect.height);
+      const rawDx = (e.clientX - dragStart.current.mouseX) * (viewWidth / rect.width);
+      const rawDy = -(e.clientY - dragStart.current.mouseY) * (viewHeight / rect.height);
+
+      const rawX = dragStart.current.posX + rawDx;
+      const rawY = dragStart.current.posY + rawDy;
+
+      const otherBounds: ElementBounds3D[] = [];
+      if (container) {
+        allTextsRef.current.forEach((t) => {
+          const el = container.querySelector(`[data-overlay-id="${t.id}"]`) as HTMLElement | null;
+          otherBounds.push(getElementBounds3D(t.id, t.position, el, rect.width, rect.height));
+        });
+        allImagesRef.current.forEach((img) => {
+          if (img.id === configRef.current.id) return;
+          const el = container.querySelector(`[data-overlay-id="${img.id}"]`) as HTMLElement | null;
+          otherBounds.push(getElementBounds3D(img.id, img.position, el, rect.width, rect.height));
+        });
+      }
+
+      const activeEl = elementRef.current;
+      const activeWidthPx = activeEl ? activeEl.offsetWidth : 100;
+      const activeHeightPx = activeEl ? activeEl.offsetHeight : 100;
+
+      const snapResult = calculateSnapPosition(
+        configRef.current.id,
+        rawX,
+        rawY,
+        activeWidthPx,
+        activeHeightPx,
+        otherBounds,
+        rect.width,
+        rect.height,
+        8
+      );
+
+      setActiveGuidesRef.current(snapResult.guides);
 
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         updateConfigRef.current({
           position: [
-            dragStart.current.posX + dx,
-            dragStart.current.posY + dy,
+            snapResult.x,
+            snapResult.y,
             configRef.current.position[2],
           ],
         });
@@ -70,6 +123,7 @@ function OverlayImage({
 
     const handlePointerUp = () => {
       setIsDragging(false);
+      clearGuidesRef.current();
       if (rafId) cancelAnimationFrame(rafId);
     };
 
@@ -78,6 +132,7 @@ function OverlayImage({
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      clearGuidesRef.current();
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [isDragging, containerRef]);
@@ -146,6 +201,7 @@ function OverlayImage({
 
   return (
     <div
+      data-overlay-id={config.id}
       data-overlay-type="image"
       data-order={config.order ?? 0}
       style={{
@@ -158,6 +214,7 @@ function OverlayImage({
       }}
     >
       <div
+        ref={elementRef}
         onPointerDown={handlePointerDown}
         onPointerEnter={() => setIsHovered(true)}
         onPointerLeave={() => setIsHovered(false)}
@@ -215,8 +272,9 @@ function OverlayImage({
 
 export default function SceneImages() {
   const { state, dispatch } = useAppState();
-  const { images } = state.scene;
+  const { images, texts } = state.scene;
   const { selectedTextId, previewTrigger: globalPreviewTrigger, exportStatus } = state;
+  const { setActiveGuides, clearGuides } = useAlignmentGuides();
   const isExporting = exportStatus === 'rendering' || exportStatus === 'encoding';
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -276,6 +334,8 @@ export default function SceneImages() {
         <OverlayImage
           key={img.id}
           config={img}
+          allTexts={texts || []}
+          allImages={images}
           isSelected={selectedTextId === img.id}
           onSelect={() => dispatch({ selectedTextId: img.id })}
           updateConfig={(updates) => {
@@ -290,6 +350,8 @@ export default function SceneImages() {
           }}
           containerRef={containerRef}
           globalPreviewTrigger={globalPreviewTrigger}
+          setActiveGuides={setActiveGuides}
+          clearGuides={clearGuides}
         />
       ))}
     </div>

@@ -12,6 +12,8 @@ export interface RevealTextProps {
 
 const REVEAL_ANIMATION_DURATION_S = 0.25;
 const MILLISECONDS_TO_SECONDS = 1000;
+const DEFAULT_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+const SMOOTH_EASE: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
 
 const directionVariants = {
   up: { y: 24, opacity: 0 },
@@ -32,6 +34,8 @@ const RevealText: React.FC<RevealTextProps> = ({
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const animate = (!triggerOnView || inView) && !shouldReduceMotion;
+  const effectiveSpeed = Math.max(speed, 0.3);
+  const ease = speed < 1 ? SMOOTH_EASE : DEFAULT_EASE;
 
   return (
     <motion.span
@@ -50,8 +54,9 @@ const RevealText: React.FC<RevealTextProps> = ({
         shouldReduceMotion
           ? { duration: 0 }
           : {
-              duration: REVEAL_ANIMATION_DURATION_S / speed,
+              duration: REVEAL_ANIMATION_DURATION_S / effectiveSpeed,
               delay: delay / MILLISECONDS_TO_SECONDS,
+              ease,
             }
       }
     >

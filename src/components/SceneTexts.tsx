@@ -2,73 +2,81 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAppState } from '@/store';
-import type { TextOverlay } from '@/types';
+import type { TextOverlay, ElementBounds3D } from '@/types';
+import { calculateSnapPosition, getElementBounds3D } from '@/lib/alignment';
+import { useAlignmentGuides } from '@/context/AlignmentContext';
 import { TextAnimate } from '@/components/ui/text-animate';
 import { TypingAnimation } from '@/components/ui/typing-animation';
 import { TextReveal } from '@/components/ui/text-reveal';
-import BlurOutUp from '@/components/smoothui/blur-out-up';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
-import DepthParallaxWords from '@/components/smoothui/depth-parallax-words';
-import FadeThrough from '@/components/smoothui/fade-through';
-import FocusBlurResolve from '@/components/smoothui/focus-blur-resolve';
 import KineticCenterBuild from '@/components/smoothui/kinetic-center-build';
 import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
 import MaskRevealUp from '@/components/smoothui/mask-reveal-up';
-import MicroScaleFade from '@/components/smoothui/micro-scale-fade';
-import PerCharacterRise from '@/components/smoothui/per-character-rise';
-import PerWordCrossfade from '@/components/smoothui/per-word-crossfade';
 import RevealText from '@/components/smoothui/reveal-text';
-import ScaleDownFade from '@/components/smoothui/scale-down-fade';
+import ShortSlideDown from '@/components/smoothui/short-slide-down';
+
+function ShortSlideDownWrapper({ children, speed = 1 }: { children?: string; speed?: number }) {
+  const text = children || '';
+  return <ShortSlideDown phrases={[text]} interval={2500 / speed} />;
+}
 
 const smoothAnimMap: Record<string, React.FC<any>> = {
-  'blur-out-up': BlurOutUp,
   'bottom-up-letters': BottomUpLetters,
-  'depth-parallax-words': DepthParallaxWords,
-  'fade-through': FadeThrough,
-  'focus-blur-resolve': FocusBlurResolve,
   'kinetic-center-build': KineticCenterBuild,
   'line-by-line-slide': LineByLineSlide,
   'mask-reveal-up': MaskRevealUp,
-  'micro-scale-fade': MicroScaleFade,
-  'per-character-rise': PerCharacterRise,
-  'per-word-crossfade': PerWordCrossfade,
   'reveal-text': RevealText,
-  'scale-down-fade': ScaleDownFade,
+  'short-slide-down': ShortSlideDownWrapper,
 };
 
 export const ENABLED_ANIMATIONS = new Set<string>([
+  'bottom-up-letters',
+  'kinetic-center-build',
+  'line-by-line-slide',
   'mask-reveal-up',
-  'typing-animation',
-  'focus-blur-resolve',
-  'depth-parallax-words',
-  'per-word-crossfade',
+  'reveal-text',
+  'short-slide-down',
 ]);
 
 const legacyMap: Record<string, string> = {
-  'fade': 'fade-through',
+  'fade': 'reveal-text',
   'slide-up': 'mask-reveal-up',
-  'typewriter': 'typing-animation',
-  'scale': 'micro-scale-fade',
+  'typewriter': 'bottom-up-letters',
+  'scale': 'kinetic-center-build',
+  'text-animate': 'reveal-text',
+  'typing-animation': 'bottom-up-letters',
+  'focus-blur-resolve': 'reveal-text',
+  'depth-parallax-words': 'line-by-line-slide',
+  'per-word-crossfade': 'reveal-text',
 };
 
 function OverlayText({
   config,
+  allTexts,
+  allImages,
   isSelected,
   onSelect,
   updateConfig,
   containerRef,
   globalPreviewTrigger,
+  setActiveGuides,
+  clearGuides,
 }: {
   config: TextOverlay;
+  allTexts: TextOverlay[];
+  allImages: any[];
   isSelected: boolean;
   onSelect: () => void;
   updateConfig: (updates: Partial<TextOverlay> & { delete?: boolean }) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   globalPreviewTrigger?: number;
+  setActiveGuides: (guides: any[]) => void;
+  clearGuides: () => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const dragStart = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
+  const elementRef = useRef<HTMLDivElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -86,6 +94,14 @@ function OverlayText({
   configRef.current = config;
   const updateConfigRef = useRef(updateConfig);
   updateConfigRef.current = updateConfig;
+  const allTextsRef = useRef(allTexts);
+  allTextsRef.current = allTexts;
+  const allImagesRef = useRef(allImages);
+  allImagesRef.current = allImages;
+  const setActiveGuidesRef = useRef(setActiveGuides);
+  setActiveGuidesRef.current = setActiveGuides;
+  const clearGuidesRef = useRef(clearGuides);
+  clearGuidesRef.current = clearGuides;
 
   useEffect(() => {
     if (!isDragging) return;
@@ -99,15 +115,49 @@ function OverlayText({
       const viewHeight = 3.3;
       const viewWidth = 3.3 * aspect;
 
-      const dx = (e.clientX - dragStart.current.mouseX) * (viewWidth / rect.width);
-      const dy = -(e.clientY - dragStart.current.mouseY) * (viewHeight / rect.height);
+      const rawDx = (e.clientX - dragStart.current.mouseX) * (viewWidth / rect.width);
+      const rawDy = -(e.clientY - dragStart.current.mouseY) * (viewHeight / rect.height);
+
+      const rawX = dragStart.current.posX + rawDx;
+      const rawY = dragStart.current.posY + rawDy;
+
+      const otherBounds: ElementBounds3D[] = [];
+      if (container) {
+        allTextsRef.current.forEach((t) => {
+          if (t.id === configRef.current.id) return;
+          const el = container.querySelector(`[data-overlay-id="${t.id}"]`) as HTMLElement | null;
+          otherBounds.push(getElementBounds3D(t.id, t.position, el, rect.width, rect.height));
+        });
+        allImagesRef.current.forEach((img) => {
+          const el = container.querySelector(`[data-overlay-id="${img.id}"]`) as HTMLElement | null;
+          otherBounds.push(getElementBounds3D(img.id, img.position, el, rect.width, rect.height));
+        });
+      }
+
+      const activeEl = elementRef.current;
+      const activeWidthPx = activeEl ? activeEl.offsetWidth : 100;
+      const activeHeightPx = activeEl ? activeEl.offsetHeight : 40;
+
+      const snapResult = calculateSnapPosition(
+        configRef.current.id,
+        rawX,
+        rawY,
+        activeWidthPx,
+        activeHeightPx,
+        otherBounds,
+        rect.width,
+        rect.height,
+        8
+      );
+
+      setActiveGuidesRef.current(snapResult.guides);
 
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         updateConfigRef.current({
           position: [
-            dragStart.current.posX + dx,
-            dragStart.current.posY + dy,
+            snapResult.x,
+            snapResult.y,
             configRef.current.position[2],
           ],
         });
@@ -116,6 +166,7 @@ function OverlayText({
 
     const handlePointerUp = () => {
       setIsDragging(false);
+      clearGuidesRef.current();
       if (rafId) cancelAnimationFrame(rafId);
     };
 
@@ -124,6 +175,7 @@ function OverlayText({
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      clearGuidesRef.current();
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [isDragging, containerRef]);
@@ -168,6 +220,7 @@ function OverlayText({
 
   return (
     <div
+      data-overlay-id={config.id}
       data-overlay-type="text"
       data-order={config.order ?? 0}
       style={{
@@ -180,6 +233,7 @@ function OverlayText({
       }}
     >
       <div
+        ref={elementRef}
         onPointerDown={handlePointerDown}
         onPointerEnter={() => setIsHovered(true)}
         onPointerLeave={() => setIsHovered(false)}
@@ -265,8 +319,9 @@ function OverlayText({
 
 export default function SceneTexts() {
   const { state, dispatch } = useAppState();
-  const { texts } = state.scene;
+  const { texts, images } = state.scene;
   const { selectedTextId, previewTrigger: globalPreviewTrigger, exportStatus } = state;
+  const { setActiveGuides, clearGuides } = useAlignmentGuides();
   const isExporting = exportStatus === 'rendering' || exportStatus === 'encoding';
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -325,6 +380,8 @@ export default function SceneTexts() {
         <OverlayText
           key={t.id}
           config={t}
+          allTexts={texts}
+          allImages={images || []}
           isSelected={selectedTextId === t.id}
           onSelect={() => dispatch({ selectedTextId: t.id })}
           updateConfig={(updates) => {
@@ -339,6 +396,8 @@ export default function SceneTexts() {
           }}
           containerRef={containerRef}
           globalPreviewTrigger={globalPreviewTrigger}
+          setActiveGuides={setActiveGuides}
+          clearGuides={clearGuides}
         />
       ))}
     </div>

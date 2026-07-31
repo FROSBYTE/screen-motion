@@ -33,13 +33,9 @@ function ScreenMaterial({ url }: { url: string }) {
   }, [texture]);
 
   return (
-    <meshStandardMaterial
+    <meshBasicMaterial
       map={texture}
-      metalness={0.1}
-      roughness={0.2}
-      emissive="#111"
-      emissiveMap={texture}
-      emissiveIntensity={0.3}
+      toneMapped={false}
     />
   );
 }
@@ -76,13 +72,9 @@ function VideoScreenMaterial({ url, onTextureReady }: { url: string; onTextureRe
   }, [onTextureReady, texture]);
 
   return (
-    <meshStandardMaterial
+    <meshBasicMaterial
       map={texture}
-      metalness={0.1}
-      roughness={0.2}
-      emissive="#111"
-      emissiveMap={texture}
-      emissiveIntensity={0.3}
+      toneMapped={false}
     />
   );
 }
@@ -268,30 +260,22 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
             name="Object_18"
           >
             {texture ? (
-              <meshStandardMaterial
+              <meshBasicMaterial
                 map={texture}
-                metalness={0.1}
-                roughness={0.2}
-                emissive="#111"
-                emissiveMap={texture}
-                emissiveIntensity={0.3}
+                toneMapped={false}
               />
             ) : screenshotUrl && mediaType === 'video' ? (
-              <React.Suspense fallback={<meshStandardMaterial color="#0f0f1a" />}>
+              <React.Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
                 <VideoScreenMaterial url={screenshotUrl} onTextureReady={onVideoRestart} />
               </React.Suspense>
             ) : screenshotUrl ? (
-              <React.Suspense fallback={<meshStandardMaterial color="#0f0f1a" />}>
+              <React.Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
                 <ScreenMaterial url={screenshotUrl} />
               </React.Suspense>
             ) : (
-              <meshStandardMaterial
+              <meshBasicMaterial
                 map={placeholderTexture}
-                metalness={0.1}
-                roughness={0.3}
-                emissive="#111"
-                emissiveMap={placeholderTexture}
-                emissiveIntensity={0.2}
+                toneMapped={false}
               />
             )}
           </mesh>
