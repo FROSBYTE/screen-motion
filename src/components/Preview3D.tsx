@@ -11,6 +11,8 @@ import FloatingTopBar from './FloatingTopBar';
 import ModelLoaderOverlay from './ModelLoaderOverlay';
 import SceneTexts from './SceneTexts';
 import SceneImages from './SceneImages';
+import AlignmentGuidesOverlay from './AlignmentGuidesOverlay';
+import { AlignmentProvider } from '@/context/AlignmentContext';
 
 const textureCache = new Map<string, THREE.Texture>();
 
@@ -321,7 +323,7 @@ export default function Preview3D() {
           });
 
   return (
-    <>
+    <AlignmentProvider>
       <FloatingTopBar />
       <div 
         className={`preview-canvas-container${isFullscreen ? ' is-fullscreen' : ''}`}
@@ -376,12 +378,11 @@ export default function Preview3D() {
         </AppContext.Provider>
       </Canvas>
 
-      {/* 2D HTML Text Overlay Layer */}
+      {/* 2D HTML Text & Image Overlay Layers & Alignment Guidelines */}
       <SceneTexts />
       <SceneImages />
-
-
+      <AlignmentGuidesOverlay />
     </div>
-    </>
+    </AlignmentProvider>
   );
 }

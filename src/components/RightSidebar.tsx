@@ -7,21 +7,42 @@ import type { TextAnimationType } from '@/types';
 import { Settings, Laptop } from 'lucide-react';
 import SceneControls from './SceneControls';
 
+const AVAILABLE_TEMPLATE_VIDEOS = new Set([
+  'bounce-drop',
+  'cinematic-pan',
+  'corkscrew-reveal',
+  'corner-drop',
+  'depth-zoom',
+  'dynamic-showcase',
+  'flip',
+  'float',
+  'hero-reveal',
+  'horizontal-slide',
+  'infinity-loop',
+  'orbit',
+  'rise',
+  'slide-in',
+  'slow-pan',
+  'spiral',
+  'tilt-shift',
+]);
+
 function TemplatePreviewCard({ t, isActive, dispatch, device }: { t: any, isActive: boolean, dispatch: any, device: string }) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [error, setError] = React.useState(false);
+  const hasVideo = AVAILABLE_TEMPLATE_VIDEOS.has(t.id);
 
   return (
     <div
       className={`animation-preview-card${isActive ? ' active' : ''}`}
       onClick={() => dispatch({ template: t.id })}
       onMouseEnter={() => {
-        if (videoRef.current) {
+        if (hasVideo && videoRef.current) {
           videoRef.current.play().catch(() => {});
         }
       }}
       onMouseLeave={() => {
-        if (videoRef.current) {
+        if (hasVideo && videoRef.current) {
           videoRef.current.pause();
           videoRef.current.currentTime = 0;
         }
@@ -37,7 +58,7 @@ function TemplatePreviewCard({ t, isActive, dispatch, device }: { t: any, isActi
       )}
 
       {/* Video Background (Thumbnail on rest, Plays on hover) */}
-      {!error && (
+      {hasVideo && !error ? (
         <video
           ref={videoRef}
           src={`/animation-card-videos/${t.id}-template.webm`}
@@ -57,10 +78,8 @@ function TemplatePreviewCard({ t, isActive, dispatch, device }: { t: any, isActi
             zIndex: 0,
           }}
         />
-      )}
-
-      {/* Generic fallback mockup if video doesn't exist */}
-      {error && (
+      ) : (
+        /* Generic fallback mockup if video doesn't exist */
         <div 
           className={`animation-card-device-mock ${device}`}
           style={{

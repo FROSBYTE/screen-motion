@@ -22,11 +22,12 @@ const fontItems = [
 
 const animationItems = [
   { id: 'none', label: 'None (Static)' },
+  { id: 'bottom-up-letters', label: 'Bottom Up Letters' },
+  { id: 'kinetic-center-build', label: 'Kinetic Center Build' },
+  { id: 'line-by-line-slide', label: 'Line By Line Slide' },
   { id: 'mask-reveal-up', label: 'Mask Reveal Up' },
-  { id: 'typing-animation', label: 'Typing Animation' },
-  { id: 'focus-blur-resolve', label: 'Focus Blur Resolve' },
-  { id: 'depth-parallax-words', label: 'Depth Parallax Words' },
-  { id: 'per-word-crossfade', label: 'Per Word Crossfade' },
+  { id: 'reveal-text', label: 'Reveal Text' },
+  { id: 'short-slide-down', label: 'Short Slide Down' },
 ];
 
 const imageAnimationItems = [
@@ -369,29 +370,6 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                     >
                       <Copy size={14} />
                     </button>
-
-                    {/* 5. Expand / Collapse Chevron Button */}
-                    <button
-                      type="button"
-                      onClick={() => toggleCard(item.id)}
-                      title={isExpanded ? 'Collapse Details' : 'Expand Details'}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 28,
-                        height: 28,
-                        borderRadius: '6px',
-                        border: '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
-                        background: 'var(--bg-secondary, #f3f4f6)',
-                        color: 'var(--text-primary)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                        <ChevronDown size={16} />
-                      </motion.div>
-                    </button>
                   </div>
                 </div>
 
@@ -400,12 +378,13 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                   {isExpanded && (
                     <motion.div
                       key={`card-body-${item.id}`}
-                      initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
-                      animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-                      exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-color, rgba(0, 0, 0, 0.06))' }}
+                      style={{ overflow: 'hidden' }}
                     >
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-color, rgba(0, 0, 0, 0.06))' }}>
                       {isText && t && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                           <textarea
@@ -883,6 +862,7 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                           </button>
                         </div>
                       )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -891,8 +871,8 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
           })}
         </Reorder.Group>
       ) : (
-        <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px' }}>
-          No components added yet.
+        <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14.4px', fontWeight: 500 }}>
+          No components added yet
         </div>
       )}
 

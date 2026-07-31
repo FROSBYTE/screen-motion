@@ -31,16 +31,17 @@ const SHOWCASE_ANIMATIONS = [
 ];
 
 const TEMPLATE_CARDS = [
+  { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/showcase-videos/screen-motion-1080p-corkscrew-reveal-1785452727399.webm", gradient: "#050509" },
+  { id: "bounce-drop", animationName: "Bounce Drop", video: "/showcase-videos/screen-motion-1080p-bounce-drop-1785438886976.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
+  { id: "flip", animationName: "Flip & Land", video: "/showcase-videos/screen-motion-1080p-flip-1785165653076.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" },
+  { id: "depth-zoom", animationName: "Depth Zoom 4K", video: "/showcase-videos/screen-motion-4k-depth-zoom-1785492356200.webm", gradient: "linear-gradient(135deg, #312e81 0%, #4c1d95 100%)" },
+  { id: "rise", animationName: "Studio Rise 4K", video: "/showcase-videos/screen-motion-4k-rise-1785492156624.webm", gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" },
   { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #38bdf8 100%)" },
   { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
-  { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/showcase-videos/screen-motion-1080p-corkscrew-reveal-1785452727399.webm", gradient: "#050509" },
   { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #38bdf8 50%, #f97316 100%)" },
-  { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" },
-  { id: "slow-pan", animationName: "Slow Studio Pan", video: "/animation-card-videos/slow-pan-template.webm", gradient: "linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%)" },
-  { id: "horizontal-slide", animationName: "Landscape Slide", video: "/animation-card-videos/horizontal-slide-template.webm", gradient: "linear-gradient(135deg, #0093E9 0%, #80D0C7 100%)" },
-  { id: "bounce-drop", animationName: "Bounce Drop", video: "/showcase-videos/screen-motion-1080p-bounce-drop-1785438886976.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
-  { id: "flip", animationName: "Flip & Land", video: "/animation-card-videos/flip-template.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" }
+  { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" }
 ];
+
 
 const WORKFLOW_STEPS = [
   {
@@ -94,6 +95,94 @@ const FAQ_ITEMS = [
     answer: "Yes, you can test all 3D animation templates for free directly in the browser."
   }
 ];
+
+interface TemplateCardData {
+  id: string;
+  animationName: string;
+  video: string;
+  gradient?: string;
+  aspectRatio?: string;
+}
+
+function TemplateCardItem({ card }: { card: TemplateCardData }) {
+  return (
+    <Link
+      href={`/editor?template=${card.id}`}
+      style={{ textDecoration: "none", color: "inherit", display: "block" }}
+    >
+      <motion.div
+        whileHover={{ y: -6, scale: 1.02 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        style={{
+          position: "relative",
+          borderRadius: "20px",
+          overflow: "hidden",
+          background: card.gradient || "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+          aspectRatio: "16 / 9",
+          width: "100%",
+          boxShadow: "0 12px 32px -8px rgba(0, 0, 0, 0.12)",
+          border: "1.5px solid rgba(0, 0, 0, 0.16)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+        {/* Main Video element */}
+        <video
+          src={card.video}
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            position: "absolute",
+            inset: 0,
+            zIndex: 1
+          }}
+        />
+
+        {/* Hover Overlay with Animation Name & Use Template CTA */}
+        <div
+          className="card-hover-cta"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 3,
+            backgroundColor: "rgba(0, 0, 0, 0.38)",
+            backdropFilter: "blur(3px)",
+            WebkitBackdropFilter: "blur(3px)",
+            opacity: 0,
+            transition: "opacity 0.25s ease",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            padding: "16px 20px"
+          }}
+        >
+          <div style={{ color: "#ffffff", fontWeight: 700, fontSize: "15px", textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>
+            {card.animationName}
+          </div>
+          <span
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#111827",
+              fontWeight: 700,
+              fontSize: "12px",
+              padding: "7px 16px",
+              borderRadius: "999px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.25)"
+            }}
+          >
+            Use Template
+          </span>
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -274,6 +363,7 @@ export default function LandingPage() {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 28px;
+          align-items: start;
         }
         @media (max-width: 1024px) {
           .template-3x3-grid {
@@ -282,8 +372,8 @@ export default function LandingPage() {
         }
         @media (max-width: 640px) {
           .template-3x3-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 16px;
           }
         }
 
@@ -556,81 +646,7 @@ export default function LandingPage() {
         >
           <div className="template-3x3-grid">
             {TEMPLATE_CARDS.map((card) => (
-              <Link
-                key={card.id}
-                href={`/editor?template=${card.id}`}
-                style={{ textDecoration: "none", color: "inherit", display: "block" }}
-              >
-                <motion.div
-                  whileHover={{ y: -6, scale: 1.02 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                  style={{
-                    position: "relative",
-                    borderRadius: "20px",
-                    overflow: "hidden",
-                    background: card.gradient,
-                    aspectRatio: "16 / 9",
-                    boxShadow: "0 12px 32px -8px rgba(0, 0, 0, 0.12)",
-                    border: "1.5px solid rgba(0, 0, 0, 0.16)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}
-                >
-                  {/* Video preview */}
-                  <video
-                    src={card.video}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                      position: "absolute",
-                      inset: 0,
-                      zIndex: 1
-                    }}
-                  />
-
-                  {/* Hover Overlay with Animation Name & Use Template CTA */}
-                  <div
-                    className="card-hover-cta"
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      zIndex: 3,
-                      backgroundColor: "rgba(0, 0, 0, 0.35)",
-                      backdropFilter: "blur(3px)",
-                      WebkitBackdropFilter: "blur(3px)",
-                      opacity: 0,
-                      transition: "opacity 0.25s ease",
-                      display: "flex",
-                      alignItems: "flex-end",
-                      justifyContent: "space-between",
-                      padding: "16px 20px"
-                    }}
-                  >
-                    <div style={{ color: "#ffffff", fontWeight: 700, fontSize: "15px", textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>
-                      {card.animationName}
-                    </div>
-                    <span
-                      style={{
-                        backgroundColor: "#ffffff",
-                        color: "#111827",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        padding: "7px 16px",
-                        borderRadius: "999px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)"
-                      }}
-                    >
-                      Use Template
-                    </span>
-                  </div>
-                </motion.div>
-              </Link>
+              <TemplateCardItem key={card.id} card={card} />
             ))}
           </div>
         </motion.div>

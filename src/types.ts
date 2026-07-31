@@ -19,7 +19,14 @@ export interface TemplateConfig {
   duration: number; // seconds
 }
 
-export type TextAnimationType = 'fade' | 'slide-up' | 'typewriter' | 'scale' | 'none' | 'text-animate' | 'typing-animation' | 'dia-text-reveal' | 'blur-out-up' | 'bottom-up-letters' | 'depth-parallax-words' | 'fade-through' | 'focus-blur-resolve' | 'kinetic-center-build' | 'line-by-line-slide' | 'mask-reveal-up' | 'micro-scale-fade' | 'per-character-rise' | 'per-word-crossfade' | 'reveal-text' | 'scale-down-fade';
+export type TextAnimationType =
+  | 'none'
+  | 'bottom-up-letters'
+  | 'kinetic-center-build'
+  | 'line-by-line-slide'
+  | 'mask-reveal-up'
+  | 'reveal-text'
+  | 'short-slide-down';
 
 export interface TextOverlay {
   id: string;
@@ -95,6 +102,33 @@ export interface AppState {
   orientationMismatch?: boolean;
   previewTrigger?: number;
   selectedTextId?: string | null;
+}
+
+export interface AlignmentGuide {
+  id: string;
+  type: 'vertical' | 'horizontal';
+  positionPercent: number; // 0 to 100 relative to canvas container
+  snapType: 'canvas-center' | 'element-center' | 'element-edge';
+  label?: string;
+  matchedTarget?: string;
+}
+
+export interface ElementBounds3D {
+  id: string;
+  x: number; // center x in 3D
+  y: number; // center y in 3D
+  width3D: number;
+  height3D: number;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+export interface SnapResult {
+  x: number;
+  y: number;
+  guides: AlignmentGuide[];
 }
 
 export const TEMPLATES: TemplateConfig[] = [

@@ -115,14 +115,12 @@ type GLTFResult = GLTF & {
     eBwkWuOBScacrgP: THREE.MeshStandardMaterial
     sfCQkHOWyrsLmor: THREE.MeshStandardMaterial
     CdgEAaPUlrQWQuD: THREE.MeshStandardMaterial
-    ZCDwChwkbBfITSW: THREE.MeshStandardMaterial
-    XCYkeTCxqFmKTKe: THREE.MeshStandardMaterial
   }
-  animations: GLTFAction[]
+  animations: any[]
 }
 
-export function Model(props: JSX.IntrinsicElements['group']) {
-  const { nodes, materials } = useGLTF('/macbook_pro.glb') as GLTFResult
+export function Model(props: any) {
+  const { nodes, materials } = useGLTF('/macbook_pro.glb') as any
   return (
     <group {...props} dispose={null}>
       <group rotation={[Math.PI / 2, 0, 0]}>

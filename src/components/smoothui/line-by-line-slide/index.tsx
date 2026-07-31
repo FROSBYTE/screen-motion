@@ -21,14 +21,9 @@ export interface LineByLineSlideProps {
 
 const DURATION_S = 0.9;
 const MS = 1000;
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const SMOOTH_EASE: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
 
-/**
- * LineByLineSlide — per-line slide-in from the left with a staggered entrance,
- * inspired by Apple landing page subheads. Each line enters from the left for a
- * flowing paragraph reveal. From the animate-text catalog (`line-by-line-slide`).
- * Best for 2-line or 3-line headings.
- */
 export default function LineByLineSlide({
   children,
   lines: linesProp,
@@ -45,6 +40,9 @@ export default function LineByLineSlide({
 
   const lines = linesProp ?? (children ? children.split("\n") : []);
   const label = lines.join(" ");
+  const effectiveSpeed = Math.max(speed, 0.3);
+  const effectiveEase = speed < 1 ? SMOOTH_EASE : EASE;
+  const effectiveStagger = Math.min(stagger / effectiveSpeed, 300);
 
   return (
     <span
@@ -65,9 +63,9 @@ export default function LineByLineSlide({
             shouldReduceMotion
               ? { duration: 0 }
               : {
-                  duration: DURATION_S / speed,
-                  delay: delay / MS + (index * (stagger / speed)) / MS,
-                  ease: EASE,
+                  duration: DURATION_S / effectiveSpeed,
+                  delay: delay / MS + (index * effectiveStagger) / MS,
+                  ease: effectiveEase,
                 }
           }
         >

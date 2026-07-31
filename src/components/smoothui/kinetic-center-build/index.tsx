@@ -12,14 +12,10 @@ export interface KineticCenterBuildProps {
   speed?: number;
 }
 
-const BUILD_EASE = [0.2, 0.8, 0.2, 1] as const;
-const EXIT_EASE = [0.4, 0, 0.2, 1] as const;
+const BUILD_EASE: [number, number, number, number] = [0.2, 0.8, 0.2, 1];
+const SMOOTH_EASE: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
+const EXIT_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
-/**
- * KineticCenterBuild — Apple keynote-style word-by-word build.
- * Each new word enters from the right and pushes the line until the full phrase locks centered.
- * From the animate-text catalog (`kinetic-center-build`).
- */
 export default function KineticCenterBuild({
   phrases: phrasesProp,
   children,
@@ -35,46 +31,45 @@ export default function KineticCenterBuild({
   const phrases = phrasesProp ?? (children ? [children] : []);
   const currentPhrase = phrases[phraseIndex] ?? "";
   const words = currentPhrase.split(" ");
+  const effectiveSpeed = Math.max(speed, 0.35);
+  const activeEase = speed < 1 ? SMOOTH_EASE : BUILD_EASE;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: words.length drives the build schedule
   useEffect(() => {
-    if (shouldReduceMotion) {
-      const holdId = setTimeout(() => {
-        setPhraseIndex((prev) => (prev + 1) % (phrases.length || 1));
-      }, interval / speed);
-      return () => clearTimeout(holdId);
-    }
+    if (shouldReduceMotion) return;
 
     setWordCount(1);
     setExiting(false);
 
     const buildTimers: ReturnType<typeof setTimeout>[] = [];
 
+    const wordDelay = Math.min((430) / effectiveSpeed, 250);
     for (let i = 1; i < words.length; i++) {
       buildTimers.push(
         setTimeout(() => {
           setWordCount(i + 1);
-        }, (i * 430) / speed)
+        }, i * wordDelay)
       );
     }
 
-    const totalBuild = ((words.length - 1) * 430 + 340) / speed;
-    const holdId = setTimeout(() => {
-      setExiting(true);
-      setTimeout(() => {
-        setPhraseIndex((prev) => (prev + 1) % (phrases.length || 1));
-        setWordCount(1);
-        setExiting(false);
-      }, (260 + 220) / speed);
-    }, totalBuild + interval / speed);
+    if (phrases.length > 1) {
+      const totalBuild = ((words.length - 1) * wordDelay + 340) / effectiveSpeed;
+      const holdId = setTimeout(() => {
+        setExiting(true);
+        setTimeout(() => {
+          setPhraseIndex((prev) => (prev + 1) % phrases.length);
+          setWordCount(1);
+          setExiting(false);
+        }, 480 / effectiveSpeed);
+      }, totalBuild + interval / effectiveSpeed);
+      buildTimers.push(holdId);
+    }
 
-    buildTimers.push(holdId);
     return () => {
       for (const t of buildTimers) {
         clearTimeout(t);
       }
     };
-  }, [phraseIndex, phrases.length, interval, speed, shouldReduceMotion, words.length]);
+  }, [phraseIndex, phrases.length, interval, effectiveSpeed, shouldReduceMotion, words.length]);
 
   const visibleWords = shouldReduceMotion ? words : words.slice(0, wordCount);
   const restingAnimate = shouldReduceMotion
@@ -84,7 +79,7 @@ export default function KineticCenterBuild({
     opacity: 0,
     y: -6,
     filter: "blur(2.5px)",
-    transition: { duration: 0.26 / speed, ease: EXIT_EASE },
+    transition: { duration: 0.26 / effectiveSpeed, ease: EXIT_EASE },
   };
 
   return (
@@ -116,9 +111,9 @@ export default function KineticCenterBuild({
               shouldReduceMotion
                 ? { duration: 0 }
                 : {
-                    duration: (i === 0 ? 0.34 : 0.43) / speed,
-                    ease: BUILD_EASE,
-                    layout: { duration: 0.43 / speed, ease: BUILD_EASE },
+                    duration: (i === 0 ? 0.34 : 0.43) / effectiveSpeed,
+                    ease: activeEase,
+                    layout: { duration: 0.43 / effectiveSpeed, ease: activeEase },
                   }
             }
           >
