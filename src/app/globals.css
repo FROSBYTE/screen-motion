@@ -31,41 +31,30 @@
 
 /* ===== CSS Reset & Design System ===== */
 
+html {
+  scroll-behavior: smooth !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* --- Light Theme Palette --- */
-  --palette-cream: #fcf9ea;
-  --palette-sage: #badfdb;
-  --palette-gold: #ffa4a4;
-  --palette-peach: #ffbdbd;
+  /* --- Pro Video Editor Dark Theme Tokens (Default) --- */
+  --theme-bg-base: #0e0e14;          /* Deep void backdrop */
+  --theme-bg-panel: #181824;         /* Slate panel background */
+  --theme-bg-inset: #222232;         /* Input controls & dropdown background */
+  --theme-bg-card: #1c1c2b;          /* Card container background */
+  --theme-bg-card-hover: rgba(250, 204, 21, 0.12);
 
-  /* --- Semantic Theme Tokens (Light Theme) --- */
-  --theme-bg-base: #fcf9ea;
-  /* Warm cream background for canvas */
-  --theme-bg-panel: #ffffff;
-  /* Pure white for panels & sidebars */
-  --theme-bg-inset: #badfdb;
-  /* Soft mint for inset inputs */
-  --theme-bg-card: #ffffff;
-  /* White cards */
-  --theme-bg-card-hover: rgba(186, 223, 219, 0.2);
+  --theme-text-light: #f8fafc;        /* High-contrast off-white primary text */
+  --theme-text-muted: #94a3b8;        /* Slate gray secondary text */
+  --theme-text-dark: #64748b;         /* Muted sub-text & icons */
+  --theme-text-accent: #facc15;      /* Studio Warm Yellow text accent */
 
-  --theme-text-light: #111827;
-  /* Dark gray/black for primary text */
-  --theme-text-muted: #4b5563;
-  /* Medium gray for secondary text */
-  --theme-text-dark: #9ca3af;
-  /* Light gray for disabled/borders */
-  --theme-text-accent: #111827;
-
-  --theme-accent-primary: #ffa4a4;
-  /* Soft pastel coral for active elements */
-  --theme-accent-hover: #ffbdbd;
-  /* Soft pastel rose for hover state */
-  --theme-accent-secondary: #badfdb;
-  --theme-border: rgba(0, 0, 0, 0.08);
-  --theme-border-hover: rgba(0, 0, 0, 0.15);
+  --theme-accent-primary: #facc15;    /* Studio Warm Yellow primary brand accent */
+  --theme-accent-hover: #fde047;      /* Warm Yellow hover state */
+  --theme-accent-secondary: #eab308;  /* Golden Yellow secondary accent */
+  --theme-border: rgba(255, 255, 255, 0.1); /* Clean dark border line */
+  --theme-border-hover: rgba(250, 204, 21, 0.4);
 
   /* --- UI CSS Variables (Components consume these directly) --- */
   --bg-primary: var(--theme-bg-base);
@@ -1018,7 +1007,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 
 .floating-top-bar-btn.active {
   background: var(--accent-primary);
-  color: white;
+  color: #0f172a;
 }
 
 /* ===== Redesigned Sidebar Styles ===== */
@@ -1074,7 +1063,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 
 .floating-top-bar-btn.active {
   background: var(--accent-primary);
-  color: white;
+  color: #0f172a;
 }
 
 .animations-scroll-area {
@@ -1237,7 +1226,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 
 .orientation-tab-btn.active {
   background: var(--accent-primary);
-  color: var(--text-primary);
+  color: #0f172a;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -1713,4 +1702,4 @@ input[type="range"]::-webkit-slider-thumb:active {
   .animation-preview-card {
     aspect-ratio: 16 / 10 !important;
   }
-}
+}

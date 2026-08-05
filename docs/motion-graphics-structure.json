@@ -1,0 +1,239 @@
+{
+  "motionGraphicsEditor": {
+    "route": "/motion-graphics",
+    "sidebar": {
+      "tabs": ["Scenes", "Layers", "Templates"],
+      "scenesTab": {
+        "actions": ["Add Scene"],
+        "sceneListItem": {
+          "display": ["name", "computed duration", "transition type"],
+          "actions": ["select", "duplicate", "delete"]
+        },
+        "sceneProperties": {
+          "name": "text input",
+          "bgColor1": "color picker",
+          "bgColor2": "color picker",
+          "gradient": "checkbox toggle",
+          "transitionIn": {
+            "type": "dropdown",
+            "options": ["None (Cut)", "Blinds", "Clip Wipe", "Doors", "Fade", "Iris", "Iris Click", "Loading Line"],
+            "transitionDuration": "slider (0.1s - 2.0s)"
+          }
+        }
+      },
+      "layersTab": {
+        "actions": ["Add Text Layer"],
+        "layerListItem": {
+          "display": ["icon (T for text, ◆ for component)", "name/text preview", "type badge"],
+          "actions": ["select", "duplicate", "delete"]
+        },
+        "textLayerProperties": {
+          "text": "textarea",
+          "textAnimation": {
+            "label": "Animation",
+            "type": "dropdown",
+            "options": ["None (Static)", "Bottom Up Letters", "Kinetic Center Build", "Line By Line Slide", "Mask Reveal Up", "Reveal Text", "Short Slide Down"]
+          },
+          "font": {
+            "label": "Font",
+            "type": "dropdown",
+            "options": ["Plus Jakarta Sans", "Inter", "Outfit", "Poppins", "Space Grotesk", "Sora", "Playfair Display", "Bricolage Grotesk", "Roboto", "Monospace"]
+          },
+          "fontSize": {
+            "label": "Size",
+            "type": "number input",
+            "min": 12,
+            "max": 200
+          },
+          "color": {
+            "label": "Color",
+            "type": "color picker"
+          },
+          "animationSpeed": {
+            "label": "Animation Speed",
+            "type": "dropdown",
+            "options": ["0.25x", "0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x", "2.5x", "3.0x"]
+          },
+          "startTime": {
+            "label": "Start (s)",
+            "type": "dropdown",
+            "options": ["0s", "0.5s", "1s", "1.5s", "2s", "2.5s", "3s", "4s", "5s", "6s", "8s", "10s", "15s", "20s"]
+          },
+          "duration": {
+            "label": "Duration (s)",
+            "type": "dropdown",
+            "options": ["0.5s", "1s", "1.5s", "2s", "2.5s", "3s", "4s", "5s", "6s", "8s", "10s", "15s", "20s"]
+          },
+          "bold": {
+            "label": "B",
+            "type": "toggle button"
+          },
+          "italic": {
+            "label": "I",
+            "type": "toggle button"
+          },
+          "enterAnimation": {
+            "label": "Enter Animation",
+            "type": "dropdown + duration dropdown",
+            "animationOptions": ["None", "Fade In", "Slide Up", "Slide Down", "Slide Left", "Slide Right", "Scale Up", "Blur In"],
+            "durationOptions": ["0.1s", "0.2s", "0.3s", "0.4s", "0.5s", "0.6s", "0.8s", "1.0s", "1.2s", "1.5s", "2.0s"]
+          },
+          "exitAnimation": {
+            "label": "Exit Animation",
+            "type": "dropdown + duration dropdown",
+            "animationOptions": ["None", "Fade Out", "Slide Up", "Slide Down", "Slide Left", "Slide Right", "Scale Down", "Blur Out"],
+            "durationOptions": ["0.1s", "0.2s", "0.3s", "0.4s", "0.5s", "0.6s", "0.8s", "1.0s", "1.2s", "1.5s", "2.0s"]
+          },
+          "canvasInteraction": {
+            "drag": "move position (x%, y%)",
+            "click": "select",
+            "deleteKey": "remove layer"
+          }
+        },
+        "componentLayerProperties": {
+          "common": {
+            "speed": "dropdown (0.25x - 3.0x)",
+            "scale": "slider (0.5x - 3.0x)",
+            "startTime": "dropdown (0s - 20s)",
+            "duration": "dropdown (0.5s - 20s)",
+            "enterAnimation": {
+              "type": "dropdown",
+              "options": ["None", "Fade In", "Slide Up", "Slide Down", "Slide Left", "Slide Right", "Scale Up", "Blur In"],
+              "duration": "dropdown (0.1s - 2.0s)"
+            },
+            "exitAnimation": {
+              "type": "dropdown",
+              "options": ["None", "Fade Out", "Slide Up", "Slide Down", "Slide Left", "Slide Right", "Scale Down", "Blur Out"],
+              "duration": "dropdown (0.1s - 2.0s)"
+            }
+          },
+          "templateSpecific": {
+            "count-up": {
+              "from": "number input",
+              "to": "number input",
+              "separator": "text input",
+              "color": "color picker",
+              "fontFamily": "dropdown (10 fonts)",
+              "fontSize": "number input",
+              "bold": "toggle button",
+              "italic": "toggle button"
+            },
+            "animated-list": {
+              "items": "textarea (one per line)",
+              "itemBgColor": "color picker",
+              "textColor": "color picker"
+            },
+            "logo-loop": {
+              "items": "ListItemEditor (text or image per item)",
+              "direction": "dropdown (Left, Right)",
+              "gap": "number input (px)",
+              "logoHeight": "number input (px)",
+              "textColor": "color picker"
+            },
+            "ai-loader": {
+              "variant": "dropdown (Dots, Bar, Grid)",
+              "color": "color picker"
+            },
+            "bubble-menu": {
+              "menuBg": "color picker",
+              "radius": "number input",
+              "bubbleSize": "number input",
+              "items": "ListItemEditor (label + image upload + color per item)"
+            },
+            "folder": {
+              "color": "color picker",
+              "size": "slider (0.5x - 3.0x)",
+              "items": "ListItemEditor (text + bgColor + textColor per item, max 3)"
+            },
+            "unlumen-animated-list": {
+              "count": "number input (how many to show)",
+              "items": "ListItemEditor (title + description + bgColor + titleColor + descriptionColor + accentColor per item)"
+            },
+            "word-rotate": {
+              "color": "color picker",
+              "fontSize": "number input",
+              "items": "ListItemEditor (text + fontFamily + bold + italic per item)"
+            },
+            "highlighter": {
+              "text": "text input (full sentence)",
+              "highlightWords": "text input (comma separated)",
+              "action": "dropdown (Highlight, Underline, Box, Circle, Strike-through)",
+              "color": "color picker (annotation)",
+              "textColor": "color picker",
+              "fontSize": "number input",
+              "strokeWidth": "number input",
+              "animationDuration": "number input (ms)"
+            },
+            "animated-beam": {
+              "variant": "dropdown (Uni-Directional, Bi-Directional, Multiple Inputs, Multiple Outputs)",
+              "nodes": "ListItemEditor (image upload or emoji per node)",
+              "centerNode": "image upload or emoji",
+              "gradientStartColor": "color picker",
+              "gradientStopColor": "color picker",
+              "curvature": "slider (-100 to 150)",
+              "duration": "number input (s)"
+            },
+            "orbiting-circles": {
+              "items": "ListItemEditor (image upload or emoji per orbit item)",
+              "radius": "number input (px)",
+              "iconSize": "number input (px)",
+              "orbitColor": "color picker"
+            },
+            "text-reveal": {
+              "text": "text input",
+              "color": "color picker (text)",
+              "revealColor": "color picker (block)",
+              "fontSize": "number input"
+            },
+            "skeleton-shimmer": {
+              "lines": "number input (1-8)",
+              "showAvatar": "checkbox",
+              "showImage": "checkbox",
+              "borderRadius": "number input (px)"
+            },
+            "text-3d-flip": {
+              "text": "text input (front)",
+              "flippedText": "text input (back, optional)",
+              "color": "color picker (front)",
+              "flipColor": "color picker (back)",
+              "fontSize": "number input",
+              "rotateDirection": "dropdown (Top, Right, Bottom, Left)",
+              "staggerFrom": "dropdown (First, Last, Center, Random)",
+              "staggerDuration": "slider (0.01s - 0.15s)"
+            },
+            "camera-zoom": {
+              "zoomScale": "slider (1.2x - 5.0x)"
+            }
+          }
+        }
+      },
+      "templatesTab": {
+        "layout": "2-column grid",
+        "itemDisplay": ["icon", "name", "source badge"],
+        "description": "tooltip on hover",
+        "action": "click to add to active scene"
+      }
+    },
+    "canvas": {
+      "aspectRatio": "16:9",
+      "features": ["scene background rendering", "text layer rendering", "component layer rendering", "scene transitions (curtain overlays)", "camera zoom effect", "drag-to-move (text + component layers)", "click-to-select", "delete key to remove selected"],
+      "enterExitAnimations": "applied via EnterAnimationWrapper",
+      "cameraZoom": {
+        "behavior": "scales entire scene content",
+        "zoomIn": "first 30% of layer duration",
+        "hold": "during layer active time",
+        "zoomOut": "0.5s after layer ends",
+        "transformOrigin": "layer position (x%, y%)"
+      }
+    },
+    "timeline": {
+      "features": ["time ruler with markers", "scene bars (color-coded, clickable)", "layer bars (lane-packed, draggable, resizable)", "playhead (draggable)", "transport controls (play/pause, skip start/end)", "zoom controls (in/out/fit)"],
+      "layerPacking": "non-overlapping layers share same row, overlapping layers get new rows",
+      "sceneDuration": "auto-computed from max(layer.startTime + layer.duration)"
+    },
+    "sceneTransitions": {
+      "options": ["None (Cut)", "Blinds", "Clip Wipe", "Doors", "Fade", "Iris", "Iris Click", "Loading Line"],
+      "rendering": "black curtain overlay that animates away to reveal incoming scene"
+    }
+  }
+}

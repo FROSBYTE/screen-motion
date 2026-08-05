@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useInView, useReducedMotion } from "motion/react";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 export interface LineByLineSlideProps {
   /** Text content. Use "\n" to separate lines, or pass `lines` instead. */
@@ -38,6 +38,11 @@ export default function LineByLineSlide({
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
 
+  const isMountedRef = useRef(false);
+  useEffect(() => {
+    isMountedRef.current = true;
+  }, []);
+
   const lines = linesProp ?? (children ? children.split("\n") : []);
   const label = lines.join(" ");
   const effectiveSpeed = Math.max(speed, 0.3);
@@ -55,7 +60,7 @@ export default function LineByLineSlide({
         <motion.span
           animate={play ? { opacity: 1, x: 0 } : undefined}
           aria-hidden="true"
-          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -48 }}
+          initial={isMountedRef.current ? false : (shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -48 })}
           // biome-ignore lint/suspicious/noArrayIndexKey: lines have no stable id
           key={index}
           style={{ display: "block" }}

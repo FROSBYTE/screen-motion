@@ -134,9 +134,9 @@ function SceneLights() {
         position={[-6, 3, 5]}
       />
 
-      {/* Cinematic Rim / Backlight 1: Electric Cyan Edge Highlight */}
+      {/* Cinematic Rim / Backlight 1: Warm Yellow Edge Highlight */}
       <pointLight
-        color="#38bdf8"
+        color="#facc15"
         intensity={2.2}
         distance={25}
         position={[-5, 5, -4]}
