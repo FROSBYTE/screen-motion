@@ -26,11 +26,10 @@ const imageAnimationItems = [
 
 const BG_PRESETS = [
   { id: 'none', label: 'None', url: null },
-  { id: 'bg6', label: 'BG 06', url: '/Background_Images/BG_06.png' },
-  { id: 'bg7', label: 'BG 07', url: '/Background_Images/BG_07.png' },
-  { id: 'bg8', label: 'BG 08', url: '/Background_Images/BG_08.png' },
-  { id: 'bg9', label: 'BG 09', url: '/Background_Images/BG_09.png' },
-  { id: 'bg10', label: 'BG 10', url: '/Background_Images/BG_10.png' },
+  { id: 'bg-01', label: 'BG 01', url: '/Background_Images/bg-01.svg' },
+  { id: 'bg-02', label: 'BG 02', url: '/Background_Images/bg-02.svg' },
+  { id: 'bg-05', label: 'BG 05', url: '/Background_Images/bg-05.svg' },
+  { id: 'bg-06', label: 'BG 06', url: '/Background_Images/bg-06.svg' },
 ];
 
 export default function SceneControls() {

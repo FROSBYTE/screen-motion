@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useInView, useReducedMotion } from "motion/react";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 export interface BottomUpLettersProps {
   children: string;
@@ -33,6 +33,11 @@ export default function BottomUpLetters({
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
+  const isMountedRef = useRef(false);
+  useEffect(() => {
+    isMountedRef.current = true;
+  }, []);
+
   const characters = Array.from(children);
   const effectiveSpeed = Math.max(speed, 0.3);
   const effectiveEase = speed < 1 ? SMOOTH_EASE : EASE;
@@ -44,7 +49,7 @@ export default function BottomUpLetters({
         <motion.span
           animate={play ? { opacity: 1, y: 0 } : undefined}
           aria-hidden="true"
-          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 46 }}
+          initial={isMountedRef.current ? false : (shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 46 })}
           // biome-ignore lint/suspicious/noArrayIndexKey: characters have no stable id
           key={index}
           style={{ display: "inline-block", whiteSpace: "pre" }}

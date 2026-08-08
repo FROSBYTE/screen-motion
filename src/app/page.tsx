@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import Iridescence from "@/components/Iridescence";
 import Footer1 from "@/components/smoothui/blocks/footers/footer-1";
+import SmoothHero from "@/components/SmoothHero";
 import { AppProvider } from "@/store";
 
 const Preview3D = dynamic(() => import("@/components/Preview3D"), {
@@ -36,9 +37,9 @@ const TEMPLATE_CARDS = [
   { id: "flip", animationName: "Flip & Land", video: "/showcase-videos/screen-motion-1080p-flip-1785165653076.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" },
   { id: "depth-zoom", animationName: "Depth Zoom 4K", video: "/showcase-videos/screen-motion-4k-depth-zoom-1785492356200.webm", gradient: "linear-gradient(135deg, #312e81 0%, #4c1d95 100%)" },
   { id: "rise", animationName: "Studio Rise 4K", video: "/showcase-videos/screen-motion-4k-rise-1785492156624.webm", gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" },
-  { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #38bdf8 100%)" },
+  { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #facc15 100%)" },
   { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
-  { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #38bdf8 50%, #f97316 100%)" },
+  { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #facc15 50%, #f97316 100%)" },
   { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" }
 ];
 
@@ -93,6 +94,11 @@ const FAQ_ITEMS = [
   {
     question: "Is there a free trial or beta access?",
     answer: "Yes, you can test all 3D animation templates for free directly in the browser."
+  },
+  {
+    question: "What is Motion Graphics in ScreenMotion?",
+    answer: "It is a completely free product video maker specially built for SaaS devs and creators. It is currently a work in progress (BETA)—you can try it out in your browser at no cost, share your suggestions with us, and join the waitlist for future updates!",
+    highlight: true
   }
 ];
 
@@ -195,26 +201,11 @@ export default function LandingPage() {
         minHeight: "100vh",
         position: "relative",
         overflowX: "hidden",
-        backgroundColor: "#f5f3ff",
-        color: "#4A4A45",
-        fontFamily: "'Google Sans', 'Inter', sans-serif"
+        backgroundColor: "#0e0e14",
+        color: "#f8fafc",
+        fontFamily: "'Inter', sans-serif"
       }}
     >
-      {/* Fixed Full Page Live WebGL Iridescence Background */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
-        <Iridescence color={IRIDESCENCE_COLOR} speed={1.2} amplitude={0.0} mouseReact={false} />
-      </div>
-
-      {/* Soft transparent vignette overlay */}
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 1,
-          pointerEvents: "none",
-          background: "radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(255, 255, 255, 0.25) 100%)"
-        }}
-      />
 
       {/* Embedded CSS for Glassmorphic & Layout Specifics */}
       <style jsx global>{`
@@ -411,181 +402,8 @@ export default function LandingPage() {
         }
       `}</style>
 
-      {/* Fixed Top Right Header Button */}
-      <div style={{ position: "fixed", top: "24px", right: "32px", zIndex: 100 }}>
-        <a
-          href="https://forms.gle/rtfYsFTgRUP9RE79A"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="home-waitlist-btn font-headline hover:scale-[1.02] active:scale-[0.98]"
-          style={{
-            fontSize: "14px",
-            fontWeight: 700,
-            color: "#111827",
-            backgroundColor: "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            padding: "10px 24px",
-            borderRadius: "999px",
-            border: "1px solid rgba(255, 255, 255, 0.5)",
-            textDecoration: "none",
-            boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px"
-          }}
-        >
-          Join Waitlist
-        </a>
-      </div>
-
-      {/* Hero Section (Full Page 100vh) */}
-      <section style={{
-        position: "relative",
-        overflow: "hidden",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        paddingLeft: "24px",
-        paddingRight: "24px",
-        textAlign: "center"
-      }}>
-        {/* Animated Hero Content Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          style={{ position: "relative", zIndex: 10, maxWidth: "1440px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}
-        >
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="glass-panel font-label"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "8px 20px",
-              borderRadius: "999px",
-              color: "#7A7A75",
-              fontSize: "12px",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase"
-            }}
-          >
-            <span style={{ position: "relative", display: "flex", height: "6px", width: "6px" }}>
-              <span className="animate-ping" style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", backgroundColor: "#D1CFA5", opacity: 0.75 }}></span>
-              <span style={{ position: "relative", width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#7A7A75" }}></span>
-            </span>
-            BETA ACCESS
-          </motion.div>
-
-          {/* 2-Line Heading */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="font-headline"
-            style={{
-              fontSize: "clamp(1.85rem, 3.8vw, 3.75rem)",
-              lineHeight: 1.18,
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              color: "#111827",
-              margin: 0,
-              maxWidth: "1440px",
-              width: "100%"
-            }}
-          >
-            <span style={{ display: "inline-block" }}>Turn Your App Screenshots Into Animated</span>
-            <br className="hidden sm:inline" />
-            <span style={{ display: "inline-block" }}>3D Device Videos</span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="font-body"
-            style={{
-              fontSize: "clamp(1.1rem, 2vw, 1.35rem)",
-              lineHeight: 1.6,
-              color: "#111827",
-              maxWidth: "760px",
-              margin: 0,
-              fontWeight: 400
-            }}
-          >
-            Upload your app UI or screen recording, choose from ready-made 3D motion templates, and export studio-quality 4K mockup videos directly in your web browser. No 3D design skills required.
-          </motion.p>
-
-          {/* Pill CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.5 }}
-            className="hero-btn-container"
-            style={{ paddingTop: "12px", display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center", alignItems: "center" }}
-          >
-            <Link
-              className="hero-btn-primary font-headline hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                fontSize: "15px",
-                fontWeight: 700,
-                color: "#ffffff",
-                backgroundColor: "#111827",
-                padding: "14px 32px",
-                borderRadius: "999px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-                boxShadow: "0 10px 25px -5px rgba(17, 24, 39, 0.3)",
-                transition: "all 0.2s ease"
-              }}
-              href="/editor"
-            >
-              Launch Editor
-              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>east</span>
-            </Link>
-
-            <a
-              className="hero-btn-secondary font-headline hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                fontSize: "15px",
-                fontWeight: 700,
-                color: "#111827",
-                backgroundColor: "#badfdb",
-                padding: "14px 32px",
-                borderRadius: "999px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-                border: "1px solid rgba(0, 0, 0, 0.06)",
-                boxShadow: "0 4px 14px rgba(186, 223, 219, 0.4)",
-                transition: "all 0.2s ease"
-              }}
-              href="#templates"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              Explore Templates
-            </a>
-          </motion.div>
-        </motion.div>
-      </section>
+      {/* Hero Section */}
+      <SmoothHero />
 
       {/* Templates Section (3D Device Animations Made Simple) */}
       <section id="templates" style={{
@@ -614,7 +432,7 @@ export default function LandingPage() {
           <h2 className="font-headline" style={{
             fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
             fontWeight: 800,
-            color: "#111827",
+            color: "#f8fafc",
             margin: "0 0 12px 0",
             letterSpacing: "-0.03em"
           }}>
@@ -622,7 +440,7 @@ export default function LandingPage() {
           </h2>
           <p className="font-body" style={{
             fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-            color: "#111827",
+            color: "#94a3b8",
             margin: 0,
             maxWidth: "680px",
             lineHeight: 1.6
@@ -901,7 +719,7 @@ export default function LandingPage() {
             <h2 className="font-headline" style={{
               fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
               fontWeight: 800,
-              color: "#111827",
+              color: "#f8fafc",
               margin: "0 0 16px 0",
               letterSpacing: "-0.03em"
             }}>
@@ -909,7 +727,7 @@ export default function LandingPage() {
             </h2>
             <p className="font-body" style={{
               fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-              color: "#111827",
+              color: "#94a3b8",
               maxWidth: "760px",
               margin: "0 auto",
               lineHeight: 1.6
@@ -931,22 +749,22 @@ export default function LandingPage() {
                 style={{
                   padding: "24px 28px",
                   borderRadius: "20px",
-                  backgroundColor: "rgba(255, 255, 255, 0.85)",
-                  border: "1px solid rgba(0, 0, 0, 0.08)",
-                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.03)",
+                  backgroundColor: "#181824",
+                  border: "1px solid #2a2a3c",
+                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
                   transition: "all 0.25s ease"
                 }}
               >
                 <h3 className="font-headline use-case-title" style={{
                   fontWeight: 700,
-                  color: "#111827",
+                  color: "#f8fafc",
                   margin: "0 0 8px 0"
                 }}>
                   {uc.title}
                 </h3>
                 <p className="font-body" style={{
                   fontSize: "14px",
-                  color: "#4b5563",
+                  color: "#94a3b8",
                   margin: 0,
                   lineHeight: 1.55
                 }}>
@@ -959,7 +777,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section style={{
+      <section id="faq" style={{
         paddingTop: "60px",
         paddingBottom: "120px",
         width: "100%",
@@ -983,7 +801,7 @@ export default function LandingPage() {
             <h2 className="font-headline" style={{
               fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
               fontWeight: 800,
-              color: "#111827",
+              color: "#f8fafc",
               margin: "0 0 12px 0",
               letterSpacing: "-0.03em"
             }}>
@@ -991,7 +809,7 @@ export default function LandingPage() {
             </h2>
             <p className="font-body" style={{
               fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-              color: "#111827",
+              color: "#94a3b8",
               margin: 0
             }}>
               Everything you need to know about ScreenMotion and 3D device mockups
@@ -1002,6 +820,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {FAQ_ITEMS.map((faq, index) => {
               const isOpen = openFaqIndex === index;
+              const isHighlighted = (faq as any).highlight;
               return (
                 <motion.div
                   key={index}
@@ -1011,9 +830,9 @@ export default function LandingPage() {
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                   style={{
                     borderRadius: "16px",
-                    backgroundColor: "rgba(255, 255, 255, 0.85)",
-                    border: "1px solid rgba(0, 0, 0, 0.08)",
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.03)",
+                    backgroundColor: isHighlighted ? "rgba(250, 204, 21, 0.08)" : "#181824",
+                    border: isHighlighted ? "1px solid rgba(250, 204, 21, 0.3)" : "1px solid #2a2a3c",
+                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.4)",
                     overflow: "hidden",
                     transition: "all 0.25s ease"
                   }}
@@ -1033,17 +852,34 @@ export default function LandingPage() {
                       textAlign: "left"
                     }}
                   >
-                    <span className="font-headline faq-question-text" style={{
-                      fontWeight: 700,
-                      color: "#111827"
-                    }}>
-                      {faq.question}
+                    <span style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
+                      <span className="font-headline faq-question-text" style={{
+                        fontWeight: 700,
+                        color: isHighlighted ? "#facc15" : "#f8fafc"
+                      }}>
+                        {faq.question}
+                      </span>
+                      {isHighlighted && (
+                        <span style={{
+                          fontSize: "10px",
+                          fontWeight: 800,
+                          color: "#0f172a",
+                          background: "linear-gradient(135deg, #facc15, #eab308)",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          letterSpacing: "0.05em",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0
+                        }}>
+                          FREE
+                        </span>
+                      )}
                     </span>
                     <span
                       className="material-symbols-outlined"
                       style={{
                         fontSize: "22px",
-                        color: "#6b7280",
+                        color: isHighlighted ? "#facc15" : "#94a3b8",
                         transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                         transition: "transform 0.3s ease"
                       }}
@@ -1067,7 +903,7 @@ export default function LandingPage() {
                             padding: "0 24px 20px 24px",
                             fontSize: "14.5px",
                             lineHeight: 1.6,
-                            color: "#4b5563"
+                            color: isHighlighted ? "#cbd5e1" : "#94a3b8"
                           }}
                         >
                           {faq.answer}
