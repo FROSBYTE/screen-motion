@@ -28,8 +28,18 @@ const BG_PRESETS = [
   { id: 'none', label: 'None', url: null },
   { id: 'bg-01', label: 'BG 01', url: '/Background_Images/bg-01.svg' },
   { id: 'bg-02', label: 'BG 02', url: '/Background_Images/bg-02.svg' },
+  { id: 'bg-03', label: 'BG 03', url: '/Background_Images/bg-03.svg' },
+  { id: 'bg-04', label: 'BG 04', url: '/Background_Images/bg-04.svg' },
   { id: 'bg-05', label: 'BG 05', url: '/Background_Images/bg-05.svg' },
   { id: 'bg-06', label: 'BG 06', url: '/Background_Images/bg-06.svg' },
+  { id: 'bg-07', label: 'BG 07', url: '/Background_Images/bg-07.svg' },
+  { id: 'bg-08', label: 'BG 08', url: '/Background_Images/bg-08.svg' },
+  { id: 'bg-09', label: 'BG 09', url: '/Background_Images/bg-09.svg' },
+  { id: 'bg-10', label: 'BG 10', url: '/Background_Images/bg-10.svg' },
+  { id: 'bg-11', label: 'BG 11', url: '/Background_Images/bg-11.svg' },
+  { id: 'bg-12', label: 'BG 12', url: '/Background_Images/bg-12.svg' },
+  { id: 'bg-13', label: 'BG 13', url: '/Background_Images/bg-13.svg' },
+  { id: 'bg-14', label: 'BG 14', url: '/Background_Images/bg-14.svg' },
 ];
 
 export default function SceneControls() {

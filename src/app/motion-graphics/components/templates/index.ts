@@ -13,6 +13,8 @@ export { default as TextReveal } from './TextReveal';
 export { default as SkeletonShimmer } from './SkeletonShimmer';
 export { default as Text3DFlip } from './Text3DFlip';
 export { default as MediaUpload } from './MediaUpload';
+export { default as VideoUpload } from './VideoUpload';
+export { default as ImageUpload } from './ImageUpload';
 export { default as PhoneDevice } from './PhoneDevice';
 export { default as MaskedHeading } from './MaskedHeading';
 
@@ -33,6 +35,8 @@ export type ComponentTemplateName =
   | 'text-3d-flip'
   | 'camera-zoom'
   | 'media-upload'
+  | 'video-upload'
+  | 'image'
   | 'phone-device'
   | 'masked-heading';
 
@@ -45,6 +49,27 @@ export interface ComponentTemplateConfig {
 }
 
 export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
+  {
+    id: 'image',
+    name: 'Image',
+    description: 'Upload and display custom image graphics',
+    category: 'component',
+    source: 'smoothui',
+  },
+  {
+    id: 'video-upload',
+    name: 'Video Upload',
+    description: 'Upload and play custom videos with playback & frame controls',
+    category: 'component',
+    source: 'smoothui',
+  },
+  {
+    id: 'media-upload',
+    name: 'Image / Video',
+    description: 'Upload images or videos with enter/exit animations',
+    category: 'component',
+    source: 'smoothui',
+  },
   {
     id: 'count-up',
     name: 'Count Up',
@@ -109,13 +134,6 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     source: 'reactbits',
   },
   {
-    id: 'animated-beam',
-    name: 'Animated Beam',
-    description: 'Glowing particle beam animation',
-    category: 'component',
-    source: 'reactbits',
-  },
-  {
     id: 'orbiting-circles',
     name: 'Orbiting Circles',
     description: 'Items orbiting in a circular path',
@@ -147,13 +165,6 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     id: 'camera-zoom',
     name: 'Camera Zoom',
     description: 'Smooth zoom in then zoom out effect on the scene',
-    category: 'component',
-    source: 'smoothui',
-  },
-  {
-    id: 'media-upload',
-    name: 'Image / Video',
-    description: 'Upload images or videos with enter/exit animations',
     category: 'component',
     source: 'smoothui',
   },

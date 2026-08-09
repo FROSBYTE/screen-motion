@@ -63,9 +63,6 @@ export default function MotionGraphicsPage() {
               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 Motion Graphics Studio
               </span>
-              <span style={{ fontSize: '10px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                1080p 60fps
-              </span>
             </div>
           </div>
 

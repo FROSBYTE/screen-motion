@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
 import type { ComponentTemplateName } from './components/templates';
+import { TEMPLATES } from '@/types';
 
 export type MGTextAnimationType =
   | 'none'
@@ -31,6 +32,7 @@ export type SceneTransition =
 export interface MGTextLayer {
   id: string;
   type: 'text';
+  name?: string;
   text: string;
   animationType: MGTextAnimationType;
   animationSpeed: number;
@@ -51,6 +53,7 @@ export interface MGTextLayer {
 export interface MGComponentLayer {
   id: string;
   type: 'component';
+  name?: string;
   templateId: ComponentTemplateName;
   props: Record<string, any>; // component-specific props
   startTime: number;
@@ -91,6 +94,7 @@ export interface MGState {
   playbackRange: { start: number; end: number } | null;
   activeSidebarTab: 'scene' | 'components';
   isPickerOpen: boolean;
+  isMuted: boolean;
 }
 
 function createDefaultScene(index: number): MGScene {
@@ -115,6 +119,7 @@ const DEFAULT_STATE: MGState = {
   playbackRange: null,
   activeSidebarTab: 'scene',
   isPickerOpen: false,
+  isMuted: false,
 };
 
 type MGUpdate = Partial<MGState>;
@@ -368,13 +373,19 @@ export function MotionGraphicsProvider({ children }: { children: ReactNode }) {
 
   const addComponentLayer = useCallback((templateId: ComponentTemplateName, props?: Record<string, any>) => {
     const id = `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    let initialDuration = 2;
+    if (templateId === 'phone-device') {
+      const animName = props?.animationTemplate || 'float';
+      const animConfig = TEMPLATES.find((t) => t.id === animName);
+      initialDuration = animConfig ? animConfig.duration : 6;
+    }
     const newLayer: MGComponentLayer = {
       id,
       type: 'component',
       templateId,
       props: props || {},
       startTime: 0,
-      duration: 2,
+      duration: initialDuration,
       position: { x: 50, y: 50 },
       scale: 1,
       enterAnimation: 'fade-in',
@@ -489,44 +500,67 @@ export function MotionGraphicsProvider({ children }: { children: ReactNode }) {
     });
   }, [pushUndo]);
 
+  const animFrameRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
+
+  const pause = useCallback(() => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    setState((prev) => ({ ...prev, isPlaying: false }));
+  }, []);
+
   const play = useCallback(() => {
     setState((prev) => {
+      const td = prev.scenes.reduce((sum, s) => sum + getSceneDuration(s), 0);
       // If focused playback ended, re-seek to range start before replaying
       if (prev.playbackRange && prev.currentTime >= prev.playbackRange.end) {
         return { ...prev, isPlaying: true, currentTime: prev.playbackRange.start };
       }
+      // If video played to completion (at or past end), reset cursor to beginning before playing
+      if (td > 0 && prev.currentTime >= td - 0.05) {
+        return { ...prev, isPlaying: true, currentTime: 0 };
+      }
       return { ...prev, isPlaying: true };
     });
-    if (playIntervalRef.current) clearInterval(playIntervalRef.current);
-    const interval = 1000 / 60;
-    playIntervalRef.current = setInterval(() => {
+
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+    }
+    lastTimeRef.current = performance.now();
+
+    const loop = (now: number) => {
+      const delta = Math.min((now - lastTimeRef.current) / 1000, 0.08);
+      lastTimeRef.current = now;
+
       setState((prev) => {
         if (!prev.isPlaying) return prev;
         const td = prev.scenes.reduce((sum, s) => sum + getSceneDuration(s), 0);
-        const next = prev.currentTime + interval / 1000;
+        const next = prev.currentTime + delta;
         // Focused playback: stop at range end
         if (prev.playbackRange) {
           if (next >= prev.playbackRange.end) {
-            if (playIntervalRef.current) clearInterval(playIntervalRef.current);
+            if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current);
+            animFrameRef.current = null;
             return { ...prev, currentTime: prev.playbackRange.end, isPlaying: false };
           }
           return { ...prev, currentTime: next };
         }
         if (next >= td) {
-          if (playIntervalRef.current) clearInterval(playIntervalRef.current);
-          return { ...prev, currentTime: 0, isPlaying: false };
+          if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = null;
+          return { ...prev, currentTime: td, isPlaying: false };
         }
         return { ...prev, currentTime: next };
       });
-    }, interval);
-  }, []);
 
-  const pause = useCallback(() => {
-    if (playIntervalRef.current) {
-      clearInterval(playIntervalRef.current);
-      playIntervalRef.current = null;
-    }
-    setState((prev) => ({ ...prev, isPlaying: false }));
+      if (stateRef.current.isPlaying) {
+        animFrameRef.current = requestAnimationFrame(loop);
+      }
+    };
+
+    animFrameRef.current = requestAnimationFrame(loop);
   }, []);
 
   const seekTo = useCallback((time: number) => {

@@ -82,8 +82,40 @@ export function FooterSimple({
           </div>
         )}
       </div>
-      <div style={{ maxWidth: "1100px", margin: "40px auto 0 auto", paddingTop: "24px", borderTop: "1px solid #222232", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>
-        {copyright}
+      <div style={{
+        maxWidth: "1100px",
+        margin: "40px auto 0 auto",
+        paddingTop: "24px",
+        borderTop: "1px solid #222232",
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "16px",
+        fontSize: "13px",
+        color: "#94a3b8"
+      }}>
+        <div>{copyright}</div>
+        <a
+          href="https://forms.gle/rtfYsFTgRUP9RE79A"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontSize: "12.5px",
+            fontWeight: 700,
+            color: "#222831",
+            background: "linear-gradient(135deg, #00ADB5 0%, #008b92 100%)",
+            padding: "7px 18px",
+            borderRadius: "9999px",
+            textDecoration: "none",
+            transition: "transform 0.15s ease",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+          }}
+        >
+          Join Waitlist <span>→</span>
+        </a>
       </div>
     </footer>
   );
