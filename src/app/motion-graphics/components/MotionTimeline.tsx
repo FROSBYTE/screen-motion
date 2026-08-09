@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { Plus, Trash2, Undo2, Redo2, RotateCcw, Minus, Lock, Rewind, FastForward } from 'lucide-react';
+import { Plus, Trash2, Undo2, Redo2, RotateCcw, Minus, Lock, Rewind, FastForward, Volume2, VolumeX } from 'lucide-react';
 import { useMGState, getSceneDuration, type MGLayer } from '../store';
 
 // Scene strip color palette – dark professional tones
@@ -29,7 +29,9 @@ export default function MotionTimeline() {
   const anySceneHasLayers = scenes.some((s) => s.layers.length > 0);
 
   const trackAreaRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1);
+  const MIN_ZOOM = 0.2;
+  const MAX_ZOOM = 1.8;
+  const [zoom, setZoom] = useState(0.68); // Default at 30%
   const [trackViewportWidth, setTrackViewportWidth] = useState(900);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const [draggingLayer, setDraggingLayer] = useState<{ id: string; sceneId: string; type: 'move' | 'resize-left' | 'resize-right'; startX: number; startTime: number; startDuration: number } | null>(null);
@@ -39,9 +41,6 @@ export default function MotionTimeline() {
   const minimumScaleWidth = Math.max(900, trackViewportWidth);
   const scaleDuration = Math.max(totalDuration, Math.ceil(minimumScaleWidth / pxPerSec));
 
-  // Zoom range: min 0.2, max 1.8, with default 1.0 at center (50%)
-  const MIN_ZOOM = 0.2;
-  const MAX_ZOOM = 1.8;
   const zoomPercent = Math.min(100, Math.max(0, ((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100));
 
   const handleZoomSliderClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -228,15 +227,32 @@ export default function MotionTimeline() {
         <button onClick={() => seekTo(currentTime + 5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: 'var(--text-muted)' }} title="+5s">
           <FastForward size={16} />
         </button>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/></svg>
+        <button
+          onClick={() => dispatch({ isMuted: !state.isMuted })}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            color: state.isMuted ? 'var(--text-muted)' : 'var(--accent-primary)',
+            transition: 'all 0.15s ease',
+          }}
+          title={state.isMuted ? "Unmute Audio (Voice Enabled)" : "Mute Audio"}
+        >
+          {state.isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+        </button>
         <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-primary)', fontWeight: 600 }}>
-          {Math.floor(currentTime / 60).toString().padStart(2,'0')}:{Math.floor(currentTime % 60).toString().padStart(2,'0')}
-          <span style={{ fontSize: '10px', opacity: 0.6 }}>{Math.floor((currentTime % 1) * 100).toString().padStart(2,'0')}</span>
+          {Math.floor(currentTime / 60).toString().padStart(2, '0')}:
+          {Math.floor(currentTime % 60).toString().padStart(2, '0')}:
+          {Math.floor((currentTime % 1) * 100).toString().padStart(2, '0')}
         </span>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>/</span>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 4px' }}>/</span>
         <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-          {Math.floor(totalDuration / 60).toString().padStart(2,'0')}:{Math.floor(totalDuration % 60).toString().padStart(2,'0')}
-          <span style={{ fontSize: '10px', opacity: 0.6 }}>{Math.floor((totalDuration % 1) * 100).toString().padStart(2,'0')}</span>
+          {Math.floor(totalDuration / 60).toString().padStart(2, '0')}:
+          {Math.floor(totalDuration % 60).toString().padStart(2, '0')}:
+          {Math.floor((totalDuration % 1) * 100).toString().padStart(2, '0')}
         </span>
         {/* Scrubber */}
         <div style={{ flex: 1, height: '5px', background: 'var(--bg-inset)', borderRadius: '3px', position: 'relative', cursor: 'pointer', marginLeft: '8px' }}
@@ -269,6 +285,7 @@ export default function MotionTimeline() {
         </button>
 
         <button
+          className="delete-btn-hover"
           style={{ ...iconBtnStyle, marginRight: '4px' }}
           title="Delete component"
           onClick={() => { if (selectedLayerId) removeLayer(selectedLayerId); }}
@@ -311,11 +328,9 @@ export default function MotionTimeline() {
           <div
             onClick={handleZoomSliderClick}
             style={{ width: '70px', height: '14px', display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}
-            title={`Zoom: ${Math.round(zoom * 100)}% (Center is 100%)`}
+            title={`Zoom: ${Math.round(zoomPercent)}%`}
           >
             <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', position: 'relative', overflow: 'hidden' }}>
-              {/* Center mark at 50% (1.0x default) */}
-              <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '2px', background: 'var(--border-color)', transform: 'translateX(-50%)', borderRadius: '1px' }} />
               {/* Active bar */}
               <div style={{ position: 'absolute', left: 0, height: '100%', background: 'var(--accent-primary)', borderRadius: '3px', width: `${zoomPercent}%` }} />
             </div>

@@ -3,26 +3,26 @@
 @source "../";
 
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #141414;
-  --color-card: #ffffff;
-  --color-card-foreground: #141414;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #141414;
-  --color-primary: #141414;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #f2f2f2;
-  --color-secondary-foreground: #141414;
-  --color-muted: #f2f2f2;
-  --color-muted-foreground: #707070;
-  --color-accent: #f2f2f2;
-  --color-accent-foreground: #141414;
-  --color-destructive: #f87171;
-  --color-border: #ededed;
-  --color-input: #ededed;
-  --color-ring: #adadad;
-  --color-brand: #141414;
-  --color-brand-secondary: #333333;
+  --color-background: #222831;
+  --color-foreground: #EEEEEE;
+  --color-card: #393E46;
+  --color-card-foreground: #EEEEEE;
+  --color-popover: #393E46;
+  --color-popover-foreground: #EEEEEE;
+  --color-primary: #00ADB5;
+  --color-primary-foreground: #222831;
+  --color-secondary: #393E46;
+  --color-secondary-foreground: #EEEEEE;
+  --color-muted: #393E46;
+  --color-muted-foreground: #a0aab5;
+  --color-accent: #00ADB5;
+  --color-accent-foreground: #222831;
+  --color-destructive: #ef4444;
+  --color-border: #393E46;
+  --color-input: #393E46;
+  --color-ring: #00ADB5;
+  --color-brand: #00ADB5;
+  --color-brand-secondary: #008b92;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -38,23 +38,23 @@ html {
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* --- Pro Video Editor Dark Theme Tokens (Default) --- */
-  --theme-bg-base: #0e0e14;          /* Deep void backdrop */
-  --theme-bg-panel: #181824;         /* Slate panel background */
-  --theme-bg-inset: #222232;         /* Input controls & dropdown background */
-  --theme-bg-card: #1c1c2b;          /* Card container background */
-  --theme-bg-card-hover: rgba(250, 204, 21, 0.12);
+  /* --- Color Schema: #222831, #393E46, #00ADB5, #EEEEEE --- */
+  --theme-bg-base: #222831;          /* Primary Deep Charcoal Backdrop */
+  --theme-bg-panel: #222831;         /* Panel background */
+  --theme-bg-inset: #2b303a;         /* Input controls & dropdown background */
+  --theme-bg-card: #393E46;          /* Medium Charcoal Card Container */
+  --theme-bg-card-hover: rgba(0, 173, 181, 0.15);
 
-  --theme-text-light: #f8fafc;        /* High-contrast off-white primary text */
-  --theme-text-muted: #94a3b8;        /* Slate gray secondary text */
-  --theme-text-dark: #64748b;         /* Muted sub-text & icons */
-  --theme-text-accent: #facc15;      /* Studio Warm Yellow text accent */
+  --theme-text-light: #EEEEEE;        /* Clean Primary Text */
+  --theme-text-muted: #a0aab5;        /* Secondary Muted Text */
+  --theme-text-dark: #707b88;         /* Sub-text & icons */
+  --theme-text-accent: #00ADB5;      /* Vibrant Teal Text Accent */
 
-  --theme-accent-primary: #facc15;    /* Studio Warm Yellow primary brand accent */
-  --theme-accent-hover: #fde047;      /* Warm Yellow hover state */
-  --theme-accent-secondary: #eab308;  /* Golden Yellow secondary accent */
-  --theme-border: rgba(255, 255, 255, 0.1); /* Clean dark border line */
-  --theme-border-hover: rgba(250, 204, 21, 0.4);
+  --theme-accent-primary: #00ADB5;    /* Vibrant Teal Primary Brand Accent */
+  --theme-accent-hover: #00c4ce;      /* Teal Hover State */
+  --theme-accent-secondary: #008b92;  /* Deep Teal Secondary Accent */
+  --theme-border: #393E46;            /* Border Line */
+  --theme-border-hover: rgba(0, 173, 181, 0.5);
 
   /* --- UI CSS Variables (Components consume these directly) --- */
   --bg-primary: var(--theme-bg-base);
@@ -169,7 +169,8 @@ body {
 
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -177,12 +178,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* ===== App Layout ===== */
@@ -571,6 +572,22 @@ input[type="range"]::-webkit-slider-thumb:active {
   cursor: grabbing;
   background: linear-gradient(180deg, var(--text-secondary) 0%, var(--text-muted) 100%);
   transform: scale(0.98);
+}
+
+/* ===== Delete Button Hover Style ===== */
+.delete-btn-hover {
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
+}
+
+.delete-btn-hover:hover:not(:disabled) {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.delete-btn-hover:hover:not(:disabled) svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
 }
 
 /* ===== Color Picker ===== */
@@ -1702,4 +1719,21 @@ input[type="range"]::-webkit-slider-thumb:active {
   .animation-preview-card {
     aspect-ratio: 16 / 10 !important;
   }
+}
+
+/* Delete / Trash button hover styling */
+.delete-btn-hover {
+  transition: all 0.15s ease !important;
+  border-radius: 6px !important;
+}
+
+.delete-btn-hover:hover:not(:disabled) {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+
+.delete-btn-hover:hover:not(:disabled) * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }

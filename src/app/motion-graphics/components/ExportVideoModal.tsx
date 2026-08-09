@@ -13,7 +13,7 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
   const { state, seekTo, play, pause, getSceneAtTime } = useMGState();
   const { scenes } = state;
 
-  const [fps, setFps] = useState<number>(60);
+  const fps = 30;
   const [resolution, setResolution] = useState<'1080p' | '720p'>('1080p');
 
   const [isExporting, setIsExporting] = useState(false);
@@ -115,41 +115,144 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
       recorderRef.current = recorder;
 
       const chunks: Blob[] = [];
-      let animFrameId: number;
+      const imageCache = new Map<string, HTMLImageElement>();
 
-      // 4. Synchronous real-time frame renderer
-      const renderCompositeFrame = () => {
-        const currentMs = stateRef.current.currentTime;
-        const currentSceneInfo = getSceneAtTime(currentMs);
+      const getOrLoadImage = (url: string): HTMLImageElement | null => {
+        if (!url) return null;
+        let img = imageCache.get(url);
+        if (!img) {
+          img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = url;
+          imageCache.set(url, img);
+        }
+        return img.complete && img.naturalWidth > 0 ? img : null;
+      };
+
+  const drawCoverImage = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) => {
+    const imgRatio = img.naturalWidth / img.naturalHeight;
+    const containerRatio = w / h;
+    let sw = img.naturalWidth;
+    let sh = img.naturalHeight;
+    let sx = 0;
+    let sy = 0;
+
+    if (imgRatio > containerRatio) {
+      sw = sh * containerRatio;
+      sx = (img.naturalWidth - sw) / 2;
+    } else {
+      sh = sw / containerRatio;
+      sy = (img.naturalHeight - sh) / 2;
+    }
+
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  };
+
+      // Helper to compute accumulated opacity across parent hierarchy up to wrapper
+      const getAccumulatedOpacity = (el: HTMLElement, wrapperEl: HTMLElement) => {
+        let accum = 1;
+        let curr: HTMLElement | null = el;
+        while (curr && curr !== wrapperEl) {
+          const op = parseFloat(window.getComputedStyle(curr).opacity || '1');
+          accum *= op;
+          curr = curr.parentElement;
+        }
+        return accum;
+      };
+
+      // Helper to apply ancestor CSS clipPath (clip-wipe, iris, iris-click transitions)
+      const applyAncestorClip = (el: HTMLElement, wrapperEl: HTMLElement, ctx: CanvasRenderingContext2D, targetWidth: number, targetHeight: number) => {
+        let curr: HTMLElement | null = el;
+        while (curr && curr !== wrapperEl) {
+          const style = window.getComputedStyle(curr);
+          const clipPath = style.clipPath;
+          if (clipPath && clipPath !== 'none') {
+            if (clipPath.includes('inset')) {
+              const match = clipPath.match(/inset\(([^)]+)\)/);
+              if (match) {
+                const parts = match[1].trim().split(/\s+/);
+                const topStr = parts[0] || '0';
+                const rightStr = parts[1] || topStr;
+                const bottomStr = parts[2] || topStr;
+                const leftStr = parts[3] || rightStr;
+
+                const parseVal = (str: string, maxDim: number) => {
+                  if (str.endsWith('%')) return (parseFloat(str) / 100) * maxDim;
+                  return parseFloat(str) || 0;
+                };
+
+                const top = parseVal(topStr, targetHeight);
+                const right = parseVal(rightStr, targetWidth);
+                const bottom = parseVal(bottomStr, targetHeight);
+                const left = parseVal(leftStr, targetWidth);
+
+                ctx.beginPath();
+                ctx.rect(left, top, Math.max(0, targetWidth - left - right), Math.max(0, targetHeight - top - bottom));
+                ctx.clip();
+              }
+            } else if (clipPath.includes('circle')) {
+              const match = clipPath.match(/circle\(([^)]+)\)/);
+              if (match) {
+                const content = match[1];
+                const radiusMatch = content.match(/([0-9.]+)%/);
+                const atMatch = content.match(/at\s+([0-9.]+)%\s+([0-9.]+)%/);
+                if (radiusMatch) {
+                  const rPercent = parseFloat(radiusMatch[1]);
+                  const r = (rPercent / 100) * targetWidth;
+                  const cxPercent = atMatch ? parseFloat(atMatch[1]) : 50;
+                  const cyPercent = atMatch ? parseFloat(atMatch[2]) : 50;
+                  const cx = (cxPercent / 100) * targetWidth;
+                  const cy = (cyPercent / 100) * targetHeight;
+
+                  ctx.beginPath();
+                  ctx.arc(cx, cy, Math.max(0, r), 0, Math.PI * 2);
+                  ctx.clip();
+                }
+              }
+            }
+          }
+          curr = curr.parentElement;
+        }
+      };
+
+      // 4. Deterministic frame renderer for ultra-smooth 60fps video export
+      const renderSingleFrame = (timeSec: number) => {
+        seekTo(timeSec);
+        const currentSceneInfo = getSceneAtTime(timeSec);
         const bgColor = currentSceneInfo?.scene.bgColor || '#0f0f0f';
 
-        // 1. Fill background color
+        // 1. Fill background color & draw scene background image
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, targetWidth, targetHeight);
 
-        // 2. Synchronous DOM layer compositor (draws DOM backgrounds & text BEFORE WebGL canvas overlay)
+        if (currentSceneInfo?.scene.bgImage) {
+          const bgImg = getOrLoadImage(currentSceneInfo.scene.bgImage);
+          if (bgImg) {
+            ctx.save();
+            drawCoverImage(ctx, bgImg, 0, 0, targetWidth, targetHeight);
+            ctx.restore();
+          }
+        }
+
+        // 2. Synchronous DOM layer compositor
         const containerRect = wrapper.getBoundingClientRect();
         if (containerRect.width > 0 && containerRect.height > 0) {
           const scaleX = targetWidth / containerRect.width;
           const scaleY = targetHeight / containerRect.height;
-
-          // Find all visible element nodes in the canvas
           const elements = Array.from(wrapper.querySelectorAll('*')) as HTMLElement[];
 
           elements.forEach((el) => {
-            // Skip canvas and wrapper container itself
             if (el === wrapper || el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
 
             const rect = el.getBoundingClientRect();
             if (rect.width <= 0 || rect.height <= 0) return;
 
+            const opacity = getAccumulatedOpacity(el, wrapper);
             const style = window.getComputedStyle(el);
-            if (style.visibility === 'hidden' || style.display === 'none' || parseFloat(style.opacity || '1') <= 0) return;
+            if (style.visibility === 'hidden' || style.display === 'none' || opacity <= 0.01) return;
 
-            // Skip full-screen container wrappers so background rects don't overwrite 3D overlays
             const isFullWrapper = rect.width >= containerRect.width - 2 && rect.height >= containerRect.height - 2;
 
-            // Draw background fill for pills/cards/containers
             if (!isFullWrapper && style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent') {
               const x = (rect.left - containerRect.left) * scaleX;
               const y = (rect.top - containerRect.top) * scaleY;
@@ -158,6 +261,8 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
               const borderRadius = parseFloat(style.borderRadius || '0') * scaleY;
 
               ctx.save();
+              ctx.globalAlpha = opacity;
+              applyAncestorClip(el, wrapper, ctx, targetWidth, targetHeight);
               ctx.fillStyle = style.backgroundColor;
               if (style.border && style.border !== 'none') {
                 ctx.strokeStyle = style.borderColor || 'rgba(255,255,255,0.1)';
@@ -177,7 +282,111 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
               ctx.restore();
             }
 
-            // Draw text for text elements
+            if (style.backgroundImage && style.backgroundImage !== 'none') {
+              const match = style.backgroundImage.match(/url\(["']?([^"']+)["']?\)/);
+              if (match && match[1]) {
+                const imgUrl = match[1];
+                const bgImg = getOrLoadImage(imgUrl);
+                if (bgImg) {
+                  const x = (rect.left - containerRect.left) * scaleX;
+                  const y = (rect.top - containerRect.top) * scaleY;
+                  const w = rect.width * scaleX;
+                  const h = rect.height * scaleY;
+                  const borderRadius = parseFloat(style.borderRadius || '0') * scaleY;
+
+                  ctx.save();
+                  ctx.globalAlpha = opacity;
+                  applyAncestorClip(el, wrapper, ctx, targetWidth, targetHeight);
+                  if (borderRadius > 0) {
+                    ctx.beginPath();
+                    if (typeof (ctx as any).roundRect === 'function') {
+                      (ctx as any).roundRect(x, y, w, h, borderRadius);
+                    } else {
+                      ctx.rect(x, y, w, h);
+                    }
+                    ctx.clip();
+                  }
+                  drawCoverImage(ctx, bgImg, x, y, w, h);
+                  ctx.restore();
+                }
+              }
+            }
+
+            if (el.tagName === 'VIDEO') {
+              const videoEl = el as HTMLVideoElement;
+              if (videoEl.readyState >= 1) {
+                const x = (rect.left - containerRect.left) * scaleX;
+                const y = (rect.top - containerRect.top) * scaleY;
+                const w = rect.width * scaleX;
+                const h = rect.height * scaleY;
+                const borderRadius = parseFloat(style.borderRadius || '0') * scaleY;
+
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                applyAncestorClip(el, wrapper, ctx, targetWidth, targetHeight);
+                if (borderRadius > 0) {
+                  ctx.beginPath();
+                  if (typeof (ctx as any).roundRect === 'function') {
+                    (ctx as any).roundRect(x, y, w, h, borderRadius);
+                  } else {
+                    ctx.rect(x, y, w, h);
+                  }
+                  ctx.clip();
+                }
+                ctx.drawImage(videoEl, x, y, w, h);
+                ctx.restore();
+              }
+            }
+
+            if (el.tagName === 'IMG') {
+              const imgEl = el as HTMLImageElement;
+              if (imgEl.complete && imgEl.naturalWidth > 0) {
+                const x = (rect.left - containerRect.left) * scaleX;
+                const y = (rect.top - containerRect.top) * scaleY;
+                const w = rect.width * scaleX;
+                const h = rect.height * scaleY;
+                const borderRadius = parseFloat(style.borderRadius || '0') * scaleY;
+
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                applyAncestorClip(el, wrapper, ctx, targetWidth, targetHeight);
+                if (borderRadius > 0) {
+                  ctx.beginPath();
+                  if (typeof (ctx as any).roundRect === 'function') {
+                    (ctx as any).roundRect(x, y, w, h, borderRadius);
+                  } else {
+                    ctx.rect(x, y, w, h);
+                  }
+                  ctx.clip();
+                }
+                ctx.drawImage(imgEl, x, y, w, h);
+                ctx.restore();
+              }
+            }
+
+            if (el.tagName === 'svg' || el.tagName === 'SVG') {
+              try {
+                const svgEl = el as unknown as SVGElement;
+                const svgString = new XMLSerializer().serializeToString(svgEl);
+                const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+                const svgImg = getOrLoadImage(svgUrl);
+                if (svgImg) {
+                  const x = (rect.left - containerRect.left) * scaleX;
+                  const y = (rect.top - containerRect.top) * scaleY;
+                  const w = rect.width * scaleX;
+                  const h = rect.height * scaleY;
+
+                  ctx.save();
+                  ctx.globalAlpha = opacity;
+                  applyAncestorClip(el, wrapper, ctx, targetWidth, targetHeight);
+                  ctx.drawImage(svgImg, x, y, w, h);
+                  ctx.restore();
+                }
+              } catch {
+                // ignore SVG error
+              }
+            }
+
             const hasDirectTextNode = Array.from(el.childNodes).some(
               (n) => n.nodeType === Node.TEXT_NODE && (n.textContent || '').trim().length > 0
             );
@@ -199,6 +408,8 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                 const fontStyle = style.fontStyle || 'normal';
 
                 ctx.save();
+                ctx.globalAlpha = opacity;
+                applyAncestorClip(el, wrapper, ctx, targetWidth, targetHeight);
                 ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
                 ctx.fillStyle = style.color || '#ffffff';
                 ctx.textAlign = 'center';
@@ -210,20 +421,24 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
           });
         }
 
-        // 3. Render ALL 3D WebGL Canvases ON TOP of scene background & DOM elements (Phone Device 3D Canvas, Drei Canvas, etc.)
+        // 3. Render WebGL 3D Canvas (Phone Device 3D canvas, etc.)
         const webglCanvases = Array.from(wrapper.querySelectorAll('canvas')) as HTMLCanvasElement[];
         webglCanvases.forEach((webglCanvas) => {
           if (webglCanvas && webglCanvas !== compositeCanvas) {
             try {
+              const opacity = getAccumulatedOpacity(webglCanvas, wrapper);
+              if (opacity <= 0.01) return;
+
+              ctx.save();
+              ctx.globalAlpha = opacity;
+              applyAncestorClip(webglCanvas, wrapper, ctx, targetWidth, targetHeight);
               ctx.drawImage(webglCanvas, 0, 0, targetWidth, targetHeight);
+              ctx.restore();
             } catch {
               // ignore WebGL draw error
             }
           }
         });
-
-        animFrameId = requestAnimationFrame(renderCompositeFrame);
-        animFrameIdRef.current = animFrameId;
       };
 
       recorder.ondataavailable = (e) => {
@@ -236,7 +451,6 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
       setExportedFileName(filename);
 
       recorder.onstop = () => {
-        cancelAnimationFrame(animFrameId);
         stream.getTracks().forEach((t) => t.stop());
 
         const blob = new Blob(chunks, { type: 'video/mp4' });
@@ -255,34 +469,41 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
         setIsExporting(false);
       };
 
-      // Reset to start time 0 and trigger playback
+      // Reset & step frame by frame for ultra-smooth 60fps export
       pause();
       seekTo(0);
 
-      // Give React 100ms to render frame 0 before starting recorder
-      setTimeout(() => {
-        play();
-        recorder.start();
-        renderCompositeFrame();
+      const totalFrames = Math.ceil(totalDuration * fps);
+      const frameStep = 1 / fps;
+      let currentFrame = 0;
 
-        const updateInterval = 100;
-        let elapsed = 0;
+      recorder.start();
 
-        const interval = setInterval(() => {
-          elapsed += updateInterval;
-          const p = Math.min(Math.floor((elapsed / actualDurationMs) * 90) + 10, 99);
-          setProgress(p);
-          setStatusText(`Rendering Motion Graphic... ${p}%`);
-        }, updateInterval);
-
-        setTimeout(() => {
-          clearInterval(interval);
-          pause();
+      const stepFrame = () => {
+        if (currentFrame > totalFrames) {
           if (recorder.state === 'recording') {
             recorder.stop();
           }
-        }, actualDurationMs + 400);
-      }, 100);
+          return;
+        }
+
+        const timeSec = Math.min(currentFrame * frameStep, totalDuration);
+        renderSingleFrame(timeSec);
+
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack && 'requestFrame' in videoTrack) {
+          (videoTrack as any).requestFrame();
+        }
+
+        const p = Math.min(Math.floor((currentFrame / totalFrames) * 90) + 10, 99);
+        setProgress(p);
+        setStatusText(`Rendering MP4 Video (${p}%)`);
+
+        currentFrame++;
+        setTimeout(stepFrame, 1000 / (fps * 1.5));
+      };
+
+      setTimeout(stepFrame, 100);
 
     } catch (err) {
       console.error('Export video error:', err);
@@ -307,38 +528,35 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
       <div style={{
         width: '100%',
         maxWidth: '460px',
-        background: '#181824',
-        border: '1px solid #2a2a3c',
+        background: '#222831',
+        border: '1px solid #393E46',
         borderRadius: '18px',
         boxShadow: '0 25px 80px rgba(0, 0, 0, 0.85)',
         overflow: 'hidden',
-        color: '#f8fafc',
+        color: '#EEEEEE',
         fontFamily: '"Plus Jakarta Sans", sans-serif',
       }}>
         {/* Header */}
         <div style={{
           padding: '16px 20px',
-          borderBottom: '1px solid #222232',
+          borderBottom: '1px solid #393E46',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#181824',
+          background: '#222831',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Film size={18} style={{ color: '#facc15' }} />
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#f8fafc' }}>
-              Export MP4 Video
-            </h3>
-          </div>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#EEEEEE' }}>
+            Export Video
+          </h3>
           {!isExporting && (
             <button
               onClick={handleClose}
               style={{
-                background: '#222232',
-                border: '1px solid #2a2a3c',
-                color: '#f8fafc',
+                background: 'transparent',
+                border: 'none',
+                color: '#a0aab5',
                 cursor: 'pointer',
-                padding: '6px',
+                padding: '4px',
                 borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
@@ -354,154 +572,83 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
         <div style={{ padding: '20px' }}>
           {!isExporting && !downloadUrl && (
             <>
-              {/* Project Info */}
-              <div style={{
-                background: 'rgba(250, 204, 21, 0.08)',
-                border: '1px solid rgba(250, 204, 21, 0.25)',
-                borderRadius: '10px',
-                padding: '12px 14px',
-                marginBottom: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <div>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '2px', fontWeight: 600 }}>
-                    PROJECT DURATION
-                  </span>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc' }}>
-                    {totalDuration.toFixed(1)} seconds ({scenes.length} Scenes)
-                  </span>
-                </div>
-                <Sparkles size={20} style={{ color: '#facc15' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', fontSize: '13px' }}>
+                <span style={{ color: '#a0aab5', fontWeight: 500 }}>Duration</span>
+                <span style={{ color: '#EEEEEE', fontWeight: 600 }}>{totalDuration.toFixed(1)}s</span>
               </div>
 
-              {/* Format Indicator */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                  VIDEO FORMAT
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontSize: '12px', color: '#a0aab5', fontWeight: 500, display: 'block', marginBottom: '6px' }}>
+                  Resolution
                 </label>
-                <div style={{
-                  padding: '10px 14px',
-                  background: '#222232',
-                  border: '1px solid #2a2a3c',
-                  borderRadius: '8px',
-                  color: '#f8fafc',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#facc15' }} />
-                  MP4 Video (.mp4)
-                </div>
+                <select
+                  value={resolution}
+                  onChange={(e) => setResolution(e.target.value as any)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: '#393E46',
+                    border: '1px solid #4f5663',
+                    borderRadius: '8px',
+                    color: '#EEEEEE',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="1080p" style={{ background: '#393E46', color: '#EEEEEE' }}>1080p</option>
+                  <option value="720p" style={{ background: '#393E46', color: '#EEEEEE' }}>720p</option>
+                </select>
               </div>
 
-              {/* Resolution & FPS */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '22px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                    RESOLUTION
-                  </label>
-                  <select
-                    value={resolution}
-                    onChange={(e) => setResolution(e.target.value as any)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      background: '#222232',
-                      border: '1px solid #2a2a3c',
-                      borderRadius: '8px',
-                      color: '#f8fafc',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="1080p" style={{ background: '#222232', color: '#f8fafc' }}>1080p (Full HD)</option>
-                    <option value="720p" style={{ background: '#222232', color: '#f8fafc' }}>720p (HD)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                    FRAME RATE
-                  </label>
-                  <select
-                    value={fps}
-                    onChange={(e) => setFps(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      background: '#222232',
-                      border: '1px solid #2a2a3c',
-                      borderRadius: '8px',
-                      color: '#f8fafc',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value={60} style={{ background: '#222232', color: '#f8fafc' }}>60 FPS (Smooth)</option>
-                    <option value={30} style={{ background: '#222232', color: '#f8fafc' }}>30 FPS (Standard)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Export Button */}
               <button
                 onClick={handleExport}
                 style={{
                   width: '100%',
-                  padding: '13px',
-                  background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #00ADB5 0%, #008b92 100%)',
                   border: 'none',
-                  borderRadius: '10px',
-                  color: '#0f172a',
-                  fontSize: '14px',
-                  fontWeight: 800,
+                  borderRadius: '8px',
+                  color: '#222831',
+                  fontSize: '13px',
+                  fontWeight: 700,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 20px rgba(234, 179, 8, 0.35)',
                 }}
               >
-                <Download size={16} /> Export MP4 Video
+                <Download size={15} /> Export Video
               </button>
             </>
           )}
 
           {/* Export Progress */}
           {isExporting && (
-            <div style={{ textAlign: 'center', padding: '20px 10px' }}>
-              <div style={{ position: 'relative', width: '70px', height: '70px', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader2 size={48} className="animate-spin" style={{ color: '#facc15' }} />
-                <span style={{ position: 'absolute', fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>{progress}%</span>
+            <div style={{ textAlign: 'center', padding: '24px 12px 16px' }}>
+              <div style={{ width: '48px', height: '48px', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 size={42} className="animate-spin" style={{ color: '#00ADB5' }} />
               </div>
 
-              <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 700, color: '#f8fafc' }}>
-                Rendering MP4 Video...
+              <h4 style={{ margin: '0', fontSize: '15px', fontWeight: 700, color: '#EEEEEE' }}>
+                Rendering Video
               </h4>
-              <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>{statusText}</p>
 
               <div style={{
                 width: '100%',
-                height: '8px',
-                background: '#222232',
-                borderRadius: '4px',
+                height: '6px',
+                background: '#393E46',
+                borderRadius: '3px',
                 overflow: 'hidden',
                 marginTop: '20px',
               }}>
                 <div style={{
                   height: '100%',
                   width: `${progress}%`,
-                  background: 'linear-gradient(90deg, #facc15, #eab308)',
-                  borderRadius: '4px',
+                  background: 'linear-gradient(90deg, #00ADB5, #008b92)',
+                  borderRadius: '3px',
                   transition: 'width 0.2s ease',
                 }} />
               </div>
@@ -510,28 +657,25 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
 
           {/* Export Complete View */}
           {!isExporting && downloadUrl && (
-            <div style={{ textAlign: 'center', padding: '16px 10px' }}>
+            <div style={{ textAlign: 'center', padding: '24px 12px 16px' }}>
               <div style={{
-                width: '56px',
-                height: '56px',
+                width: '52px',
+                height: '52px',
                 borderRadius: '50%',
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                color: '#10b981',
+                background: 'rgba(0, 173, 181, 0.15)',
+                border: '1px solid rgba(0, 173, 181, 0.3)',
+                color: '#00ADB5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 14px auto',
+                margin: '0 auto 16px auto',
               }}>
-                <CheckCircle2 size={28} />
+                <CheckCircle2 size={26} />
               </div>
 
-              <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 700, color: '#f8fafc' }}>
-                MP4 Export Complete!
+              <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 700, color: '#EEEEEE' }}>
+                Export Complete
               </h4>
-              <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#94a3b8' }}>
-                Your MP4 video <strong style={{ color: '#f8fafc' }}>{exportedFileName}</strong> has been downloaded.
-              </p>
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <a
@@ -540,9 +684,9 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                   style={{
                     flex: 1,
                     padding: '11px',
-                    background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+                    background: 'linear-gradient(135deg, #00ADB5 0%, #008b92 100%)',
                     borderRadius: '8px',
-                    color: '#0f172a',
+                    color: '#222831',
                     fontSize: '13px',
                     fontWeight: 800,
                     textDecoration: 'none',
@@ -550,41 +694,24 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    boxShadow: '0 4px 16px rgba(234, 179, 8, 0.35)',
                   }}
                 >
-                  <Download size={14} /> Download Again
+                  <Download size={14} /> Download Video
                 </a>
-                <button
-                  onClick={() => setDownloadUrl(null)}
-                  style={{
-                    flex: 1,
-                    padding: '11px',
-                    background: '#222232',
-                    border: '1px solid #2a2a3c',
-                    borderRadius: '8px',
-                    color: '#f8fafc',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Change FPS / Settings
-                </button>
                 <button
                   onClick={handleClose}
                   style={{
-                    padding: '11px 16px',
-                    background: '#272730',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    padding: '11px 20px',
+                    background: '#393E46',
+                    border: '1px solid #4f5663',
                     borderRadius: '8px',
-                    color: '#ffffff',
+                    color: '#EEEEEE',
                     fontSize: '13px',
                     fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
-                  Close
+                  Done
                 </button>
               </div>
             </div>

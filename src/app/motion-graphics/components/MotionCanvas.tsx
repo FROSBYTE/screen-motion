@@ -25,8 +25,11 @@ import TextReveal from './templates/TextReveal';
 import SkeletonShimmer from './templates/SkeletonShimmer';
 import Text3DFlip from './templates/Text3DFlip';
 import MediaUploadComponent from './templates/MediaUpload';
+import VideoUploadComponent from './templates/VideoUpload';
+import ImageUploadComponent from './templates/ImageUpload';
 import PhoneDeviceComponent from './templates/PhoneDevice';
 import MaskedHeadingComponent from './templates/MaskedHeading';
+import { applyVideoFileToLayer, applyImageFileToLayer } from './MotionSidebar';
 import { useAlignmentGuides } from '@/context/AlignmentContext';
 import AlignmentGuidesOverlay from '@/components/AlignmentGuidesOverlay';
 import type { AlignmentGuide } from '@/types';
@@ -98,17 +101,18 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
-        const initial = initialColors.current[mat.uuid];
-        if (!initial) return;
-
-        if (initial.r < 0.1 && initial.g < 0.1 && initial.b < 0.1 && !mat.map) {
-          mat.color.set('#000000');
-          return;
-        }
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        mat.color.set(deviceColor);
-        if (mat.map) mat.map = null;
+        const initial = initialColors.current[mat.uuid];
+        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch');
+
+        if (isNotchOrLens) {
+          mat.color.set('#000000');
+        } else {
+          mat.color.set(deviceColor);
+          if (mat.map) mat.map = null;
+        }
         mat.needsUpdate = true;
       });
     });
@@ -122,13 +126,9 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
       const loader = new THREE.TextureLoader();
       loader.load(screenImage, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.flipY = true;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
+        texture.flipY = false;
+        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture });
       });
-    } else {
-      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
     }
   }, [screenImage, cloned]);
 
@@ -140,27 +140,26 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
   const appliedColor = useRef('');
+
   const uvFixed = useRef(false);
 
   useEffect(() => {
     if (uvFixed.current) return;
     const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
-    const geometry = screenMesh.geometry;
-    geometry.computeBoundingBox();
-    const box = geometry.boundingBox;
+
+    const geo = screenMesh.geometry;
+    geo.computeBoundingBox();
+    const box = geo.boundingBox;
     if (!box) return;
 
-    const posAttr = geometry.attributes.position;
-    const uvAttr = geometry.attributes.uv;
-    if (!posAttr || !uvAttr) return;
-
+    const width = box.max.x - box.min.x;
+    const height = box.max.y - box.min.y;
     const minX = box.min.x;
-    const maxX = box.max.x;
     const minY = box.min.y;
-    const maxY = box.max.y;
-    const width = maxX - minX;
-    const height = maxY - minY;
+
+    const posAttr = geo.attributes.position;
+    const uvAttr = geo.attributes.uv;
 
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
@@ -194,13 +193,18 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
-        const initial = initialColors.current[mat.uuid];
-        if (!initial) return;
-
-        if (initial.r < 0.1 && initial.g < 0.1 && initial.b < 0.1) return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        mat.color.set(deviceColor);
+        const initial = initialColors.current[mat.uuid];
+        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor';
+
+        if (isNotchOrLens) {
+          mat.color.set('#000000');
+        } else {
+          mat.color.set(deviceColor);
+          if (mat.map) mat.map = null;
+        }
         mat.needsUpdate = true;
       });
     });
@@ -256,9 +260,14 @@ function AnimatedDeviceInline({
   const innerGroupRef = useRef<THREE.Group>(null!);
   const animRef = useRef<TemplateAnimation | null>(null);
   const { camera } = useThree();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (!groupRef.current || !camera) return;
+
+    if (groupRef.current) {
+      groupRef.current.visible = false;
+    }
 
     // Kill previous animation
     if (animRef.current) {
@@ -286,10 +295,18 @@ function AnimatedDeviceInline({
     try {
       const anim = createAnimation(animationTemplate as TemplateName, 'portrait', target, speed);
       animRef.current = anim;
-      anim.timeline.play();
+      const dur = anim.duration || 3;
+      const progress = Math.max(0, Math.min(localTime / dur, 1));
+      anim.timeline.progress(progress);
+      anim.timeline.pause();
     } catch {
       animRef.current = null;
     }
+
+    if (groupRef.current) {
+      groupRef.current.visible = true;
+    }
+    setIsReady(true);
 
     return () => {
       if (animRef.current) animRef.current.timeline.kill();
@@ -306,33 +323,33 @@ function AnimatedDeviceInline({
   useEffect(() => {
     if (animRef.current && animRef.current.timeline) {
       const dur = animRef.current.duration || 3;
-      const progress = Math.max(0, Math.min((localTime / dur) % 1, 1));
+      const progress = Math.max(0, Math.min(localTime / dur, 1));
       animRef.current.timeline.progress(progress);
       animRef.current.timeline.pause();
     }
   }, [localTime]);
 
-function CameraOffsetController({ posX = 0, posY = 0 }: { posX: number; posY: number }) {
-  const { camera, size } = useThree();
+  function CameraOffsetController({ posX = 0, posY = 0 }: { posX: number; posY: number }) {
+    const { camera, size } = useThree();
 
-  useFrame(() => {
-    const cam = camera as THREE.PerspectiveCamera;
-    if (posX !== 0 || posY !== 0) {
-      const pxX = -posX * (size.width / 5);
-      const pxY = posY * (size.height / 5);
-      cam.setViewOffset(size.width, size.height, pxX, pxY, size.width, size.height);
-    } else {
-      if (cam.view) cam.clearViewOffset();
-    }
-  });
+    useFrame(() => {
+      const cam = camera as THREE.PerspectiveCamera;
+      if (posX !== 0 || posY !== 0) {
+        const pxX = -posX * (size.width / 5);
+        const pxY = posY * (size.height / 5);
+        cam.setViewOffset(size.width, size.height, pxX, pxY, size.width, size.height);
+      } else {
+        if (cam.view) cam.clearViewOffset();
+      }
+    });
 
-  return null;
-}
+    return null;
+  }
 
   const baseScale = 0.15 * (deviceSize || 1);
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} visible={isReady}>
       <CameraOffsetController posX={posX} posY={posY} />
       <group ref={innerGroupRef} position={[0, 0, 0]}>
         <group 
@@ -604,18 +621,20 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
   const [triggerKey, setTriggerKey] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef<{ mouseX: number; mouseY: number; posX: number; posY: number } | null>(null);
+  const hasMovedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneLayersRef = useRef(sceneLayers);
   sceneLayersRef.current = sceneLayers;
   const isSelected = state.selectedLayerId === layer.id;
+  const prevVisibleRef = useRef(false);
 
   useEffect(() => {
-    if (isVisible) {
-      // Delay by one frame to ensure mount → initial → animate cycle works
+    if (isVisible && !prevVisibleRef.current) {
       requestAnimationFrame(() => {
         setTriggerKey((k) => k + 1);
       });
     }
+    prevVisibleRef.current = isVisible;
   }, [isVisible]);
 
   if (!isVisible && !isDragging) return null;
@@ -628,11 +647,13 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
       data-motion-layer-id={layer.id}
       onClick={(e) => {
         e.stopPropagation();
-        dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        if (!hasMovedRef.current) {
+          dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        }
       }}
       onPointerDown={(e) => {
         e.stopPropagation();
-        dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        hasMovedRef.current = false;
 
         const targetEl = e.currentTarget as HTMLElement;
         if (targetEl && 'setPointerCapture' in targetEl) {
@@ -650,6 +671,11 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
         setIsDragging(true);
 
         const handleMove = (moveEvent: PointerEvent) => {
+          const dist = Math.hypot(moveEvent.clientX - startMouseX, moveEvent.clientY - startMouseY);
+          if (dist > 4) {
+            hasMovedRef.current = true;
+          }
+
           const parent = containerRef.current?.parentElement;
           if (!parent) return;
           const rect = parent.getBoundingClientRect();
@@ -690,6 +716,9 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
         left: `${layer.position.x}%`,
         top: `${layer.position.y}%`,
         transform: 'translate(-50%, -50%)',
+        width: 'max-content',
+        maxWidth: 'none',
+        flexShrink: 0,
         color: layer.color,
         fontSize: `${layer.fontSize}px`,
         fontFamily: layer.fontFamily,
@@ -729,13 +758,15 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
   const sceneLayersRef = useRef(sceneLayers);
   sceneLayersRef.current = sceneLayers;
   const isSelected = state.selectedLayerId === layer.id;
+  const prevVisibleRef = useRef(false);
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && !prevVisibleRef.current) {
       requestAnimationFrame(() => {
         setTriggerKey((k) => k + 1);
       });
     }
+    prevVisibleRef.current = isVisible;
   }, [isVisible]);
 
   if (!isVisible && !isDragging) return null;
@@ -784,6 +815,40 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             borderRadius={layer.props.borderRadius ?? 8}
             width={layer.props.width ?? 300}
             height={layer.props.height ?? 200}
+          />
+        );
+      case 'video-upload':
+        return (
+          <VideoUploadComponent
+            src={layer.props.src}
+            autoPlay={true}
+            loop={layer.props.loop ?? true}
+            muted={layer.props.muted ?? true}
+            controls={false}
+            objectFit={layer.props.objectFit ?? 'contain'}
+            width={layer.props.width ?? 360}
+            height={layer.props.height ?? 240}
+            borderRadius={layer.props.borderRadius ?? 12}
+            borderWidth={layer.props.borderWidth ?? 0}
+            borderColor={layer.props.borderColor ?? '#a855f7'}
+            playbackRate={layer.props.speed ?? 1}
+            poster={layer.props.poster}
+            onUpload={(file) => {
+              applyVideoFileToLayer(file, (updates) => updateLayer(layer.id, updates as any), layer.props);
+            }}
+          />
+        );
+      case 'image':
+        return (
+          <ImageUploadComponent
+            src={layer.props.src}
+            objectFit={layer.props.objectFit ?? 'contain'}
+            width={layer.props.width ?? 300}
+            height={layer.props.height ?? 200}
+            borderRadius={layer.props.borderRadius ?? 8}
+            onUpload={(file) => {
+              applyImageFileToLayer(file, (updates) => updateLayer(layer.id, updates as any), layer.props);
+            }}
           />
         );
       case 'phone-device':
@@ -896,10 +961,13 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         left: `${layer.position.x}%`,
         top: `${layer.position.y}%`,
         transform: `translate(-50%, -50%) scale(${layer.scale})`,
+        width: 'max-content',
+        maxWidth: 'none',
+        flexShrink: 0,
         cursor: isDragging ? 'grabbing' : 'grab',
         border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
-        borderRadius: '8px',
-        padding: '12px',
+        borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
+        padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
         transition: 'border-color 0.15s ease',
         userSelect: 'none',
         touchAction: 'none',
@@ -928,14 +996,14 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
         if (localTime >= layer.startTime && localTime < layerEnd) {
           const duration = layer.duration || 1;
           const progress = (localTime - layer.startTime) / duration;
-          const zoomScale = layer.props.zoomScale ?? 2;
+          const zoomScale = layer.props.zoomScale ?? 0;
           const t = Math.min(progress / 0.3, 1);
           const eased = t * t * (3 - 2 * t);
           cameraScale = 1 + (zoomScale - 1) * eased;
           cameraOriginX = layer.position.x;
           cameraOriginY = layer.position.y;
         } else if (localTime >= layerEnd && localTime < layerEnd + zoomOutDuration) {
-          const zoomScale = layer.props.zoomScale ?? 2;
+          const zoomScale = layer.props.zoomScale ?? 0;
           const outProgress = (localTime - layerEnd) / zoomOutDuration;
           const t = 1 - outProgress;
           const eased = t * t * (3 - 2 * t);

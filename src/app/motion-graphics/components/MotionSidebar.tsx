@@ -9,6 +9,68 @@ import ListItemEditor from './ListItemEditor';
 import CustomDropdown from './CustomDropdown';
 import ComponentPicker from './ComponentPicker';
 import ColorPickerControl from './ColorPickerControl';
+import { TEMPLATES } from '@/types';
+
+export function applyVideoFileToLayer(
+  file: File,
+  updateFn: (updates: { duration?: number; props: any }) => void,
+  currentProps: any
+) {
+  const url = URL.createObjectURL(file);
+  const tempVideo = document.createElement('video');
+  tempVideo.preload = 'metadata';
+  tempVideo.onloadedmetadata = () => {
+    const dur = tempVideo.duration;
+    const vw = tempVideo.videoWidth;
+    const vh = tempVideo.videoHeight;
+    const updates: any = { props: { ...currentProps, src: url } };
+    if (dur && isFinite(dur) && dur > 0) {
+      updates.duration = Math.round(dur * 10) / 10;
+    }
+    if (vw > 0 && vh > 0) {
+      const baseWidth = currentProps.width || 360;
+      const calcHeight = Math.round((vh / vw) * baseWidth);
+      updates.props.width = baseWidth;
+      updates.props.height = calcHeight;
+    }
+    updateFn(updates);
+  };
+  tempVideo.onerror = () => {
+    updateFn({ props: { ...currentProps, src: url } });
+  };
+  tempVideo.src = url;
+}
+
+export function applyImageFileToLayer(
+  file: File,
+  updateFn: (updates: { props: any }) => void,
+  currentProps: any
+) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    if (nw > 0 && nh > 0) {
+      const baseWidth = currentProps.width || 360;
+      const calcHeight = Math.round((nh / nw) * baseWidth);
+      updateFn({
+        props: {
+          ...currentProps,
+          src: url,
+          width: baseWidth,
+          height: calcHeight,
+        },
+      });
+    } else {
+      updateFn({ props: { ...currentProps, src: url } });
+    }
+  };
+  img.onerror = () => {
+    updateFn({ props: { ...currentProps, src: url } });
+  };
+  img.src = url;
+}
 const DEFAULT_LOGO_LOOP_ITEMS: { type: string; value: string }[] = [
   { type: 'text', value: 'React' },
   { type: 'text', value: 'Next.js' },
@@ -187,18 +249,6 @@ export default function MotionSidebar() {
         {/* ===== SCENES TAB ===== */}
         {activeTab === 'scene' && (
           <>
-            <button
-              onClick={addScene}
-              style={{
-                width: '100%', padding: '10px', background: 'var(--accent-primary)', color: '#0f172a',
-                border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                fontFamily: '"Plus Jakarta Sans", sans-serif', marginBottom: '12px',
-              }}
-            >
-              <Plus size={14} /> Add Scene
-            </button>
-
             {/* Scene List with Reordering */}
             <Reorder.Group
               axis="y"
@@ -230,9 +280,46 @@ export default function MotionSidebar() {
                         <GripVertical size={14} />
                       </div>
                       <Layers size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {scene.name}
-                      </span>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', position: 'relative', minWidth: 0 }}>
+                        <input
+                          type="text"
+                          value={scene.name}
+                          maxLength={20}
+                          onChange={(e) => updateScene(scene.id, { name: e.target.value.slice(0, 20) })}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLElement).blur(); }}
+                          style={{
+                            width: '100%',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: 'var(--text-primary)',
+                            background: 'transparent',
+                            border: '1px solid transparent',
+                            borderRadius: '4px',
+                            padding: '2px 4px',
+                            outline: 'none',
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.background = 'var(--bg-primary)';
+                            e.target.style.borderColor = 'var(--border-color)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.background = 'transparent';
+                            e.target.style.borderColor = 'transparent';
+                          }}
+                          title="Click to edit scene name"
+                        />
+                        <span style={{
+                          fontSize: '9px',
+                          color: scene.name.length >= 20 ? '#ef4444' : 'var(--text-muted)',
+                          fontWeight: scene.name.length >= 20 ? 700 : 500,
+                          marginLeft: '4px',
+                          flexShrink: 0,
+                          userSelect: 'none',
+                        }}>
+                          {scene.name.length}/20
+                        </span>
+                      </div>
                       <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
                         {getSceneDuration(scene).toFixed(1)}s
                       </span>
@@ -243,6 +330,7 @@ export default function MotionSidebar() {
                       </button>
                       {scenes.length > 1 && (
                         <button onClick={(e) => { e.stopPropagation(); removeScene(scene.id); }}
+                          className="delete-btn-hover"
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
                           title="Delete Scene">
                           <Trash2 size={12} />
@@ -267,52 +355,34 @@ export default function MotionSidebar() {
                   SCENE PROPERTIES
                 </h4>
 
-                {/* Scene Name and BG Color on same line with 20 char limit */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '12px' }}>
-                  {/* Scene Name */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Name</label>
-                      <span style={{
-                        fontSize: '10px',
-                        color: activeScene.name.length >= 20 ? '#ef4444' : 'var(--text-muted)',
-                        fontWeight: activeScene.name.length >= 20 ? 700 : 500
-                      }}>
-                        {activeScene.name.length}/20
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={20}
-                      value={activeScene.name}
-                      onChange={(e) => updateScene(activeScene.id, { name: e.target.value.slice(0, 20) })}
-                      style={{
-                        width: '100%', padding: '8px 10px', background: 'var(--bg-primary)',
-                        border: '1px solid var(--border-color)', borderRadius: '6px',
-                        color: 'var(--text-primary)', fontSize: '12px',
-                      }}
-                      placeholder="Scene name"
-                    />
-                  </div>
-
-                  {/* Background Color */}
+                {/* Background Color */}
+                <div style={{ marginBottom: '12px' }}>
                   <ColorPickerControl
                     label="BG Color"
                     value={activeScene.bgColor}
                     onChange={(color) => updateScene(activeScene.id, { bgColor: color })}
-                    style={{ width: '100px', flexShrink: 0 }}
                   />
                 </div>
 
                 {/* Background Images */}
                 <h4 style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600 }}>BG IMAGES</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginBottom: '16px' }}>
                   {[
                     { id: 'none', label: 'None', url: null },
                     { id: 'bg-01', label: 'BG 01', url: '/Background_Images/bg-01.svg' },
                     { id: 'bg-02', label: 'BG 02', url: '/Background_Images/bg-02.svg' },
+                    { id: 'bg-03', label: 'BG 03', url: '/Background_Images/bg-03.svg' },
+                    { id: 'bg-04', label: 'BG 04', url: '/Background_Images/bg-04.svg' },
                     { id: 'bg-05', label: 'BG 05', url: '/Background_Images/bg-05.svg' },
                     { id: 'bg-06', label: 'BG 06', url: '/Background_Images/bg-06.svg' },
+                    { id: 'bg-07', label: 'BG 07', url: '/Background_Images/bg-07.svg' },
+                    { id: 'bg-08', label: 'BG 08', url: '/Background_Images/bg-08.svg' },
+                    { id: 'bg-09', label: 'BG 09', url: '/Background_Images/bg-09.svg' },
+                    { id: 'bg-10', label: 'BG 10', url: '/Background_Images/bg-10.svg' },
+                    { id: 'bg-11', label: 'BG 11', url: '/Background_Images/bg-11.svg' },
+                    { id: 'bg-12', label: 'BG 12', url: '/Background_Images/bg-12.svg' },
+                    { id: 'bg-13', label: 'BG 13', url: '/Background_Images/bg-13.svg' },
+                    { id: 'bg-14', label: 'BG 14', url: '/Background_Images/bg-14.svg' },
                   ].map((bg) => (
                     <button
                       key={bg.id}
@@ -383,22 +453,10 @@ export default function MotionSidebar() {
         {activeTab === 'components' && (
           <>
             {activeScene && (
-              <div style={{ marginBottom: '12px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Film size={12} /> Editing: <strong style={{ color: 'var(--text-primary)' }}>{activeScene.name}</strong>
+              <div style={{ marginBottom: '14px', fontSize: '13.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Film size={14} /> Editing: <strong style={{ color: 'var(--text-primary)', fontSize: '13.5px' }}>{activeScene.name}</strong>
               </div>
             )}
-
-            <button
-              onClick={() => setPickerOpen(true)}
-              style={{
-                width: '100%', padding: '10px', background: 'var(--accent-primary)', color: '#0f172a',
-                border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                fontFamily: '"Plus Jakarta Sans", sans-serif', marginBottom: '12px',
-              }}
-            >
-              <Plus size={13} /> Add Element
-            </button>
 
             <ComponentPicker 
               open={pickerOpen} 
@@ -416,6 +474,7 @@ export default function MotionSidebar() {
             >
               {layers.map((layer) => {
                 const isSelected = selectedLayerId === layer.id;
+                const layerDisplayName = layer.name !== undefined ? layer.name : (layer.type === 'text' ? layer.text : (COMPONENT_TEMPLATES.find((t) => t.id === layer.templateId)?.name || layer.templateId));
                 return (
                   <Reorder.Item
                     key={layer.id}
@@ -437,15 +496,44 @@ export default function MotionSidebar() {
                     ) : (
                       <Type size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                     )}
-                    <span style={{ flex: 1, fontSize: '12px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                      {layer.type === 'text' ? layer.text : COMPONENT_TEMPLATES.find((t) => t.id === layer.templateId)?.name || layer.templateId}
-                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <input
+                        type="text"
+                        value={layerDisplayName}
+                        onChange={(e) => updateLayer(layer.id, { name: e.target.value } as any)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLElement).blur(); }}
+                        style={{
+                          width: '100%',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: 'var(--text-primary)',
+                          background: 'transparent',
+                          border: '1px solid transparent',
+                          borderRadius: '4px',
+                          padding: '2px 4px',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.background = 'var(--bg-primary)';
+                          e.target.style.borderColor = 'var(--border-color)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.borderColor = 'transparent';
+                        }}
+                        title="Click to rename component"
+                      />
+                    </div>
                     <button onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}>
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
+                      title="Duplicate Component">
                       <Copy size={12} />
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); removeLayer(layer.id); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}>
+                      className="delete-btn-hover"
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
+                      title="Delete Component">
                       <Trash2 size={12} />
                     </button>
                   </Reorder.Item>
@@ -1083,87 +1171,6 @@ export default function MotionSidebar() {
                   </>
                 )}
 
-                {selectedLayer.templateId === 'animated-beam' && (
-                  <>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Variant</label>
-                    <select value={selectedLayer.props.variant ?? 'unidirectional'}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, variant: e.target.value } } as any)}
-                      style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }}>
-                      <option value="unidirectional">Uni-Directional</option>
-                      <option value="bidirectional">Bi-Directional</option>
-                      <option value="multiple-inputs">Multiple Inputs</option>
-                      <option value="multiple-outputs">Multiple Outputs</option>
-                    </select>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Nodes (images)</label>
-                    <ListItemEditor
-                      items={selectedLayer.props.nodes || [{ emoji: '📄' }, { emoji: '🔗' }, { emoji: '💬' }]}
-                      onChange={(nodes) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, nodes } } as any)}
-                      createNewItem={() => ({ emoji: '⚡' } as any)}
-                      addLabel="Add Node"
-                      renderItem={(item: any, idx, update) => (
-                        <>
-                          <label style={{ width: '32px', height: '28px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }} title="Upload image">
-                            {item.imageUrl ? (
-                              <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <span style={{ fontSize: '14px' }}>{item.emoji || '⚡'}</span>
-                            )}
-                            <input type="file" accept="image/*" style={{ display: 'none' }}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) update({ imageUrl: URL.createObjectURL(file), emoji: undefined } as any);
-                              }} />
-                          </label>
-                          <input type="text" value={item.emoji || ''} placeholder="emoji"
-                            onChange={(e) => update({ emoji: e.target.value, imageUrl: undefined } as any)}
-                            style={{ width: '40px', padding: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px', textAlign: 'center' }} />
-                        </>
-                      )}
-                    />
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Center/Target Node</label>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
-                      <label style={{ width: '32px', height: '28px', borderRadius: '4px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
-                        {(selectedLayer.props.centerNode || {}).imageUrl ? (
-                          <img src={selectedLayer.props.centerNode.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <span style={{ fontSize: '14px' }}>{(selectedLayer.props.centerNode || {}).emoji || '🎯'}</span>
-                        )}
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, centerNode: { imageUrl: URL.createObjectURL(file) } } } as any);
-                          }} />
-                      </label>
-                      <input type="text" value={(selectedLayer.props.centerNode || {}).emoji || '🎯'} placeholder="emoji"
-                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, centerNode: { emoji: e.target.value } } } as any)}
-                        style={{ width: '50px', padding: '4px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px', textAlign: 'center' }} />
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Start Color</label>
-                        <input type="color" value={selectedLayer.props.gradientStartColor ?? '#ffaa40'}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, gradientStartColor: e.target.value } } as any)}
-                          style={{ width: '100%', height: '34px', padding: '2px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer' }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>End Color</label>
-                        <input type="color" value={selectedLayer.props.gradientStopColor ?? '#9c40ff'}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, gradientStopColor: e.target.value } } as any)}
-                          style={{ width: '100%', height: '34px', padding: '2px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer' }} />
-                      </div>
-                    </div>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Curvature: {selectedLayer.props.curvature ?? 50}</label>
-                    <input type="range" min={-100} max={150} step={5} value={selectedLayer.props.curvature ?? 50}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, curvature: Number(e.target.value) } } as any)}
-                      style={{ width: '100%', marginBottom: '10px' }} />
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Duration (s)</label>
-                    <input type="number" value={selectedLayer.props.duration ?? 5}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, duration: Number(e.target.value) } } as any)}
-                      min={1} max={15} step={0.5}
-                      style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
-                  </>
-                )}
-
                 {selectedLayer.templateId === 'orbiting-circles' && (
                   <>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Orbit Items (images)</label>
@@ -1320,9 +1327,9 @@ export default function MotionSidebar() {
                 {selectedLayer.templateId === 'camera-zoom' && (
                   <>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
-                      Zoom Scale: {(selectedLayer.props.zoomScale ?? 2).toFixed(1)}x
+                      Zoom Scale: {(selectedLayer.props.zoomScale ?? 0).toFixed(1)}x
                     </label>
-                    <input type="range" min={1.2} max={5} step={0.1} value={selectedLayer.props.zoomScale ?? 2}
+                    <input type="range" min={0} max={5} step={0.1} value={selectedLayer.props.zoomScale ?? 0}
                       onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, zoomScale: Number(e.target.value) } } as any)}
                       style={{ width: '100%', marginBottom: '10px' }} />
                   </>
@@ -1383,6 +1390,155 @@ export default function MotionSidebar() {
                   </>
                 )}
 
+                {selectedLayer.templateId === 'video-upload' && (
+                  <>
+                    {/* Video File Upload Dropzone */}
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block', fontWeight: 600 }}>VIDEO FILE</label>
+                    <label style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      padding: '16px 12px', background: 'var(--bg-primary)',
+                      border: '2px dashed var(--border-color)', borderRadius: '10px',
+                      textAlign: 'center', cursor: 'pointer', fontSize: '12px',
+                      color: 'var(--text-primary)', fontWeight: 600, marginBottom: '12px',
+                      transition: 'all 0.15s ease',
+                    }}>
+                      {selectedLayer.props.src ? (
+                        <>
+                          <span style={{ color: '#a855f7', fontSize: '13px' }}>✓ Video Loaded</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>Click to replace video file</span>
+                        </>
+                      ) : (
+                        <>
+                          <Film size={20} style={{ color: '#a855f7', marginBottom: '2px' }} />
+                          <span>Upload Video File</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>MP4, WEBM, or MOV</span>
+                        </>
+                      )}
+                      <input type="file" accept="video/*" style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            applyVideoFileToLayer(file, (updates) => updateLayer(selectedLayer.id, updates as any), selectedLayer.props);
+                          }
+                        }} />
+                    </label>
+
+                    {/* Playback Controls */}
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>PLAYBACK SETTINGS</label>
+                    <div style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={selectedLayer.props.loop ?? true}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, loop: e.target.checked } } as any)}
+                          style={{ accentColor: '#a855f7' }} />
+                        Loop
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={selectedLayer.props.muted ?? true}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, muted: e.target.checked } } as any)}
+                          style={{ accentColor: '#a855f7' }} />
+                        Mute
+                      </label>
+                    </div>
+
+                    {/* Styling */}
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>STYLING & BORDER</label>
+                    
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-end' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Border Radius (px)</label>
+                        <input type="number" value={selectedLayer.props.borderRadius ?? 12}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, borderRadius: Number(e.target.value) } } as any)}
+                          min={0} max={60} step={2}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Border Width</label>
+                        <input type="number" value={selectedLayer.props.borderWidth ?? 0}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, borderWidth: Number(e.target.value) } } as any)}
+                          min={0} max={10} step={1}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <ColorPickerControl
+                          label="Border Color"
+                          value={selectedLayer.props.borderColor ?? '#a855f7'}
+                          onChange={(color) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, borderColor: color } } as any)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {selectedLayer.templateId === 'image' && (
+                  <>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>IMAGE FILE</label>
+                    <label style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      padding: '16px', borderRadius: '8px', border: '2px dashed var(--border-color)',
+                      background: 'rgba(255,255,255,0.02)', cursor: 'pointer', marginBottom: '12px',
+                      color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, gap: '4px',
+                    }}>
+                      {selectedLayer.props.src ? (
+                        <>
+                          <span style={{ color: '#facc15', fontSize: '13px' }}>✓ Image Loaded</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>Click to replace image file</span>
+                        </>
+                      ) : (
+                        <>
+                          <Box size={20} style={{ color: '#facc15', marginBottom: '2px' }} />
+                          <span>Upload Image File</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>PNG, JPG, SVG, WEBP</span>
+                        </>
+                      )}
+                      <input type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            applyImageFileToLayer(file, (updates) => updateLayer(selectedLayer.id, updates as any), selectedLayer.props);
+                          }
+                        }} />
+                    </label>
+
+                    {/* Dimensions & Object Fit */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Width (px)</label>
+                        <input type="number" value={selectedLayer.props.width ?? 300}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, width: Number(e.target.value) } } as any)}
+                          min={50} max={1920} step={10}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Height (px)</label>
+                        <input type="number" value={selectedLayer.props.height ?? 200}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, height: Number(e.target.value) } } as any)}
+                          min={50} max={1080} step={10}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Border Radius (px)</label>
+                        <input type="number" value={selectedLayer.props.borderRadius ?? 8}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, borderRadius: Number(e.target.value) } } as any)}
+                          min={0} max={100} step={2}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Object Fit</label>
+                        <select value={selectedLayer.props.objectFit ?? 'contain'}
+                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, objectFit: e.target.value } } as any)}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }}>
+                          <option value="contain">Contain</option>
+                          <option value="cover">Cover</option>
+                          <option value="fill">Fill</option>
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {selectedLayer.templateId === 'phone-device' && (
                   <>
                     {/* Device Type & Animation in 2-column grid */}
@@ -1399,7 +1555,15 @@ export default function MotionSidebar() {
                       <div>
                         <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Animation</label>
                         <select value={selectedLayer.props.animationTemplate ?? 'float'}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, animationTemplate: e.target.value } } as any)}
+                          onChange={(e) => {
+                            const animName = e.target.value;
+                            const animConfig = TEMPLATES.find((t) => t.id === animName);
+                            const newDuration = animConfig ? animConfig.duration : selectedLayer.duration;
+                            updateLayer(selectedLayer.id, {
+                              duration: newDuration,
+                              props: { ...selectedLayer.props, animationTemplate: animName },
+                            } as any);
+                          }}
                           style={{ width: '100%', padding: '7px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }}>
                           <option value="orbit">Orbit</option>
                           <option value="hero-reveal">Hero Reveal</option>
@@ -1647,6 +1811,42 @@ export default function MotionSidebar() {
           </>
         )}
 
+      </div>
+
+      {/* Pinned Bottom-Aligned Action Footer */}
+      <div style={{
+        padding: '12px 14px',
+        borderTop: '1px solid var(--border-color)',
+        background: 'var(--bg-secondary)',
+        flexShrink: 0,
+      }}>
+        {activeTab === 'scene' ? (
+          <button
+            onClick={addScene}
+            style={{
+              width: '100%', padding: '10px', background: 'var(--accent-primary)', color: '#0f172a',
+              border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              fontFamily: '"Plus Jakarta Sans", sans-serif',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            }}
+          >
+            <Plus size={14} /> Add Scene
+          </button>
+        ) : (
+          <button
+            onClick={() => setPickerOpen(true)}
+            style={{
+              width: '100%', padding: '10px', background: 'var(--accent-primary)', color: '#0f172a',
+              border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              fontFamily: '"Plus Jakarta Sans", sans-serif',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            }}
+          >
+            <Plus size={13} /> Add Element
+          </button>
+        )}
       </div>
     </div>
   );

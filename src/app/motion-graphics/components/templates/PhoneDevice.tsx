@@ -90,19 +90,18 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
-        const initial = initialColors.current[mat.uuid];
-        if (!initial) return;
-
-        // Skip black materials (camera, sensors, notch)
-        if (initial.r < 0.1 && initial.g < 0.1 && initial.b < 0.1 && !mat.map) {
-          mat.color.set('#000000');
-          return;
-        }
-        // Skip emissive (flash)
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        mat.color.set(deviceColor);
-        if (mat.map) mat.map = null;
+        const initial = initialColors.current[mat.uuid];
+        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch');
+
+        if (isNotchOrLens) {
+          mat.color.set('#000000');
+        } else {
+          mat.color.set(deviceColor);
+          if (mat.map) mat.map = null;
+        }
         mat.needsUpdate = true;
       });
     });
@@ -190,13 +189,18 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
-        const initial = initialColors.current[mat.uuid];
-        if (!initial) return;
-
-        if (initial.r < 0.1 && initial.g < 0.1 && initial.b < 0.1) return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        mat.color.set(deviceColor);
+        const initial = initialColors.current[mat.uuid];
+        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor';
+
+        if (isNotchOrLens) {
+          mat.color.set('#000000');
+        } else {
+          mat.color.set(deviceColor);
+          if (mat.map) mat.map = null;
+        }
         mat.needsUpdate = true;
       });
     });

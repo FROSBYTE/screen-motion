@@ -7,7 +7,6 @@ export type BeamVariant = 'unidirectional' | 'bidirectional' | 'multiple-inputs'
 
 export interface BeamNode {
   imageUrl?: string;
-  emoji?: string;
 }
 
 export interface AnimatedBeamProps {
@@ -69,7 +68,7 @@ function NodeCircle({ node, x, y, size }: { node: BeamNode; x: number; y: number
       {node.imageUrl ? (
         <img src={node.imageUrl} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
       ) : (
-        <span style={{ fontSize: `${size * 0.45}px` }}>{node.emoji || '⚡'}</span>
+        <span style={{ fontSize: `${size * 0.35}px`, color: 'rgba(255,255,255,0.3)' }}>+</span>
       )}
     </div>
   );
@@ -77,8 +76,8 @@ function NodeCircle({ node, x, y, size }: { node: BeamNode; x: number; y: number
 
 export default function AnimatedBeam({
   variant = 'unidirectional',
-  nodes = [{ emoji: '📄' }, { emoji: '🔗' }, { emoji: '💬' }],
-  centerNode = { emoji: '🎯' },
+  nodes = [{ imageUrl: '' }, { imageUrl: '' }, { imageUrl: '' }],
+  centerNode = { imageUrl: '' },
   curvature = 50,
   duration = 5,
   pathColor = 'gray',
@@ -150,7 +149,7 @@ export default function AnimatedBeam({
   }
 
   // Determine which nodes to show
-  const displayLeftNodes = variant === 'multiple-inputs' ? nodes : [nodes[0] || { emoji: '⚡' }];
+  const displayLeftNodes = variant === 'multiple-inputs' ? nodes : [nodes[0] || { imageUrl: '' }];
   const displayRightNodes = variant === 'multiple-outputs' ? nodes : [centerNode];
 
   return (

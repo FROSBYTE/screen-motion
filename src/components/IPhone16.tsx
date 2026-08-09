@@ -186,24 +186,15 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
     Object.entries(materials).forEach(([name, mat]) => {
       if ('color' in mat && mat.color) {
         const color = (mat as any).color as THREE.Color;
-        const initialColor = initialColors.current[name];
         
-        // Skip if it's already a very dark/black material (like camera lenses, or notch) originally
-        if (initialColor && initialColor.r < 0.1 && initialColor.g < 0.1 && initialColor.b < 0.1 && !(mat as any).map) {
-          // Explicitly ensure it stays black
-          color.set('#000000');
-          return;
-        }
-        
-        // Skip if it's highly emissive (like the camera flash)
+        // Skip camera lens and flash
+        if (name === 'Lens_Glass' || name === 'Flash') return;
         if ('emissive' in mat && (mat as any).emissive && ((mat as any).emissive.r > 0.2 || (mat as any).emissive.g > 0.2)) {
           return;
         }
 
         // Change all other materials (frame, back glass, buttons) to the selected device color
         color.set(state.deviceColor);
-        
-        // If the green color was baked into a texture map, remove it so the new color shows
         if ((mat as any).map) {
           (mat as any).map = null;
         }

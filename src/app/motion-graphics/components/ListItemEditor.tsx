@@ -63,6 +63,7 @@ export default function ListItemEditor<T>({
             {renderItem(item, idx, (patch) => handleUpdate(idx, patch))}
           </div>
           <button
+            className="delete-btn-hover"
             onClick={() => handleRemove(idx)}
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', flexShrink: 0 }}
             title="Remove item"

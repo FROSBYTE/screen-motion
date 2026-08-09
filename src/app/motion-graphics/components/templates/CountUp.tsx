@@ -35,23 +35,18 @@ export default function CountUp({
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   fontSize = 48,
 }: CountUpProps) {
-  const [displayValue, setDisplayValue] = useState(direction === 'up' ? from : to);
-  const motionValue = useMotionValue(direction === 'up' ? from : to);
-
-  const isMountedRef = useRef(false);
+  const startVal = direction === 'up' ? from : to;
+  const targetVal = direction === 'up' ? to : from;
+  const [displayValue, setDisplayValue] = useState(startVal);
+  const motionValue = useMotionValue(startVal);
 
   useEffect(() => {
-    const target = direction === 'up' ? to : from;
-    if (isMountedRef.current) {
-      setDisplayValue(target);
-      motionValue.set(target);
-      return;
-    }
-    isMountedRef.current = true;
+    motionValue.set(startVal);
+    setDisplayValue(startVal);
 
-    const controls = animate(motionValue, target, {
-      duration: duration / speed,
-      delay: delay / speed,
+    const controls = animate(motionValue, targetVal, {
+      duration: Math.max(0.1, duration / (speed || 1)),
+      delay: (delay || 0) / (speed || 1),
       ease: 'easeOut',
       onUpdate: (latest) => {
         setDisplayValue(Math.round(latest));
@@ -59,7 +54,7 @@ export default function CountUp({
     });
 
     return () => controls.stop();
-  }, [to, from, duration, delay, direction, speed, motionValue]);
+  }, [to, from, duration, delay, direction, speed]);
 
   const formattedValue = separator
     ? displayValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator)

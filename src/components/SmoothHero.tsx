@@ -1,18 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react";
 
 export default function SmoothHero() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <section
       style={{
         position: "relative",
         overflow: "hidden",
         minHeight: "100vh",
-        backgroundColor: "#0e0e14", // Pro Video Editor Dark Primary Background
+        backgroundColor: "#0e0e14",
         color: "#f8fafc",
         fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif",
         display: "flex",
@@ -22,6 +24,60 @@ export default function SmoothHero() {
         paddingBottom: "80px",
       }}
     >
+      {/* Responsive Styles */}
+      <style jsx global>{`
+        .nav-desktop-links {
+          display: flex;
+          align-items: center;
+          gap: 28px;
+        }
+        .nav-desktop-cta {
+          display: inline-flex;
+          align-items: center;
+        }
+        .nav-mobile-toggle {
+          display: none;
+        }
+        .hero-btn-primary, .hero-btn-secondary {
+          height: 58px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 18px;
+          font-size: 18px;
+          font-weight: 800;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+          .nav-desktop-links {
+            display: none !important;
+          }
+          .nav-desktop-cta {
+            display: none !important;
+          }
+          .nav-mobile-toggle {
+            display: flex !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-btn-container {
+            flex-direction: column !important;
+            width: 100% !important;
+            padding: 0 16px !important;
+          }
+          .hero-btn-primary, .hero-btn-secondary {
+            width: 100% !important;
+            max-width: 320px !important;
+            height: 50px !important;
+            font-size: 15px !important;
+            padding: 0 20px !important;
+          }
+        }
+      `}</style>
+
       {/* 1. Top Navigation Bar */}
       <header
         style={{
@@ -31,44 +87,46 @@ export default function SmoothHero() {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "16px 24px",
-          zIndex: 20,
+          zIndex: 30,
           marginBottom: "40px",
+          position: "relative",
         }}
       >
-        {/* Brand Logo - Text Only (No App Icon) */}
+        {/* Brand Logo - Text Only */}
         <Link href="/" style={{ textDecoration: "none" }}>
-          <span style={{ fontSize: "24px", fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.03em" }}>
-            screen<span style={{ color: "#facc15" }}>motion</span>
+          <span style={{ fontSize: "24px", fontWeight: 800, color: "#EEEEEE", letterSpacing: "-0.03em" }}>
+            screen<span style={{ color: "#00ADB5" }}>motion</span>
           </span>
         </Link>
 
-        {/* Center Nav Links */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "28px" }}>
-          <a href="#templates" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+        {/* Center Nav Links (Desktop) */}
+        <nav className="nav-desktop-links">
+          <a href="#templates" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             3D Templates
           </a>
-          <Link href="/motion-graphics" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <Link href="/motion-graphics" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             Motion Graphics
           </Link>
-          <Link href="/editor" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <Link href="/editor" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             3D Editor
           </Link>
-          <a href="#faq" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <a href="#faq" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             FAQ
           </a>
         </nav>
 
-        {/* Right CTA */}
+        {/* Right CTA (Desktop) */}
         <a
           href="https://forms.gle/rtfYsFTgRUP9RE79A"
           target="_blank"
           rel="noopener noreferrer"
+          className="nav-desktop-cta"
           style={{
             fontSize: "13px",
             fontWeight: 700,
-            color: "#f8fafc",
-            backgroundColor: "#222232",
-            border: "1px solid #2a2a3c",
+            color: "#222831",
+            backgroundColor: "#00ADB5",
+            border: "none",
             padding: "8px 20px",
             borderRadius: "9999px",
             textDecoration: "none",
@@ -77,6 +135,100 @@ export default function SmoothHero() {
         >
           Join Waitlist
         </a>
+
+        {/* Mobile Hamburger Toggle Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="nav-mobile-toggle"
+          aria-label="Toggle Mobile Navigation Menu"
+          style={{
+            background: "#393E46",
+            border: "1px solid #4f5663",
+            borderRadius: "10px",
+            padding: "8px",
+            color: "#EEEEEE",
+            cursor: "pointer",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: "16px",
+                right: "16px",
+                backgroundColor: "#393E46",
+                border: "1px solid #4f5663",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.8)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                zIndex: 40,
+              }}
+            >
+              <a
+                href="#templates"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+              >
+                3D Templates
+              </a>
+              <Link
+                href="/motion-graphics"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+              >
+                Motion Graphics
+              </Link>
+              <Link
+                href="/editor"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+              >
+                3D Editor
+              </Link>
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+              >
+                FAQ
+              </a>
+              <div style={{ height: "1px", backgroundColor: "#4f5663", margin: "4px 0" }} />
+              <a
+                href="https://forms.gle/rtfYsFTgRUP9RE79A"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  color: "#222831",
+                  backgroundColor: "#00ADB5",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  textDecoration: "none",
+                  textAlign: "center",
+                }}
+              >
+                Join Waitlist
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* 2. Main Hero Content Container */}
@@ -99,73 +251,58 @@ export default function SmoothHero() {
         {/* Title */}
         <h1
           style={{
-            fontSize: "clamp(2.5rem, 5.5vw, 4.25rem)",
+            fontSize: "clamp(2.2rem, 5.5vw, 4.25rem)",
             lineHeight: 1.12,
             fontWeight: 800,
             letterSpacing: "-0.03em",
-            color: "#f8fafc",
+            color: "#EEEEEE",
             margin: "0 0 20px 0",
             maxWidth: "920px",
           }}
         >
-          Build Beautiful 3D Product Videos, Effortlessly
+          Product Video Maker For SaaS
         </h1>
 
         {/* Subtitle */}
         <p
           style={{
-            fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
+            fontSize: "clamp(0.95rem, 1.8vw, 1.25rem)",
             lineHeight: 1.5,
-            color: "#94a3b8",
-            maxWidth: "680px",
+            color: "#a0aab5",
+            maxWidth: "760px",
             margin: "0 0 36px 0",
             fontWeight: 400,
           }}
         >
-          Craft. Animate. Export 4K Studio Device Mockups &amp; Motion Graphics In Your Browser.
+          No need to learn After Effects and spend your unprofessional time in making videos. Choose from the variety of our templates and create video easily. Zero Experience required
         </p>
 
-        {/* Warm Light Yellow CTA Buttons (No Glow Effect) */}
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "48px" }}>
-          {/* Light Yellow Gradient Primary Button */}
+        {/* Teal CTA Buttons */}
+        <div className="hero-btn-container" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "48px" }}>
+          {/* Vibrant Teal Gradient Primary Button */}
           <Link
             href="/editor"
+            className="hero-btn-primary"
             style={{
-              height: "58px",
               padding: "0 32px",
-              borderRadius: "18px",
-              background: "linear-gradient(135deg, #facc15 0%, #eab308 100%)",
-              color: "#0f172a",
-              fontSize: "18px",
-              fontWeight: 800,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              textDecoration: "none",
-              boxShadow: "0 4px 16px rgba(234, 179, 8, 0.25)",
+              background: "linear-gradient(135deg, #00ADB5 0%, #008b92 100%)",
+              color: "#222831",
               transition: "transform 0.2s ease",
             }}
           >
             Launch 3D Editor
           </Link>
 
-          {/* Secondary Studio Dark Button with Background Color & BETA Tag */}
+          {/* Secondary Medium Dark Button */}
           <Link
             href="/motion-graphics"
+            className="hero-btn-secondary"
             style={{
-              height: "58px",
               padding: "0 28px",
-              borderRadius: "18px",
-              backgroundColor: "#1c1c28",
-              border: "1.5px solid #2d2d42",
-              color: "#f8fafc",
-              fontSize: "18px",
-              fontWeight: 800,
-              display: "inline-flex",
-              alignItems: "center",
+              backgroundColor: "#393E46",
+              border: "1.5px solid #4f5663",
+              color: "#EEEEEE",
               gap: "10px",
-              textDecoration: "none",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)",
               transition: "transform 0.2s ease",
             }}
           >
@@ -176,8 +313,8 @@ export default function SmoothHero() {
                 fontWeight: 800,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: "#0f172a",
-                backgroundColor: "#facc15",
+                color: "#222831",
+                backgroundColor: "#00ADB5",
                 padding: "3px 8px",
                 borderRadius: "9999px",
                 lineHeight: 1,
