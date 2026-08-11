@@ -16,6 +16,8 @@ export interface WordRotateProps {
   color?: string;
   fontSize?: number;
   className?: string;
+  isLoop?: boolean;
+  layerDuration?: number;
 }
 
 const DEFAULT_ITEMS: WordRotateItem[] = [
@@ -31,15 +33,26 @@ export default function WordRotate({
   color = '#ffffff',
   fontSize = 32,
   className = '',
+  isLoop = true,
+  layerDuration,
 }: WordRotateProps) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    const wordCount = Math.max(1, items.length);
+    const targetCycleMs = layerDuration ? (layerDuration * 1000 * 0.85) / wordCount : 2000;
+    const intervalMs = Math.max(250, targetCycleMs / Math.max(0.5, speed));
+
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % items.length);
-    }, 2000 / speed);
+      setIndex((prev) => {
+        if (!isLoop && prev >= items.length - 1) {
+          return prev;
+        }
+        return (prev + 1) % items.length;
+      });
+    }, intervalMs);
     return () => clearInterval(interval);
-  }, [items.length, speed]);
+  }, [items.length, speed, layerDuration, isLoop]);
 
   const currentRaw = items[index] || items[0] || 'Word';
   const currentText = typeof currentRaw === 'string' ? currentRaw : currentRaw?.text || 'Word';

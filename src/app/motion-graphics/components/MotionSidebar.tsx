@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, Play } from 'lucide-react';
-import { useMGState, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration } from '../store';
+import { useMGState, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration, MGPacingPreset } from '../store';
 import { COMPONENT_TEMPLATES } from './templates';
 import { Reorder } from 'motion/react';
 import ListItemEditor from './ListItemEditor';
@@ -192,6 +192,56 @@ const TIMING_OPTIONS = [
 
 const selectStyle = { width: '100%', padding: '8px', background: '#1c1c26', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#ffffff', fontSize: '12px', marginBottom: '10px', outline: 'none' };
 
+function PacingPresetControl({
+  value = 'balanced',
+  onChange,
+}: {
+  value?: MGPacingPreset;
+  onChange: (preset: MGPacingPreset) => void;
+}) {
+  const presets: { id: MGPacingPreset; label: string; tooltip: string }[] = [
+    { id: 'snappy', label: 'Snappy', tooltip: 'Fast entrance (~20% duration), maximizes reading time on screen.' },
+    { id: 'balanced', label: 'Balanced', tooltip: 'Standard smooth entrance (~35% duration).' },
+    { id: 'cinematic', label: 'Cinematic', tooltip: 'Slower, elegant reveal (~50% duration).' },
+  ];
+
+  return (
+    <div style={{ marginBottom: '10px' }}>
+      <label style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+        Speed
+      </label>
+      <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-primary)', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+        {presets.map((p) => {
+          const isActive = value === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              title={p.tooltip}
+              onClick={() => onChange(p.id)}
+              style={{
+                flex: 1,
+                padding: '6px 4px',
+                background: isActive ? 'var(--accent-primary)' : 'transparent',
+                color: isActive ? '#0f172a' : 'var(--text-primary)',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: isActive ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                textAlign: 'center',
+              }}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 
 export default function MotionSidebar() {
@@ -337,7 +387,7 @@ export default function MotionSidebar() {
                         </button>
                       )}
                     </div>
-                    {i > 0 && (
+                    {scene.transition !== 'none' && (
                       <div style={{ marginTop: '4px', paddingLeft: '22px', fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <ChevronRight size={10} />
                         {TRANSITION_OPTIONS.find((t) => t.id === scene.transition)?.label || 'Cut'} ({scene.transitionDuration}s)
@@ -404,9 +454,8 @@ export default function MotionSidebar() {
                   ))}
                 </div>
 
-                {/* Transition (not for first scene) */}
-                {activeSceneIndex > 0 && (
-                  <div style={{ marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                {/* Transition */}
+                <div style={{ marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
                     <h4 style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', fontWeight: 600 }}>
                       TRANSITION IN
                     </h4>
@@ -443,7 +492,6 @@ export default function MotionSidebar() {
                       </>
                     )}
                   </div>
-                )}
               </div>
             )}
           </>
@@ -580,15 +628,8 @@ export default function MotionSidebar() {
                   </div>
                 </div>
 
-                {/* Size, Color, Bold, Italic same line */}
+                {/* Color, Bold, Italic line */}
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', marginBottom: '10px' }}>
-                  <div style={{ width: '50px' }}>
-                    <label style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '3px', display: 'block' }}>Size</label>
-                    <input type="number" value={selectedLayer.fontSize}
-                      onChange={(e) => updateLayer(selectedLayer.id, { fontSize: Number(e.target.value) })}
-                      min={12} max={200}
-                      style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
-                  </div>
                   <ColorPickerControl
                     label="Color"
                     showHex={false}
@@ -606,15 +647,11 @@ export default function MotionSidebar() {
                   </button>
                 </div>
 
-                {/* Speed only */}
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '3px', display: 'block' }}>Speed</label>
-                  <select value={selectedLayer.animationSpeed}
-                    onChange={(e) => updateLayer(selectedLayer.id, { animationSpeed: Number(e.target.value) })}
-                    style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }}>
-                    {SPEED_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                  </select>
-                </div>
+                {/* Pacing Preset */}
+                <PacingPresetControl
+                  value={selectedLayer.pacingPreset || 'balanced'}
+                  onChange={(pacingPreset) => updateLayer(selectedLayer.id, { pacingPreset })}
+                />
 
                 {/* Enter Animation */}
                 <div style={{ marginTop: '8px' }}>
@@ -667,29 +704,12 @@ export default function MotionSidebar() {
                   {COMPONENT_TEMPLATES.find((t) => t.id === selectedLayer.templateId)?.name} <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>ⓘ</span>
                 </div>
 
-                {/* Speed & Scale side by side */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Speed</label>
-                    <CustomDropdown value={selectedLayer.props.speed ?? 1}
-                      onChange={(v) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, speed: v } } as any)}
-                      options={SPEED_OPTIONS} style={{ width: '100%' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Scale</label>
-                    <CustomDropdown
-                      value={selectedLayer.templateId === 'phone-device' ? (selectedLayer.props.deviceSize ?? selectedLayer.scale ?? 1) : selectedLayer.scale}
-                      onChange={(v) => {
-                        if (selectedLayer.templateId === 'phone-device') {
-                          updateLayer(selectedLayer.id, { scale: v, props: { ...selectedLayer.props, deviceSize: v } } as any);
-                        } else {
-                          updateLayer(selectedLayer.id, { scale: v } as any);
-                        }
-                      }}
-                      options={[{ value: 0.5, label: '0.5x' }, { value: 0.75, label: '0.75x' }, { value: 1, label: '1.0x' }, { value: 1.25, label: '1.25x' }, { value: 1.5, label: '1.5x' }, { value: 1.8, label: '1.8x' }, { value: 2, label: '2.0x' }, { value: 2.5, label: '2.5x' }, { value: 3, label: '3.0x' }]}
-                      style={{ width: '100%' }} />
-                  </div>
-                </div>
+                <PacingPresetControl
+                  value={selectedLayer.pacingPreset || 'balanced'}
+                  onChange={(pacingPreset) => updateLayer(selectedLayer.id, { pacingPreset })}
+                />
+
+
 
                 {/* Enter Animation */}
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Enter Animation</label>
@@ -749,13 +769,6 @@ export default function MotionSidebar() {
                         <input type="color" value={selectedLayer.props.color ?? '#ffffff'}
                           onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, color: e.target.value } } as any)}
                           style={{ width: '100%', height: '30px', padding: '1px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer' }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '3px', display: 'block' }}>Size</label>
-                        <input type="number" value={selectedLayer.props.fontSize ?? 48}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
-                          min={12} max={150} step={2}
-                          style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
                       </div>
                       <button onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
                         style={{ padding: '6px 10px', background: (selectedLayer.props.isBold ?? true) ? 'var(--accent-primary)' : 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: (selectedLayer.props.isBold ?? true) ? '#0f172a' : 'var(--text-primary)', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
@@ -1069,15 +1082,20 @@ export default function MotionSidebar() {
 
                 {selectedLayer.templateId === 'word-rotate' && (
                   <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', background: 'var(--bg-primary)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 500, cursor: 'pointer' }} htmlFor="word-rotate-loop">Loop Animation</label>
+                      <input
+                        id="word-rotate-loop"
+                        type="checkbox"
+                        checked={selectedLayer.props.isLoop ?? true}
+                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isLoop: e.target.checked } } as any)}
+                        style={{ cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                      />
+                    </div>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Text Color</label>
                     <input type="color" value={selectedLayer.props.color ?? '#ffffff'}
                       onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, color: e.target.value } } as any)}
                       style={{ width: '100%', height: '34px', padding: '2px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', marginBottom: '10px' }} />
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Font Size</label>
-                    <input type="number" value={selectedLayer.props.fontSize ?? 32}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
-                      min={12} max={100} step={2}
-                      style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Word Items</label>
                     <ListItemEditor
                       items={selectedLayer.props.items || DEFAULT_WORD_ROTATE_ITEMS}
@@ -1148,13 +1166,6 @@ export default function MotionSidebar() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Font Size</label>
-                        <input type="number" value={selectedLayer.props.fontSize ?? 32}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
-                          min={12} max={120} step={2}
-                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
-                      </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Stroke Width</label>
                         <input type="number" value={selectedLayer.props.strokeWidth ?? 2}
@@ -1271,6 +1282,16 @@ export default function MotionSidebar() {
 
                 {selectedLayer.templateId === 'text-3d-flip' && (
                   <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', background: 'var(--bg-primary)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 500, cursor: 'pointer' }} htmlFor="text-3d-flip-loop">Loop Animation</label>
+                      <input
+                        id="text-3d-flip-loop"
+                        type="checkbox"
+                        checked={selectedLayer.props.isLoop ?? true}
+                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isLoop: e.target.checked } } as any)}
+                        style={{ cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                      />
+                    </div>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Front Text</label>
                     <input type="text" value={selectedLayer.props.text ?? 'Stay hungry, stay foolish'}
                       onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, text: e.target.value } } as any)}
@@ -1755,13 +1776,6 @@ export default function MotionSidebar() {
                         <input type="number" value={selectedLayer.props.weight ?? 700}
                           onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, weight: Number(e.target.value) } } as any)}
                           min={100} max={900} step={100}
-                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Scale</label>
-                        <input type="number" value={selectedLayer.props.textScale ?? 0.115}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, textScale: Number(e.target.value) } } as any)}
-                          min={0.04} max={0.3} step={0.005}
                           style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
                       </div>
                     </div>

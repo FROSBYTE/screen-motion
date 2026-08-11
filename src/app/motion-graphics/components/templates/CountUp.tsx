@@ -18,6 +18,7 @@ export interface CountUpProps {
   isItalic?: boolean;
   fontFamily?: string;
   fontSize?: number;
+  layerDuration?: number;
 }
 
 export default function CountUp({
@@ -34,6 +35,7 @@ export default function CountUp({
   isItalic = false,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   fontSize = 48,
+  layerDuration,
 }: CountUpProps) {
   const startVal = direction === 'up' ? from : to;
   const targetVal = direction === 'up' ? to : from;
@@ -44,9 +46,12 @@ export default function CountUp({
     motionValue.set(startVal);
     setDisplayValue(startVal);
 
+    const targetDuration = layerDuration ? layerDuration * 0.75 : (duration || 2);
+    const effectiveAnimDuration = Math.max(0.1, targetDuration / Math.max(0.2, speed || 1));
+
     const controls = animate(motionValue, targetVal, {
-      duration: Math.max(0.1, duration / (speed || 1)),
-      delay: (delay || 0) / (speed || 1),
+      duration: effectiveAnimDuration,
+      delay: (delay || 0) / Math.max(0.2, speed || 1),
       ease: 'easeOut',
       onUpdate: (latest) => {
         setDisplayValue(Math.round(latest));
@@ -54,7 +59,7 @@ export default function CountUp({
     });
 
     return () => controls.stop();
-  }, [to, from, duration, delay, direction, speed]);
+  }, [to, from, duration, delay, direction, speed, layerDuration]);
 
   const formattedValue = separator
     ? displayValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator)

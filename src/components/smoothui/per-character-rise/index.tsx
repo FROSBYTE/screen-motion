@@ -42,27 +42,32 @@ export default function PerCharacterRise({
 
   return (
     <span aria-label={children} className={className} ref={ref}>
-      {characters.map((char, index) => (
-        <motion.span
-          animate={play ? { opacity: 1, y: 0 } : undefined}
-          aria-hidden="true"
-          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 32 }}
-          // biome-ignore lint/suspicious/noArrayIndexKey: characters have no stable id
-          key={index}
-          style={{ display: "inline-block", whiteSpace: "pre" }}
-          transition={
-            shouldReduceMotion
-              ? { duration: 0 }
-              : {
-                  duration: DURATION_S / speed,
-                  delay: delay / MS + (index * (stagger / speed)) / MS,
-                  ease: EASE,
-                }
-          }
-        >
-          {char === " " ? " " : char}
-        </motion.span>
-      ))}
+      {characters.map((char, index) => {
+        if (char === "\n") {
+          return <span key={index} style={{ display: "block", width: "100%", height: 0 }} />;
+        }
+        return (
+          <motion.span
+            animate={play ? { opacity: 1, y: 0 } : undefined}
+            aria-hidden="true"
+            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 32 }}
+            // biome-ignore lint/suspicious/noArrayIndexKey: characters have no stable id
+            key={index}
+            style={{ display: "inline-block", whiteSpace: "pre" }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : {
+                    duration: DURATION_S / speed,
+                    delay: delay / MS + (index * (stagger / speed)) / MS,
+                    ease: EASE,
+                  }
+            }
+          >
+            {char === " " ? " " : char}
+          </motion.span>
+        );
+      })}
     </span>
   );
 }

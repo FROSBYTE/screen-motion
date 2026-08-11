@@ -18,6 +18,7 @@ export interface Text3DFlipProps {
   rotateDirection?: RotateDirection;
   speed?: number;
   autoPlay?: boolean;
+  isLoop?: boolean;
   className?: string;
 }
 
@@ -40,6 +41,7 @@ export default function Text3DFlip({
   rotateDirection = 'top',
   speed = 1,
   autoPlay = true,
+  isLoop = true,
   className = '',
 }: Text3DFlipProps) {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -77,6 +79,7 @@ export default function Text3DFlip({
     if (!autoPlay) return;
     const triggerFlip = () => {
       setIsFlipped(true);
+      if (!isLoop) return;
       timeoutRef.current = setTimeout(() => {
         setIsFlipped(false);
         timeoutRef.current = setTimeout(triggerFlip, 2000 / speed);
@@ -84,7 +87,7 @@ export default function Text3DFlip({
     };
     timeoutRef.current = setTimeout(triggerFlip, 500 / speed);
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-  }, [autoPlay, speed]);
+  }, [autoPlay, speed, isLoop]);
 
   const springTransition = {
     type: 'spring' as const,

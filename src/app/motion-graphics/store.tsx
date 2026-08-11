@@ -29,6 +29,43 @@ export type SceneTransition =
   | 'iris-click'
   | 'loading-line';
 
+export type MGPacingPreset = 'snappy' | 'balanced' | 'cinematic';
+
+export interface PacingCalculation {
+  entranceDuration: number;
+  staggerDelay: number;
+  holdDuration: number;
+}
+
+export function getCalculatedPacing(
+  duration: number,
+  preset: MGPacingPreset = 'balanced',
+  itemCount: number = 1
+): PacingCalculation {
+  let ratio = 0.35;
+  let maxCap = 0.8;
+
+  if (preset === 'snappy') {
+    ratio = 0.2;
+    maxCap = 0.4;
+  } else if (preset === 'cinematic') {
+    ratio = 0.5;
+    maxCap = 1.5;
+  }
+
+  const calculatedEntrance = Math.min(duration * ratio, maxCap);
+  const entranceDuration = Math.max(0.15, calculatedEntrance);
+  const items = Math.max(1, itemCount);
+  const staggerDelay = items > 1 ? entranceDuration / items : 0;
+  const holdDuration = Math.max(0, duration - entranceDuration);
+
+  return {
+    entranceDuration,
+    staggerDelay,
+    holdDuration,
+  };
+}
+
 export interface MGTextLayer {
   id: string;
   type: 'text';
@@ -36,6 +73,7 @@ export interface MGTextLayer {
   text: string;
   animationType: MGTextAnimationType;
   animationSpeed: number;
+  pacingPreset?: MGPacingPreset;
   color: string;
   fontSize: number;
   fontFamily: string;
@@ -56,6 +94,7 @@ export interface MGComponentLayer {
   name?: string;
   templateId: ComponentTemplateName;
   props: Record<string, any>; // component-specific props
+  pacingPreset?: MGPacingPreset;
   startTime: number;
   duration: number;
   position: { x: number; y: number };
@@ -249,7 +288,7 @@ export function MotionGraphicsProvider({ children }: { children: ReactNode }) {
         const localTime = time - elapsed;
         // Calculate transition progress (0 = fully transitioning in, 1 = fully visible)
         let transitionProgress = 1;
-        if (scene.transition !== 'none' && scene.transitionDuration > 0 && i > 0) {
+        if (scene.transition !== 'none' && scene.transitionDuration > 0) {
           if (localTime < scene.transitionDuration) {
             transitionProgress = localTime / scene.transitionDuration;
           }

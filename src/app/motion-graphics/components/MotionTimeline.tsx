@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { Plus, Trash2, Undo2, Redo2, RotateCcw, Minus, Lock, Rewind, FastForward, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Trash2, Undo2, Redo2, RotateCcw, Minus, Lock, Rewind, FastForward } from 'lucide-react';
 import { useMGState, getSceneDuration, type MGLayer } from '../store';
 
 // Scene strip color palette – dark professional tones
@@ -18,7 +18,7 @@ const SCENE_COLORS = [
 
 export default function MotionTimeline() {
   const { state, dispatch, play, pause, seekTo, updateLayer, removeLayer, resetSelectedComponent, totalDuration, getSceneStartTime, undo, redo, canUndo, canRedo, pushUndo } = useMGState();
-  const { scenes, currentTime, isPlaying, selectedLayerId, activeSceneId } = state;
+  const { scenes, currentTime, isPlaying, selectedLayerId, activeSceneId, activeSidebarTab } = state;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
   const layers = activeScene?.layers || [];
   const hasLayers = layers.length > 0;
@@ -227,22 +227,7 @@ export default function MotionTimeline() {
         <button onClick={() => seekTo(currentTime + 5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: 'var(--text-muted)' }} title="+5s">
           <FastForward size={16} />
         </button>
-        <button
-          onClick={() => dispatch({ isMuted: !state.isMuted })}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            color: state.isMuted ? 'var(--text-muted)' : 'var(--accent-primary)',
-            transition: 'all 0.15s ease',
-          }}
-          title={state.isMuted ? "Unmute Audio (Voice Enabled)" : "Mute Audio"}
-        >
-          {state.isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-        </button>
+
         <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-primary)', fontWeight: 600 }}>
           {Math.floor(currentTime / 60).toString().padStart(2, '0')}:
           {Math.floor(currentTime % 60).toString().padStart(2, '0')}:
@@ -362,7 +347,7 @@ export default function MotionTimeline() {
       {/* Tracks container */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', margin: '0 24px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
         {/* Scrollable tracks */}
-        <div ref={trackAreaRef} onPointerDown={(e) => { if (e.target === e.currentTarget || !(e.target as HTMLElement).closest('[data-layer-clip]')) { dispatch({ selectedLayerId: null, playbackRange: null }); } }} style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', position: 'relative' }}>
+        <div ref={trackAreaRef} onPointerDown={(e) => { if (e.target === e.currentTarget || !(e.target as HTMLElement).closest('[data-layer-clip]')) { dispatch({ selectedLayerId: null, activeSidebarTab: 'components', playbackRange: null }); } }} style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', position: 'relative' }}>
           <div style={{ position: 'relative', minWidth: `${timelineWidth}px`, minHeight: '100%' }}>
             {/* Scene Strip – locked top row (above ruler) */}
             <div style={{ position: 'sticky', top: 0, zIndex: 32, height: '30px', display: 'flex', alignItems: 'stretch', background: 'var(--bg-inset)' }}>
@@ -439,7 +424,7 @@ export default function MotionTimeline() {
             )}
 
             {/* Playhead */}
-            {anySceneHasLayers && (
+            {anySceneHasLayers && (selectedLayerId !== null || activeSidebarTab === 'scene' || isPlaying || isDraggingPlayhead) && (
               <div
                 onPointerDown={(e) => { e.stopPropagation(); setIsDraggingPlayhead(true); }}
                 style={{ position: 'absolute', top: 0, left: `${currentTime * pxPerSec}px`, width: '24px', height: '100%', transform: 'translateX(-50%)', zIndex: 40, cursor: 'ew-resize', touchAction: 'none' }}
@@ -501,9 +486,6 @@ export default function MotionTimeline() {
                           e.stopPropagation();
                           dispatch({
                             activeSceneId: sceneId,
-                            selectedLayerId: layer.id,
-                            activeSidebarTab: 'components',
-                            playbackRange: { start: layerSceneStart + layer.startTime, end: layerSceneStart + layer.startTime + layer.duration },
                           });
                           seekTo(layerSceneStart + layer.startTime);
                           pushUndo();
