@@ -228,7 +228,7 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
 
         // Orthographic projection to normalize UV space [0, 1]
         const u = (x - minX) / width;
-        const v = (y - minY) / height;
+        const v = 1 - (y - minY) / height;
 
         uvAttr.setXY(i, u, v);
       }

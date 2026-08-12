@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, Play } from 'lucide-react';
+import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, Play, RotateCcw } from 'lucide-react';
 import { useMGState, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration, MGPacingPreset } from '../store';
 import { COMPONENT_TEMPLATES } from './templates';
 import { Reorder } from 'motion/react';
@@ -1611,61 +1611,144 @@ export default function MotionSidebar() {
                     </div>
 
                     {/* Device Color */}
-                    <ColorPickerControl
-                      label="Device Color"
-                      value={selectedLayer.props.deviceColor ?? '#1a1a1a'}
-                      onChange={(color) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, deviceColor: color } } as any)}
-                      style={{ marginBottom: '10px' }}
-                    />
-
-                    {/* Screen Image & Screen Video Uploads in 2-column grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                      <label style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '8px 6px', background: 'var(--bg-primary)',
-                        border: '1px dashed var(--border-color)', borderRadius: '6px',
-                        textAlign: 'center', cursor: 'pointer', fontSize: '11px',
-                        color: 'var(--text-muted)', fontWeight: 600,
-                      }}>
-                        {selectedLayer.props.screenImage ? '✓ Image' : '🖼️ Upload Image'}
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenImage: URL.createObjectURL(file), screenVideo: undefined } } as any);
-                          }} />
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600, letterSpacing: '0.04em' }}>
+                        DEVICE COLOR
                       </label>
-                      <label style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '8px 6px', background: 'var(--bg-primary)',
-                        border: '1px dashed var(--border-color)', borderRadius: '6px',
-                        textAlign: 'center', cursor: 'pointer', fontSize: '11px',
-                        color: 'var(--text-muted)', fontWeight: 600,
-                      }}>
-                        {selectedLayer.props.screenVideo ? '✓ Video' : '🎬 Upload Video'}
-                        <input type="file" accept="video/*" style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenVideo: URL.createObjectURL(file), screenImage: undefined } } as any);
-                          }} />
-                      </label>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {['#ffffff', '#333333', '#6b7280', '#e3d5ca', '#991b1b', '#448AFF'].map((color, i) => {
+                          const currentVal = selectedLayer.props.deviceColor ?? '#333333';
+                          const isActive = currentVal.toLowerCase() === color.toLowerCase();
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              title={`Device Color ${color}`}
+                              onClick={() => {
+                                if (!isActive) {
+                                  updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, deviceColor: color } } as any);
+                                }
+                              }}
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                background: color,
+                                cursor: 'pointer',
+                                border: isActive ? '2px solid var(--accent-primary, #3b82f6)' : '1px solid rgba(255,255,255,0.2)',
+                                transform: isActive ? 'scale(1.15)' : 'scale(1)',
+                                transition: 'all 0.2s ease',
+                                boxShadow: color === '#ffffff' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+                                outline: 'none',
+                                padding: 0,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
+
+                    {/* Screen Media Upload (Single Button) */}
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      padding: '10px 12px', background: 'var(--bg-primary)',
+                      border: '1px dashed var(--border-color)', borderRadius: '8px',
+                      textAlign: 'center', cursor: 'pointer', fontSize: '12px',
+                      color: 'var(--text-primary)', fontWeight: 600, marginBottom: '12px',
+                      transition: 'all 0.15s ease', width: '100%',
+                    }}>
+                      {selectedLayer.props.screenVideo ? (
+                        <>
+                          <span style={{ color: '#a855f7' }}>✓ Screen Video</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to change)</span>
+                        </>
+                      ) : selectedLayer.props.screenImage ? (
+                        <>
+                          <span style={{ color: '#3b82f6' }}>✓ Screen Image</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to change)</span>
+                        </>
+                      ) : (
+                        <span>🖼️ Upload Image or Video</span>
+                      )}
+                      <input type="file" accept="image/*,video/*" style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = URL.createObjectURL(file);
+                            if (file.type.startsWith('video/')) {
+                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenVideo: url, screenImage: undefined } } as any);
+                            } else {
+                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenImage: url, screenVideo: undefined } } as any);
+                            }
+                          }
+                        }} />
+                    </label>
 
                     {/* Device Settings */}
                     <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '8px', paddingTop: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <h4 style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, margin: 0 }}>DEVICE SETTINGS</h4>
-                        <button onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, posX: 0, posY: 0, rotX: 0, rotY: 0 } } as any)}
-                          title="Reset"
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', fontSize: '12px' }}>↺</button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPos = { ...selectedLayer.position, x: 50, y: 50 };
+                            updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: 0, posY: 0, rotX: 0, rotY: 0 } } as any);
+                          }}
+                          title="Reset Device Settings"
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--text-secondary, #6b7280)",
+                            cursor: "pointer",
+                            padding: "4px",
+                            borderRadius: "6px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.2s ease"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "var(--text-primary, #ffffff)";
+                            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "var(--text-secondary, #6b7280)";
+                            e.currentTarget.style.backgroundColor = "transparent";
+                          }}
+                        >
+                          <RotateCcw size={14} />
+                        </button>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Pos X</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <span style={{ fontSize: '10px', color: 'var(--text-primary)' }}>{(selectedLayer.props.posX ?? 0).toFixed(2)}</span>
-                              <button onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, posX: 0 } } as any)}
-                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0', fontSize: '9px', lineHeight: 1 }}>↺</button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.posX ?? 0).toFixed(2)}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const valX = 0;
+                                  const newPos = { ...selectedLayer.position, x: 50 };
+                                  updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: valX } } as any);
+                                }}
+                                title="Reset Pos X to 0.00"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-secondary, #6b7280)',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  borderRadius: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: (selectedLayer.props.posX ?? 0) !== 0 ? 1 : 0.35,
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <RotateCcw size={12} />
+                              </button>
                             </div>
                           </div>
                           <input type="range" min={-2} max={2} step={0.05} value={selectedLayer.props.posX ?? 0}
@@ -1677,12 +1760,30 @@ export default function MotionSidebar() {
                             style={{ width: '100%' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Rot X</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <span style={{ fontSize: '10px', color: 'var(--text-primary)' }}>{(selectedLayer.props.rotX ?? 0)}°</span>
-                              <button onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotX: 0 } } as any)}
-                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0', fontSize: '9px', lineHeight: 1 }}>↺</button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.rotX ?? 0)}°</span>
+                              <button
+                                type="button"
+                                onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotX: 0 } } as any)}
+                                title="Reset Rot X to 0°"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-secondary, #6b7280)',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  borderRadius: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: (selectedLayer.props.rotX ?? 0) !== 0 ? 1 : 0.35,
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <RotateCcw size={12} />
+                              </button>
                             </div>
                           </div>
                           <input type="range" min={-180} max={180} step={1} value={selectedLayer.props.rotX ?? 0}
@@ -1692,12 +1793,34 @@ export default function MotionSidebar() {
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Pos Y</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <span style={{ fontSize: '10px', color: 'var(--text-primary)' }}>{(selectedLayer.props.posY ?? 0).toFixed(2)}</span>
-                              <button onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, posY: 0 } } as any)}
-                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0', fontSize: '9px', lineHeight: 1 }}>↺</button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.posY ?? 0).toFixed(2)}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const valY = 0;
+                                  const newPos = { ...selectedLayer.position, y: 50 };
+                                  updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posY: valY } } as any);
+                                }}
+                                title="Reset Pos Y to 0.00"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-secondary, #6b7280)',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  borderRadius: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: (selectedLayer.props.posY ?? 0) !== 0 ? 1 : 0.35,
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <RotateCcw size={12} />
+                              </button>
                             </div>
                           </div>
                           <input type="range" min={-2} max={2} step={0.05} value={selectedLayer.props.posY ?? 0}
@@ -1709,12 +1832,30 @@ export default function MotionSidebar() {
                             style={{ width: '100%' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Rot Y</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <span style={{ fontSize: '10px', color: 'var(--text-primary)' }}>{(selectedLayer.props.rotY ?? 0)}°</span>
-                              <button onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotY: 0 } } as any)}
-                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0', fontSize: '9px', lineHeight: 1 }}>↺</button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.rotY ?? 0)}°</span>
+                              <button
+                                type="button"
+                                onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotY: 0 } } as any)}
+                                title="Reset Rot Y to 0°"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-secondary, #6b7280)',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  borderRadius: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: (selectedLayer.props.rotY ?? 0) !== 0 ? 1 : 0.35,
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <RotateCcw size={12} />
+                              </button>
                             </div>
                           </div>
                           <input type="range" min={-180} max={180} step={1} value={selectedLayer.props.rotY ?? 0}

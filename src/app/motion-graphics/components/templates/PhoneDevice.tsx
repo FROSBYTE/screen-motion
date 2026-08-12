@@ -2,7 +2,7 @@
 
 import React, { Suspense, useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, Center } from '@react-three/drei';
+import { useGLTF, Center, useVideoTexture, useTexture } from '@react-three/drei';
 import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
 import type { TemplateName } from '@/types';
 import * as THREE from 'three';
@@ -11,7 +11,6 @@ export interface PhoneDeviceProps {
   deviceType?: 'iphone' | 'android';
   deviceColor?: string;
   screenImage?: string;
-  // ponytail: screenVideo not yet wired to Three.js video texture; upgrade path is useVideoTexture from @react-three/drei
   screenVideo?: string;
   size?: number;
   animationTemplate?: string;
@@ -27,18 +26,60 @@ export interface PhoneDeviceProps {
 const IPHONE_SCREEN_MESH = 'Object_18';
 const ANDROID_SCREEN_MESH = 'S22_Ultra001_2';
 
-function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screenImage?: string }) {
-  const { scene, materials } = useGLTF('/models/iphone16.gltf') as any;
+function VideoScreenMaterial({ url }: { url: string }) {
+  const texture = useVideoTexture(url, {
+    loop: true,
+    start: true,
+    muted: true,
+    playsInline: true,
+  });
+
+  React.useLayoutEffect(() => {
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.flipY = true;
+      texture.needsUpdate = true;
+    }
+  }, [texture]);
+
+  return <meshBasicMaterial map={texture} toneMapped={false} />;
+}
+
+function ImageScreenMaterial({ url }: { url: string }) {
+  const texture = useTexture(url);
+
+  React.useLayoutEffect(() => {
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.flipY = true;
+      texture.needsUpdate = true;
+    }
+  }, [texture]);
+
+  return <meshBasicMaterial map={texture} toneMapped={false} />;
+}
+
+function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
+  const { scene } = useGLTF('/models/iphone16.gltf') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
   const appliedColor = useRef('');
   const uvFixed = useRef(false);
+  const [screenMeshGeometry, setScreenMeshGeometry] = React.useState<THREE.BufferGeometry | null>(null);
 
-  // Fix UV coordinates on the screen mesh so the image maps correctly
+  // Fix UV coordinates on the screen mesh so the image/video maps correctly
   useEffect(() => {
-    if (uvFixed.current) return;
     const screenMesh = cloned.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
+    
+    screenMesh.visible = false;
+    setScreenMeshGeometry(screenMesh.geometry);
+
+    if (uvFixed.current) return;
     const geometry = screenMesh.geometry;
     geometry.computeBoundingBox();
     const box = geometry.boundingBox;
@@ -58,7 +99,7 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      uvAttr.setXY(i, (x - minX) / width, (y - minY) / height);
+      uvAttr.setXY(i, (x - minX) / width, 1 - (y - minY) / height);
     }
     uvAttr.needsUpdate = true;
     uvFixed.current = true;
@@ -84,7 +125,6 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
 
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
-      // Skip the screen mesh entirely
       if (child.name === IPHONE_SCREEN_MESH) return;
 
       const mats = Array.isArray(child.material) ? child.material : [child.material];
@@ -107,40 +147,45 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
     });
   }, [deviceColor, cloned]);
 
-  // Apply screen image
-  useEffect(() => {
-    const screenMesh = cloned.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh | null;
-    if (!screenMesh) return;
-
-    if (screenImage) {
-      const loader = new THREE.TextureLoader();
-      loader.load(screenImage, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.flipY = true;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
-      });
-    } else {
-      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
-    }
-  }, [screenImage, cloned]);
-
-  return <primitive object={cloned} />;
+  return (
+    <group>
+      <primitive object={cloned} />
+      {screenMeshGeometry && (
+        <mesh geometry={screenMeshGeometry}>
+          {screenVideo ? (
+            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+              <VideoScreenMaterial url={screenVideo} />
+            </Suspense>
+          ) : screenImage ? (
+            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+              <ImageScreenMaterial url={screenImage} />
+            </Suspense>
+          ) : (
+            <meshBasicMaterial color="#0f0f1a" toneMapped={false} />
+          )}
+        </mesh>
+      )}
+    </group>
+  );
 }
 
-function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: string; screenImage?: string }) {
+function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene } = useGLTF('/models/S22Ultra.glb') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
   const appliedColor = useRef('');
   const uvFixed = useRef(false);
+  const [screenMeshGeometry, setScreenMeshGeometry] = React.useState<THREE.BufferGeometry | null>(null);
 
   // Fix UV coordinates on the screen mesh
   useEffect(() => {
-    if (uvFixed.current) return;
     const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
+
+    screenMesh.visible = false;
+    setScreenMeshGeometry(screenMesh.geometry);
+
+    if (uvFixed.current) return;
     const geometry = screenMesh.geometry;
     geometry.computeBoundingBox();
     const box = geometry.boundingBox;
@@ -160,7 +205,7 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      uvAttr.setXY(i, (x - minX) / width, (y - minY) / height);
+      uvAttr.setXY(i, (x - minX) / width, 1 - (y - minY) / height);
     }
     uvAttr.needsUpdate = true;
     uvFixed.current = true;
@@ -206,31 +251,33 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
     });
   }, [deviceColor, cloned]);
 
-  useEffect(() => {
-    const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
-    if (!screenMesh) return;
-
-    if (screenImage) {
-      const loader = new THREE.TextureLoader();
-      loader.load(screenImage, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.flipY = true;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
-      });
-    } else {
-      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
-    }
-  }, [screenImage, cloned]);
-
-  return <primitive object={cloned} scale={88.58} />;
+  return (
+    <group scale={88.58}>
+      <primitive object={cloned} />
+      {screenMeshGeometry && (
+        <mesh geometry={screenMeshGeometry}>
+          {screenVideo ? (
+            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+              <VideoScreenMaterial url={screenVideo} />
+            </Suspense>
+          ) : screenImage ? (
+            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+              <ImageScreenMaterial url={screenImage} />
+            </Suspense>
+          ) : (
+            <meshBasicMaterial color="#0f0f1a" toneMapped={false} />
+          )}
+        </mesh>
+      )}
+    </group>
+  );
 }
 
 function AnimatedDevice({
   deviceType,
   deviceColor,
   screenImage,
+  screenVideo,
   animationTemplate,
   speed = 1,
   deviceSize = 1,
@@ -242,6 +289,7 @@ function AnimatedDevice({
   deviceType: string;
   deviceColor: string;
   screenImage?: string;
+  screenVideo?: string;
   animationTemplate: string;
   speed: number;
   deviceSize: number;
@@ -296,10 +344,10 @@ function AnimatedDevice({
         rotation={[(rotX * Math.PI) / 180, (rotY * Math.PI) / 180, 0]}
       >
         {deviceType === 'iphone' ? (
-          <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} />
+          <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
         ) : (
           <Center>
-            <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} />
+            <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
           </Center>
         )}
       </group>
@@ -354,6 +402,7 @@ export default function PhoneDevice({
             deviceType={deviceType}
             deviceColor={deviceColor}
             screenImage={screenImage}
+            screenVideo={screenVideo}
             animationTemplate={animationTemplate}
             speed={speed}
             deviceSize={size === -1 ? 1 : size}

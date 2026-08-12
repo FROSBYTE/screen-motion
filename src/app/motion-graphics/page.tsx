@@ -1,5 +1,24 @@
 'use client';
 
+// Suppress three.js deprecation & HMR development warnings coming from react-three-fiber and Turbopack internals
+if (typeof window !== 'undefined') {
+  const originalWarn = console.warn;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  console.warn = (...args: any[]) => {
+    const message = args[0];
+    if (
+      typeof message === 'string' &&
+      (message.includes('THREE.Clock: This module has been deprecated.') ||
+       message.includes('THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated.') ||
+       message.includes('Unexpected import of module') ||
+       message.includes('deleted by an HMR update'))
+    ) {
+      return;
+    }
+    originalWarn.apply(console, args);
+  };
+}
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Home as HomeIcon, Download, Film } from 'lucide-react';

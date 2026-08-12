@@ -11,6 +11,15 @@ interface ColorPickerControlProps {
   height?: string | number;
 }
 
+function normalizeHex(color: string): string {
+  if (!color) return '#000000';
+  if (/^#[0-9A-Fa-f]{6}$/.test(color)) return color;
+  if (/^#[0-9A-Fa-f]{3}$/.test(color)) {
+    return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
+  }
+  return '#000000';
+}
+
 export default function ColorPickerControl({
   label,
   value,
@@ -32,9 +41,14 @@ export default function ColorPickerControl({
     setHexInput(newVal);
     // Validate hex format (#123456 or #fff or 123456)
     if (/^#([0-9A-F]{3}){1,2}$/i.test(newVal)) {
-      onChange(newVal);
+      if (newVal.toLowerCase() !== colorVal.toLowerCase()) {
+        onChange(newVal);
+      }
     } else if (/^[0-9A-F]{6}$/i.test(newVal)) {
-      onChange(`#${newVal}`);
+      const formatted = `#${newVal}`;
+      if (formatted.toLowerCase() !== colorVal.toLowerCase()) {
+        onChange(formatted);
+      }
     }
   };
 
@@ -110,10 +124,12 @@ export default function ColorPickerControl({
         <input
           ref={colorInputRef}
           type="color"
-          value={colorVal}
+          value={normalizeHex(colorVal)}
           onChange={(e) => {
-            onChange(e.target.value);
-            setHexInput(e.target.value);
+            if (e.target.value.toLowerCase() !== colorVal.toLowerCase()) {
+              onChange(e.target.value);
+              setHexInput(e.target.value);
+            }
           }}
           style={{ opacity: 0, width: 0, height: 0, position: 'absolute', pointerEvents: 'none' }}
         />

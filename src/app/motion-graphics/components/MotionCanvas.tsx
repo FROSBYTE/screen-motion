@@ -655,6 +655,9 @@ function SelectionCornerHandles({
   );
 }
 
+// Module-level drag state — survives React re-renders/re-mounts
+const _canvasDragState = { isDragging: false, draggedLayerId: null as string | null };
+
 function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[] }) {
   const { state, dispatch, updateLayer } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
@@ -698,14 +701,18 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
       data-motion-layer-id={layer.id}
       onClick={(e) => {
         e.stopPropagation();
-        if (!hasMovedRef.current && Date.now() - lastDragTimeRef.current > 300) {
+        // Only select if this layer was NOT just dragged
+        if (_canvasDragState.draggedLayerId !== layer.id) {
           dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        }
+        // Reset after click is handled
+        if (_canvasDragState.draggedLayerId === layer.id) {
+          _canvasDragState.draggedLayerId = null;
         }
       }}
       onPointerDown={(e) => {
-        if (!e.isPrimary) return;
+        if (!e.isPrimary || e.button !== 0) return;
         e.stopPropagation();
-        hasMovedRef.current = false;
 
         const targetEl = e.currentTarget as HTMLElement;
         if (targetEl && 'setPointerCapture' in targetEl) {
@@ -720,15 +727,18 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
         const startMouseY = e.clientY;
         const startPosX = layer.position.x;
         const startPosY = layer.position.y;
+        let moved = false;
         setIsDragging(true);
 
         const handleMove = (moveEvent: PointerEvent) => {
-          if (!moveEvent.isPrimary) return;
           const dist = Math.hypot(moveEvent.clientX - startMouseX, moveEvent.clientY - startMouseY);
-          if (dist > 3) {
-            hasMovedRef.current = true;
-            lastDragTimeRef.current = Date.now();
+          if (dist > 3 && !moved) {
+            moved = true;
+            _canvasDragState.isDragging = true;
+            _canvasDragState.draggedLayerId = layer.id;
           }
+
+          if (!moved) return;
 
           const parent = containerRef.current?.parentElement;
           if (!parent) return;
@@ -749,7 +759,6 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
         };
 
         const handleUp = (upEvent: PointerEvent) => {
-          if (!upEvent.isPrimary) return;
           window.removeEventListener('pointermove', handleMove);
           window.removeEventListener('pointerup', handleUp);
           if (targetEl && 'releasePointerCapture' in targetEl) {
@@ -761,6 +770,9 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
           }
           setIsDragging(false);
           setActiveGuides([]);
+          _canvasDragState.isDragging = false;
+          // Note: draggedLayerId is NOT cleared here — it's cleared in onClick
+          // so the click event that fires after pointerup can check it
         };
 
         window.addEventListener('pointermove', handleMove);
@@ -993,14 +1005,18 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
       data-motion-layer-id={layer.id}
       onClick={(e) => {
         e.stopPropagation();
-        if (!hasMovedRef.current && Date.now() - lastDragTimeRef.current > 300) {
+        // Only select if this layer was NOT just dragged
+        if (_canvasDragState.draggedLayerId !== layer.id) {
           dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        }
+        // Reset after click is handled
+        if (_canvasDragState.draggedLayerId === layer.id) {
+          _canvasDragState.draggedLayerId = null;
         }
       }}
       onPointerDown={(e) => {
-        if (!e.isPrimary) return;
+        if (!e.isPrimary || e.button !== 0) return;
         e.stopPropagation();
-        hasMovedRef.current = false;
 
         const targetEl = e.currentTarget as HTMLElement;
         if (targetEl && 'setPointerCapture' in targetEl) {
@@ -1015,15 +1031,19 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         const startMouseY = e.clientY;
         const startPosX = layer.position.x;
         const startPosY = layer.position.y;
+        let moved = false;
         setIsDragging(true);
 
         const handleMove = (moveEvent: PointerEvent) => {
-          if (!moveEvent.isPrimary) return;
           const dist = Math.hypot(moveEvent.clientX - startMouseX, moveEvent.clientY - startMouseY);
-          if (dist > 3) {
-            hasMovedRef.current = true;
-            lastDragTimeRef.current = Date.now();
+          if (dist > 3 && !moved) {
+            moved = true;
+            _canvasDragState.isDragging = true;
+            _canvasDragState.draggedLayerId = layer.id;
           }
+
+          if (!moved) return;
+
           const parent = containerRef.current?.parentElement;
           if (!parent) return;
           const rect = parent.getBoundingClientRect();
@@ -1053,7 +1073,6 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         };
 
         const handleUp = (upEvent: PointerEvent) => {
-          if (!upEvent.isPrimary) return;
           window.removeEventListener('pointermove', handleMove);
           window.removeEventListener('pointerup', handleUp);
           if (targetEl && 'releasePointerCapture' in targetEl) {
@@ -1065,6 +1084,7 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
           }
           setIsDragging(false);
           setActiveGuides([]);
+          _canvasDragState.isDragging = false;
         };
 
         window.addEventListener('pointermove', handleMove);
@@ -1176,7 +1196,10 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
 
   return (
     <div
-      onClick={() => dispatch({ selectedLayerId: null })}
+      onClick={() => {
+        if (_canvasDragState.draggedLayerId) { _canvasDragState.draggedLayerId = null; return; }
+        dispatch({ selectedLayerId: null });
+      }}
       style={{
         position: 'absolute',
         inset: 0,
@@ -1348,7 +1371,10 @@ export default function MotionCanvas() {
   return (
     <div
       data-motion-canvas-wrapper="true"
-      onClick={() => dispatch({ selectedLayerId: null, activeSidebarTab: 'scene' })}
+      onClick={() => {
+        if (_canvasDragState.draggedLayerId) { _canvasDragState.draggedLayerId = null; return; }
+        dispatch({ selectedLayerId: null, activeSidebarTab: 'scene' });
+      }}
       style={{
         width: 'auto',
         height: '85%',

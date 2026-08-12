@@ -455,7 +455,7 @@ export default function MotionTimeline() {
             )}
 
             {/* Layers */}
-            <div style={{ paddingTop: anySceneHasLayers ? '32px' : 0 }}>
+            <div style={{ paddingTop: 0, paddingBottom: '8px' }}>
               {globalLanes.map((lane, laneIdx) => (
                 <div key={laneIdx} style={{ position: 'relative', height: '42px' }}>
                   {lane.map((entry) => {

@@ -195,7 +195,7 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
         const y = posAttr.getY(i);
 
         const u = (x - minX) / width;
-        const v = (y - minY) / height;
+        const v = 1 - (y - minY) / height;
 
         uvAttr.setXY(i, u, v);
       }
