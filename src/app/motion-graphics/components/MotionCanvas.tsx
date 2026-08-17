@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useMGState, MGTextLayer, MGComponentLayer, MGLayer, MGScene, SceneTransition, getSceneDuration } from '../store';
+import { useMGState, MGTextLayer, MGComponentLayer, MGLayer, MGScene, SceneTransition, getSceneDuration, interpolateProperty } from '../store';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
 import KineticCenterBuild from '@/components/smoothui/kinetic-center-build';
 import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
@@ -700,7 +700,7 @@ function SelectionCornerHandles({
 // Module-level drag state — survives React re-renders/re-mounts
 const _canvasDragState = { isDragging: false, draggedLayerId: null as string | null };
 
-function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[] }) {
+function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
   const { state, dispatch, updateLayer } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
@@ -820,29 +820,40 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
         window.addEventListener('pointermove', handleMove);
         window.addEventListener('pointerup', handleUp);
       }}
-      style={{
-        position: 'absolute',
-        left: `${layer.position.x}%`,
-        top: `${layer.position.y}%`,
-        transform: 'translate(-50%, -50%)',
-        width: 'max-content',
-        maxWidth: 'none',
-        flexShrink: 0,
-        color: layer.color,
-        fontSize: `${layer.fontSize}px`,
-        fontFamily: layer.fontFamily,
-        fontWeight: layer.isBold ? 800 : 400,
-        fontStyle: layer.isItalic ? 'italic' : 'normal',
-        cursor: isDragging ? 'grabbing' : 'grab',
-        border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
-        borderRadius: '4px',
-        padding: '8px 16px',
-        transition: 'border-color 0.15s ease',
-        whiteSpace: 'pre-wrap',
-        textAlign: 'center',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
+      style={(() => {
+        const hasKf = layer.keyframes && layer.keyframes.length > 0;
+        const relTime = Math.max(0, Math.min(layer.duration, localTime - layer.startTime));
+        const kfPosX = hasKf ? interpolateProperty(layer.keyframes, 'posX', relTime, layer.position.x) : layer.position.x;
+        const kfPosY = hasKf ? interpolateProperty(layer.keyframes, 'posY', relTime, layer.position.y) : layer.position.y;
+        const kfScale = hasKf ? interpolateProperty(layer.keyframes, 'scale', relTime, 1) : 1;
+        const kfRotation = hasKf ? interpolateProperty(layer.keyframes, 'rotation', relTime, 0) : 0;
+        const kfOpacity = hasKf ? interpolateProperty(layer.keyframes, 'opacity', relTime, 1) : 1;
+        return {
+          position: 'absolute' as const,
+          left: `${kfPosX}%`,
+          top: `${kfPosY}%`,
+          transform: `translate(-50%, -50%) scale(${kfScale}) rotate(${kfRotation}deg)`,
+          opacity: kfOpacity,
+          width: 'max-content',
+          maxWidth: 'none',
+          flexShrink: 0,
+          color: layer.color,
+          fontSize: `${layer.fontSize}px`,
+          fontFamily: layer.fontFamily,
+          letterSpacing: layer.letterSpacing !== undefined ? `${layer.letterSpacing}px` : undefined,
+          fontWeight: layer.isBold ? 800 : 400,
+          fontStyle: layer.isItalic ? 'italic' : 'normal',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          border: isSelected ? '2px dashed rgba(255, 255, 255, 0.85)' : '2px solid transparent',
+          borderRadius: '4px',
+          padding: '8px 16px',
+          transition: 'border-color 0.15s ease',
+          whiteSpace: 'pre-wrap' as const,
+          textAlign: 'center' as const,
+          userSelect: 'none' as const,
+          touchAction: 'none' as const,
+        };
+      })()}
     >
       <EnterAnimationWrapper enterAnimation={layer.enterAnimation || 'none'} enterDuration={effectiveEnterDur} exitAnimation={layer.exitAnimation || 'none'} exitDuration={effectiveExitDur} triggerKey={triggerKey} isExiting={isExiting}>
         {layer.animationType === 'none' || !AnimComp ? (
@@ -896,7 +907,7 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
   );
 }
 
-function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }: { layer: MGComponentLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[] }) {
+function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGComponentLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
   const { state, dispatch, updateLayer } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
@@ -1132,22 +1143,32 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         window.addEventListener('pointermove', handleMove);
         window.addEventListener('pointerup', handleUp);
       }}
-      style={{
-        position: 'absolute',
-        left: `${layer.position.x}%`,
-        top: `${layer.position.y}%`,
-        transform: `translate(-50%, -50%) scale(${layer.scale})`,
-        width: 'max-content',
-        maxWidth: 'none',
-        flexShrink: 0,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
-        borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
-        padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
-        transition: 'border-color 0.15s ease',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
+      style={(() => {
+        const hasKf = layer.keyframes && layer.keyframes.length > 0;
+        const relTime = Math.max(0, Math.min(layer.duration, localTime - layer.startTime));
+        const kfPosX = hasKf ? interpolateProperty(layer.keyframes, 'posX', relTime, layer.position.x) : layer.position.x;
+        const kfPosY = hasKf ? interpolateProperty(layer.keyframes, 'posY', relTime, layer.position.y) : layer.position.y;
+        const kfScale = hasKf ? interpolateProperty(layer.keyframes, 'scale', relTime, layer.scale ?? 1) : (layer.scale ?? 1);
+        const kfRotation = hasKf ? interpolateProperty(layer.keyframes, 'rotation', relTime, 0) : 0;
+        const kfOpacity = hasKf ? interpolateProperty(layer.keyframes, 'opacity', relTime, 1) : 1;
+        return {
+          position: 'absolute' as const,
+          left: `${kfPosX}%`,
+          top: `${kfPosY}%`,
+          transform: `translate(-50%, -50%) scale(${kfScale}) rotate(${kfRotation}deg)`,
+          opacity: kfOpacity,
+          width: 'max-content',
+          maxWidth: 'none',
+          flexShrink: 0,
+          cursor: isDragging ? 'grabbing' : 'grab',
+          border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
+          borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
+          padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
+          transition: 'border-color 0.15s ease',
+          userSelect: 'none' as const,
+          touchAction: 'none' as const,
+        };
+      })()}
     >
       <EnterAnimationWrapper enterAnimation={layer.enterAnimation || 'none'} enterDuration={effectiveEnterDur} exitAnimation={layer.exitAnimation || 'none'} exitDuration={effectiveExitDur} triggerKey={triggerKey} isExiting={isExiting}>
         {renderComponent()}
@@ -1272,6 +1293,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
               isExiting={isExiting}
               sceneId={scene.id}
               sceneLayers={scene.layers}
+              localTime={localTime}
             />
           );
         }
@@ -1284,6 +1306,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
             isExiting={isExiting}
             sceneId={scene.id}
             sceneLayers={scene.layers}
+            localTime={localTime}
           />
         );
       })}

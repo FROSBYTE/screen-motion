@@ -17,7 +17,7 @@ const SCENE_COLORS = [
 ];
 
 export default function MotionTimeline() {
-  const { state, dispatch, play, pause, seekTo, updateLayer, removeLayer, resetSelectedComponent, totalDuration, getSceneStartTime, undo, redo, canUndo, canRedo, pushUndo } = useMGState();
+  const { state, dispatch, play, pause, seekTo, updateLayer, removeLayer, resetSelectedComponent, totalDuration, getSceneStartTime, undo, redo, canUndo, canRedo, pushUndo, moveKeyframe } = useMGState();
   const { scenes, currentTime, isPlaying, selectedLayerId, activeSceneId, activeSidebarTab } = state;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
   const layers = activeScene?.layers || [];
@@ -35,6 +35,7 @@ export default function MotionTimeline() {
   const [trackViewportWidth, setTrackViewportWidth] = useState(900);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const [draggingLayer, setDraggingLayer] = useState<{ id: string; sceneId: string; type: 'move' | 'resize-left' | 'resize-right'; startX: number; startTime: number; startDuration: number } | null>(null);
+  const [draggingKeyframe, setDraggingKeyframe] = useState<{ layerId: string; keyframeId: string; startX: number; startTime: number; layerDuration: number; layerSceneStart: number; layerStartTime: number } | null>(null);
   const [snapGuide, setSnapGuide] = useState<{ time: number; kind: 'scene-start' | 'layer-edge' } | null>(null);
 
   const pxPerSec = 62 * zoom;
@@ -148,6 +149,26 @@ export default function MotionTimeline() {
     };
   }, [draggingLayer, pxPerSec, updateLayer, scenes]);
 
+  useEffect(() => {
+    if (!draggingKeyframe) return;
+    const handleMove = (e: PointerEvent) => {
+      const dt = (e.clientX - draggingKeyframe.startX) / pxPerSec;
+      const newTime = Math.max(0, Math.min(draggingKeyframe.layerDuration, draggingKeyframe.startTime + dt));
+      const roundedTime = Math.round(newTime * 100) / 100;
+      moveKeyframe(draggingKeyframe.layerId, draggingKeyframe.keyframeId, roundedTime);
+      seekTo(draggingKeyframe.layerSceneStart + draggingKeyframe.layerStartTime + roundedTime);
+    };
+    const handleUp = () => {
+      setDraggingKeyframe(null);
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+  }, [draggingKeyframe, pxPerSec, moveKeyframe, seekTo]);
+
   // Ruler ticks
   const tickSpacing = pxPerSec; // 1 tick per second at current zoom
   const majorEvery = 5;
@@ -240,9 +261,24 @@ export default function MotionTimeline() {
           {Math.floor((totalDuration % 1) * 100).toString().padStart(2, '0')}
         </span>
         {/* Scrubber */}
-        <div style={{ flex: 1, height: '5px', background: 'var(--bg-inset)', borderRadius: '3px', position: 'relative', cursor: 'pointer', marginLeft: '8px' }}
+        <div style={{
+          flex: 1,
+          height: '6px',
+          background: 'var(--bg-inset)',
+          border: '1px solid rgba(255, 255, 255, 0.22)',
+          borderRadius: '9999px',
+          position: 'relative',
+          cursor: 'pointer',
+          marginLeft: '8px',
+          overflow: 'hidden',
+        }}
           onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seekTo(((e.clientX - r.left) / r.width) * totalDuration); }}>
-          <div style={{ width: `${totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0}%`, height: '100%', background: 'var(--accent-primary)', borderRadius: '3px' }} />
+          <div style={{
+            width: `${totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0}%`,
+            height: '100%',
+            background: '#FFFFFF',
+            borderRadius: '9999px',
+          }} />
         </div>
       </div>
 
@@ -263,10 +299,18 @@ export default function MotionTimeline() {
       }}>
         <button
           onClick={() => dispatch({ isPickerOpen: true, activeSidebarTab: 'components' })}
-          style={{ ...btnStyle, borderRadius: '8px' }}
+          style={{
+            ...btnStyle,
+            borderRadius: '8px',
+            background: '#FFFFFF',
+            color: '#000000',
+            fontWeight: 700,
+            border: '1px solid #FFFFFF',
+            boxShadow: '0 2px 8px rgba(255, 255, 255, 0.15)',
+          }}
           title="Add a component"
         >
-          <Plus size={14} style={{ opacity: 0.8 }} /> Add a component
+          <Plus size={14} strokeWidth={2.5} style={{ color: '#000000' }} /> Add a component
         </button>
 
         <button
@@ -315,9 +359,9 @@ export default function MotionTimeline() {
             style={{ width: '70px', height: '14px', display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}
             title={`Zoom: ${Math.round(zoomPercent)}%`}
           >
-            <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: '9999px', position: 'relative', overflow: 'hidden' }}>
               {/* Active bar */}
-              <div style={{ position: 'absolute', left: 0, height: '100%', background: 'var(--accent-primary)', borderRadius: '3px', width: `${zoomPercent}%` }} />
+              <div style={{ position: 'absolute', left: 0, height: '100%', background: '#FFFFFF', borderRadius: '9999px', width: `${zoomPercent}%` }} />
             </div>
             {/* Thumb */}
             <div style={{
@@ -327,10 +371,10 @@ export default function MotionTimeline() {
               transform: 'translate(-50%, -50%)',
               width: '12px',
               height: '12px',
-              background: 'var(--bg-primary)',
-              border: '2px solid var(--accent-primary)',
+              background: '#000000',
+              border: '2px solid #FFFFFF',
               borderRadius: '50%',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.6)',
               pointerEvents: 'none',
             }} />
           </div>
@@ -521,6 +565,54 @@ export default function MotionTimeline() {
                         <span style={{ fontSize: '11px', color: isFromActiveScene ? '#f8fafc' : 'var(--text-muted)', fontWeight: 600, opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pointerEvents: 'none', padding: '0 14px' }}>
                           {label}
                         </span>
+
+                        {/* Keyframe Diamond Markers */}
+                        {layer.keyframes && layer.keyframes.length > 0 && (
+                          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                            {layer.keyframes.map((kf) => {
+                              const kfPct = (kf.time / Math.max(0.1, layer.duration)) * 100;
+                              return (
+                                <div
+                                  key={kf.id}
+                                  title={`${kf.property}: ${kf.value} (${kf.easing}) @ ${kf.time.toFixed(2)}s`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    dispatch({ activeSceneId: sceneId, selectedLayerId: layer.id, activeSidebarTab: 'components' });
+                                    seekTo(layerSceneStart + layer.startTime + kf.time);
+                                  }}
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    dispatch({ activeSceneId: sceneId, selectedLayerId: layer.id, activeSidebarTab: 'components' });
+                                    seekTo(layerSceneStart + layer.startTime + kf.time);
+                                    setDraggingKeyframe({
+                                      layerId: layer.id,
+                                      keyframeId: kf.id,
+                                      startX: e.clientX,
+                                      startTime: kf.time,
+                                      layerDuration: layer.duration,
+                                      layerSceneStart,
+                                      layerStartTime: layer.startTime,
+                                    });
+                                  }}
+                                  style={{
+                                    position: 'absolute',
+                                    left: `${kfPct}%`,
+                                    top: '50%',
+                                    width: '8px',
+                                    height: '8px',
+                                    background: '#FFFFFF',
+                                    border: '1.5px solid #000000',
+                                    transform: 'translate(-50%, -50%) rotate(45deg)',
+                                    cursor: 'ew-resize',
+                                    pointerEvents: 'auto',
+                                    zIndex: 25,
+                                    boxShadow: '0 0 4px rgba(0,0,0,0.8)',
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
 
                         {/* Right cap */}
                         <div

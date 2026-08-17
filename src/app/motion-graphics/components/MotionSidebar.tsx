@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, Play, RotateCcw } from 'lucide-react';
-import { useMGState, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration, MGPacingPreset } from '../store';
+import { useMGState, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration, MGPacingPreset, MGAnimatableProperty, MGEasingType, hasKeyframesForProperty, getKeyframeAtTime, interpolateProperty } from '../store';
 import { COMPONENT_TEMPLATES } from './templates';
 import { Reorder } from 'motion/react';
 import ListItemEditor from './ListItemEditor';
@@ -228,12 +228,12 @@ function PacingPresetControl({
               style={{
                 flex: 1,
                 padding: '6px 4px',
-                background: isActive ? 'var(--accent-primary)' : 'transparent',
-                color: isActive ? '#0f172a' : 'var(--text-primary)',
+                background: isActive ? '#FFFFFF' : 'transparent',
+                color: isActive ? '#000000' : 'var(--text-primary)',
                 border: 'none',
                 borderRadius: '4px',
                 fontSize: '11px',
-                fontWeight: isActive ? 600 : 400,
+                fontWeight: isActive ? 700 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 textAlign: 'center',
@@ -250,10 +250,329 @@ function PacingPresetControl({
 
 
 
+const EASING_PRESETS: { id: MGEasingType; label: string }[] = [
+  { id: 'linear', label: 'Linear' },
+  { id: 'easeOut', label: 'Ease Out' },
+  { id: 'easeInOut', label: 'Ease In Out' },
+  { id: 'spring', label: 'Spring' },
+  { id: 'bounce', label: 'Bounce' },
+];
+
+function CustomAnimationInspector({ layer, activeScene }: { layer: MGLayer; activeScene: any }) {
+  const { state, seekTo, getSceneStartTime, updateLayer, addOrUpdateKeyframe, removeKeyframe, clearKeyframes } = useMGState();
+  const [selectedEasing, setSelectedEasing] = useState<MGEasingType>('easeInOut');
+
+  const sceneStart = getSceneStartTime(activeScene.id);
+  const layerStartGlobal = sceneStart + layer.startTime;
+  const relTime = Math.max(0, Math.min(layer.duration, state.currentTime - layerStartGlobal));
+
+  const animProps: {
+    prop: MGAnimatableProperty;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    unit: string;
+    defaultValue: number;
+    getValue: () => number;
+    setValue: (val: number) => void;
+  }[] = [
+    {
+      prop: 'posX',
+      label: 'Position X',
+      min: 0,
+      max: 100,
+      step: 0.5,
+      unit: '%',
+      defaultValue: layer.position.x,
+      getValue: () => interpolateProperty(layer.keyframes, 'posX', relTime, layer.position.x),
+      setValue: (val: number) => {
+        if (hasKeyframesForProperty(layer.keyframes, 'posX')) {
+          addOrUpdateKeyframe(layer.id, 'posX', Math.round(relTime * 100) / 100, val, selectedEasing);
+        } else {
+          updateLayer(layer.id, { position: { ...layer.position, x: val } } as any);
+        }
+      },
+    },
+    {
+      prop: 'posY',
+      label: 'Position Y',
+      min: 0,
+      max: 100,
+      step: 0.5,
+      unit: '%',
+      defaultValue: layer.position.y,
+      getValue: () => interpolateProperty(layer.keyframes, 'posY', relTime, layer.position.y),
+      setValue: (val: number) => {
+        if (hasKeyframesForProperty(layer.keyframes, 'posY')) {
+          addOrUpdateKeyframe(layer.id, 'posY', Math.round(relTime * 100) / 100, val, selectedEasing);
+        } else {
+          updateLayer(layer.id, { position: { ...layer.position, y: val } } as any);
+        }
+      },
+    },
+    {
+      prop: 'scale',
+      label: 'Scale',
+      min: 0.1,
+      max: 4,
+      step: 0.05,
+      unit: 'x',
+      defaultValue: layer.type === 'component' ? (layer.scale ?? 1) : 1,
+      getValue: () => interpolateProperty(layer.keyframes, 'scale', relTime, layer.type === 'component' ? (layer.scale ?? 1) : 1),
+      setValue: (val: number) => {
+        if (hasKeyframesForProperty(layer.keyframes, 'scale')) {
+          addOrUpdateKeyframe(layer.id, 'scale', Math.round(relTime * 100) / 100, val, selectedEasing);
+        } else if (layer.type === 'component') {
+          updateLayer(layer.id, { scale: val } as any);
+        }
+      },
+    },
+    {
+      prop: 'rotation',
+      label: 'Rotation',
+      min: -180,
+      max: 180,
+      step: 1,
+      unit: '°',
+      defaultValue: 0,
+      getValue: () => interpolateProperty(layer.keyframes, 'rotation', relTime, 0),
+      setValue: (val: number) => {
+        addOrUpdateKeyframe(layer.id, 'rotation', Math.round(relTime * 100) / 100, val, selectedEasing);
+      },
+    },
+    {
+      prop: 'opacity',
+      label: 'Opacity',
+      min: 0,
+      max: 1,
+      step: 0.05,
+      unit: '',
+      defaultValue: 1,
+      getValue: () => interpolateProperty(layer.keyframes, 'opacity', relTime, 1),
+      setValue: (val: number) => {
+        addOrUpdateKeyframe(layer.id, 'opacity', Math.round(relTime * 100) / 100, val, selectedEasing);
+      },
+    },
+  ];
+
+  const totalKeyframesCount = layer.keyframes?.length || 0;
+  const uniqueTimes = Array.from(new Set((layer.keyframes || []).map((k) => k.time))).sort((a, b) => a - b);
+
+  return (
+    <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <h4 style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', background: '#FFFFFF', transform: 'rotate(45deg)' }} />
+          CUSTOM ANIMATION
+        </h4>
+        {totalKeyframesCount > 0 && (
+          <button
+            onClick={() => clearKeyframes(layer.id)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#ef4444',
+              fontSize: '10px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              padding: '2px 4px',
+            }}
+            title="Remove all keyframes from this component"
+          >
+            Clear All
+          </button>
+        )}
+      </div>
+
+      {/* Info bar: playhead relative time */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '6px 8px',
+        background: 'var(--bg-primary)',
+        borderRadius: '6px',
+        border: '1px solid var(--border-color)',
+        marginBottom: '10px',
+        fontSize: '11px',
+      }}>
+        <span style={{ color: 'var(--text-muted)' }}>Playhead Time:</span>
+        <span style={{ fontWeight: 700, color: '#FFFFFF', fontFamily: 'monospace' }}>
+          {relTime.toFixed(2)}s <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {layer.duration.toFixed(1)}s</span>
+        </span>
+      </div>
+
+      {/* Easing Preset */}
+      <div style={{ marginBottom: '10px' }}>
+        <label style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+          Keyframe Transition Easing
+        </label>
+        <div style={{ display: 'flex', gap: '3px', background: 'var(--bg-primary)', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+          {EASING_PRESETS.map((p) => {
+            const isActive = selectedEasing === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedEasing(p.id)}
+                style={{
+                  flex: 1,
+                  padding: '5px 2px',
+                  background: isActive ? '#FFFFFF' : 'transparent',
+                  color: isActive ? '#000000' : 'var(--text-primary)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: isActive ? 700 : 400,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Animatable Properties Grid */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {animProps.map(({ prop, label, min, max, step, unit, getValue, setValue }) => {
+          const curVal = getValue();
+          const kfAtNow = getKeyframeAtTime(layer.keyframes, prop, relTime);
+          const hasAnyKf = hasKeyframesForProperty(layer.keyframes, prop);
+
+          return (
+            <div
+              key={prop}
+              style={{
+                padding: '8px',
+                background: 'var(--bg-primary)',
+                borderRadius: '6px',
+                border: kfAtNow ? '1px solid #FFFFFF' : '1px solid var(--border-color)',
+                transition: 'border-color 0.15s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {/* Diamond Keyframe Toggle Button */}
+                  <button
+                    type="button"
+                    title={kfAtNow ? 'Remove keyframe at current time' : 'Add keyframe at current time'}
+                    onClick={() => {
+                      if (kfAtNow) {
+                        removeKeyframe(layer.id, kfAtNow.id);
+                      } else {
+                        addOrUpdateKeyframe(layer.id, prop, Math.round(relTime * 100) / 100, curVal, selectedEasing);
+                      }
+                    }}
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: kfAtNow ? '#FFFFFF' : 'transparent',
+                      color: kfAtNow ? '#000000' : hasAnyKf ? '#FFFFFF' : 'var(--text-muted)',
+                      border: '1px solid ' + (kfAtNow ? '#FFFFFF' : hasAnyKf ? 'rgba(255,255,255,0.4)' : 'var(--border-color)'),
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      lineHeight: 1,
+                      padding: 0,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    ◆
+                  </button>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {label}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFFFFF', fontFamily: 'monospace' }}>
+                    {typeof curVal === 'number' ? (step < 1 ? curVal.toFixed(step < 0.1 ? 2 : 1) : Math.round(curVal)) : curVal}{unit}
+                  </span>
+                  {hasAnyKf && (
+                    <button
+                      type="button"
+                      title={`Clear ${label} keyframes`}
+                      onClick={() => clearKeyframes(layer.id, prop)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        fontSize: '9px',
+                        cursor: 'pointer',
+                        padding: '1px 3px',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Slider for value */}
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={curVal}
+                onChange={(e) => setValue(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#FFFFFF' }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Keyframe Jump Markers */}
+      {uniqueTimes.length > 0 && (
+        <div style={{ marginTop: '12px' }}>
+          <label style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+            Jump to Keyframe Time
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {uniqueTimes.map((t) => {
+              const isAtThisTime = Math.abs(relTime - t) < 0.05;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => seekTo(layerStartGlobal + t)}
+                  style={{
+                    padding: '3px 8px',
+                    background: isAtThisTime ? '#FFFFFF' : 'var(--bg-primary)',
+                    color: isAtThisTime ? '#000000' : 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: isAtThisTime ? 700 : 500,
+                    cursor: 'pointer',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  ◆ {t.toFixed(2)}s
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MotionSidebar() {
   const {
     state, dispatch, addScene, removeScene, updateScene, duplicateScene, setScenes,
     addLayer, addComponentLayer, removeLayer, updateLayer, duplicateLayer, setLayers, seekTo, getSceneStartTime, play,
+    addOrUpdateKeyframe, removeKeyframe, clearKeyframes, moveKeyframe,
   } = useMGState();
   const { scenes, activeSceneId, selectedLayerId } = state;
   const activeTab = state.activeSidebarTab || 'scene';
@@ -466,20 +785,40 @@ export default function MotionSidebar() {
                       TRANSITION IN
                     </h4>
 
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Type</label>
-                    <select
-                      value={activeScene.transition}
-                      onChange={(e) => updateScene(activeScene.id, { transition: e.target.value as SceneTransition })}
-                      style={{
-                        width: '100%', padding: '8px', background: 'var(--bg-primary)',
-                        border: '1px solid var(--border-color)', borderRadius: '6px',
-                        color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px',
-                      }}
-                    >
-                      {TRANSITION_OPTIONS.map((opt) => (
-                        <option key={opt.id} value={opt.id}>{opt.icon} {opt.label}</option>
-                      ))}
-                    </select>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Type</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
+                      {TRANSITION_OPTIONS.map((opt) => {
+                        const isSelected = activeScene.transition === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => updateScene(activeScene.id, { transition: opt.id as SceneTransition })}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              padding: '8px 4px',
+                              borderRadius: '8px',
+                              border: isSelected ? '2px solid #FFFFFF' : '1px solid var(--border-color)',
+                              background: isSelected ? '#FFFFFF' : 'var(--bg-primary)',
+                              color: isSelected ? '#000000' : 'var(--text-primary)',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              textAlign: 'center',
+                            }}
+                            title={opt.label}
+                          >
+                            <span style={{ fontSize: '14px' }}>{opt.icon}</span>
+                            <span style={{ fontSize: '10px', fontWeight: isSelected ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                              {opt.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
                     {activeScene.transition !== 'none' && (
                       <>
@@ -634,6 +973,44 @@ export default function MotionSidebar() {
                   </div>
                 </div>
 
+                {/* Font Size & Letter Spacing line */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Font Size</label>
+                      <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{selectedLayer.fontSize ?? 48}px</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={selectedLayer.fontSize ?? 48}
+                      onChange={(e) => updateLayer(selectedLayer.id, { fontSize: Number(e.target.value) })}
+                      min={12} max={180} step={2}
+                      style={{
+                        width: '100%', padding: '7px 8px', background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)', borderRadius: '6px',
+                        color: 'var(--text-primary)', fontSize: '12px', outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Letter Spacing</label>
+                      <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{selectedLayer.letterSpacing ?? 0}px</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={selectedLayer.letterSpacing ?? 0}
+                      onChange={(e) => updateLayer(selectedLayer.id, { letterSpacing: Number(e.target.value) })}
+                      min={-10} max={60} step={0.5}
+                      style={{
+                        width: '100%', padding: '7px 8px', background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)', borderRadius: '6px',
+                        color: 'var(--text-primary)', fontSize: '12px', outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+
                 {/* Color, Bold, Italic line */}
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', marginBottom: '10px' }}>
                   <ColorPickerControl
@@ -644,11 +1021,11 @@ export default function MotionSidebar() {
                     style={{ width: '40px', flexShrink: 0 }}
                   />
                   <button onClick={() => updateLayer(selectedLayer.id, { isBold: !selectedLayer.isBold })}
-                    style={{ padding: '6px 10px', background: selectedLayer.isBold ? 'var(--accent-primary)' : 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: selectedLayer.isBold ? '#0f172a' : 'var(--text-primary)', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ padding: '6px 10px', background: selectedLayer.isBold ? '#FFFFFF' : 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: selectedLayer.isBold ? '#000000' : 'var(--text-primary)', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
                     B
                   </button>
                   <button onClick={() => updateLayer(selectedLayer.id, { isItalic: !selectedLayer.isItalic })}
-                    style={{ padding: '6px 10px', background: selectedLayer.isItalic ? 'var(--accent-primary)' : 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: selectedLayer.isItalic ? '#0f172a' : 'var(--text-primary)', fontSize: '12px', fontStyle: 'italic', cursor: 'pointer' }}>
+                    style={{ padding: '6px 10px', background: selectedLayer.isItalic ? '#FFFFFF' : 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: selectedLayer.isItalic ? '#000000' : 'var(--text-primary)', fontSize: '12px', fontStyle: 'italic', cursor: 'pointer' }}>
                     I
                   </button>
                 </div>
@@ -1986,6 +2363,11 @@ export default function MotionSidebar() {
                 )}
                 </div>
               </div>
+            )}
+
+            {/* Custom Animation (Keyframes) Inspector */}
+            {selectedLayer && activeScene && (
+              <CustomAnimationInspector layer={selectedLayer} activeScene={activeScene} />
             )}
           </>
         )}

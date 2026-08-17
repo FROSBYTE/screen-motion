@@ -3,6 +3,7 @@ import { Inter, Geist, Sora, Space_Grotesk, Plus_Jakarta_Sans } from "next/font/
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import MixpanelInit from "@/components/MixpanelInit";
+import RangeSliderSync from "@/components/RangeSliderSync";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -72,6 +73,7 @@ export default function RootLayout({
       </head>
       <body style={{ fontFamily: '"Plus Jakarta Sans", "Google Sans", "Inter", sans-serif' }}>
         <MixpanelInit />
+        <RangeSliderSync />
         {children}
       </body>
     </html>

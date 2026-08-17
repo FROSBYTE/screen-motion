@@ -101,6 +101,95 @@ export function calculatePacing(
 }
 export const getCalculatedPacing = calculatePacing;
 
+// ── Keyframe Animation System ──
+export type MGAnimatableProperty = 'posX' | 'posY' | 'scale' | 'rotation' | 'opacity';
+export type MGEasingType = 'linear' | 'easeOut' | 'easeInOut' | 'spring' | 'bounce';
+
+export interface MGKeyframe {
+  id: string;
+  time: number;          // seconds relative to layer start
+  property: MGAnimatableProperty;
+  value: number;
+  easing: MGEasingType;
+}
+
+// Easing functions
+function easingLinear(t: number): number { return t; }
+function easingEaseOut(t: number): number { return 1 - Math.pow(1 - t, 3); }
+function easingEaseInOut(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+function easingSpring(t: number): number {
+  const c4 = (2 * Math.PI) / 3;
+  return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+}
+function easingBounce(t: number): number {
+  const n1 = 7.5625, d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+  if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+  return n1 * (t -= 2.625 / d1) * t + 0.984375;
+}
+
+const EASING_FNS: Record<MGEasingType, (t: number) => number> = {
+  linear: easingLinear,
+  easeOut: easingEaseOut,
+  easeInOut: easingEaseInOut,
+  spring: easingSpring,
+  bounce: easingBounce,
+};
+
+/**
+ * Evaluate the animated value for a given property at a relative time.
+ * Returns defaultValue if no keyframes exist for that property.
+ */
+export function interpolateProperty(
+  keyframes: MGKeyframe[] | undefined,
+  property: MGAnimatableProperty,
+  relativeTime: number,
+  defaultValue: number,
+): number {
+  if (!keyframes || keyframes.length === 0) return defaultValue;
+  const propKfs = keyframes.filter((k) => k.property === property).sort((a, b) => a.time - b.time);
+  if (propKfs.length === 0) return defaultValue;
+  // Before first keyframe
+  if (relativeTime <= propKfs[0].time) return propKfs[0].value;
+  // After last keyframe
+  if (relativeTime >= propKfs[propKfs.length - 1].time) return propKfs[propKfs.length - 1].value;
+  // Find the surrounding pair
+  for (let i = 0; i < propKfs.length - 1; i++) {
+    const a = propKfs[i];
+    const b = propKfs[i + 1];
+    if (relativeTime >= a.time && relativeTime <= b.time) {
+      const range = b.time - a.time;
+      if (range <= 0) return b.value;
+      const rawT = (relativeTime - a.time) / range;
+      const easedT = EASING_FNS[b.easing || 'easeInOut'](rawT);
+      return a.value + (b.value - a.value) * easedT;
+    }
+  }
+  return defaultValue;
+}
+
+/** Check if a property has keyframes */
+export function hasKeyframesForProperty(
+  keyframes: MGKeyframe[] | undefined,
+  property: MGAnimatableProperty,
+): boolean {
+  return !!keyframes && keyframes.some((k) => k.property === property);
+}
+
+/** Check if a keyframe exists at a given time (+/- tolerance) for a property */
+export function getKeyframeAtTime(
+  keyframes: MGKeyframe[] | undefined,
+  property: MGAnimatableProperty,
+  time: number,
+  tolerance: number = 0.05,
+): MGKeyframe | undefined {
+  if (!keyframes) return undefined;
+  return keyframes.find((k) => k.property === property && Math.abs(k.time - time) < tolerance);
+}
+
 export interface MGTextLayer {
   id: string;
   type: 'text';
@@ -112,6 +201,7 @@ export interface MGTextLayer {
   color: string;
   fontSize: number;
   fontFamily: string;
+  letterSpacing?: number; // in pixels, default 0
   isBold: boolean;
   isItalic: boolean;
   startTime: number; // seconds
@@ -121,6 +211,7 @@ export interface MGTextLayer {
   enterDuration?: number;
   exitAnimation?: 'none' | 'fade-out' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'scale-down' | 'blur-out';
   exitDuration?: number;
+  keyframes?: MGKeyframe[];
 }
 
 export interface MGComponentLayer {
@@ -138,6 +229,7 @@ export interface MGComponentLayer {
   enterDuration?: number;
   exitAnimation?: 'none' | 'fade-out' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'scale-down' | 'blur-out';
   exitDuration?: number;
+  keyframes?: MGKeyframe[];
 }
 
 export type MGLayer = MGTextLayer | MGComponentLayer;
@@ -249,6 +341,11 @@ interface MGContextValue {
   pushUndo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  // Keyframe actions
+  addOrUpdateKeyframe: (layerId: string, property: MGAnimatableProperty, time: number, value: number, easing?: MGEasingType) => void;
+  removeKeyframe: (layerId: string, keyframeId: string) => void;
+  moveKeyframe: (layerId: string, keyframeId: string, newTime: number) => void;
+  clearKeyframes: (layerId: string, property?: MGAnimatableProperty) => void;
   // Computed
   totalDuration: number;
   getSceneAtTime: (time: number) => { scene: MGScene; localTime: number; transitionProgress: number } | null;
@@ -623,6 +720,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       color: partial?.color || '#ffffff',
       fontSize: partial?.fontSize ?? 48,
       fontFamily: partial?.fontFamily || '"Plus Jakarta Sans", sans-serif',
+      letterSpacing: partial?.letterSpacing ?? 0,
       isBold: partial?.isBold ?? true,
       isItalic: partial?.isItalic ?? false,
       startTime: partial?.startTime ?? 0,
@@ -779,6 +877,93 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
     });
   }, [pushUndo, markDirty]);
 
+  // ── Keyframe CRUD Actions ──
+  const addOrUpdateKeyframe = useCallback((
+    layerId: string,
+    property: MGAnimatableProperty,
+    time: number,
+    value: number,
+    easing: MGEasingType = 'easeInOut',
+  ) => {
+    pushUndo();
+    markDirty();
+    setState((prev) => ({
+      ...prev,
+      scenes: prev.scenes.map((s) => ({
+        ...s,
+        layers: s.layers.map((l) => {
+          if (l.id !== layerId) return l;
+          const existing = (l.keyframes || []).slice();
+          const idx = existing.findIndex((k) => k.property === property && Math.abs(k.time - time) < 0.05);
+          if (idx >= 0) {
+            existing[idx] = { ...existing[idx], value, easing };
+          } else {
+            existing.push({
+              id: `kf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              time,
+              property,
+              value,
+              easing,
+            });
+          }
+          return { ...l, keyframes: existing } as MGLayer;
+        }),
+      })),
+    }));
+  }, [pushUndo, markDirty]);
+
+  const removeKeyframe = useCallback((layerId: string, keyframeId: string) => {
+    pushUndo();
+    markDirty();
+    setState((prev) => ({
+      ...prev,
+      scenes: prev.scenes.map((s) => ({
+        ...s,
+        layers: s.layers.map((l) => {
+          if (l.id !== layerId) return l;
+          return { ...l, keyframes: (l.keyframes || []).filter((k) => k.id !== keyframeId) } as MGLayer;
+        }),
+      })),
+    }));
+  }, [pushUndo, markDirty]);
+
+  const moveKeyframe = useCallback((layerId: string, keyframeId: string, newTime: number) => {
+    markDirty();
+    setState((prev) => ({
+      ...prev,
+      scenes: prev.scenes.map((s) => ({
+        ...s,
+        layers: s.layers.map((l) => {
+          if (l.id !== layerId) return l;
+          return {
+            ...l,
+            keyframes: (l.keyframes || []).map((k) =>
+              k.id === keyframeId ? { ...k, time: Math.max(0, Math.min(newTime, l.duration)) } : k
+            ),
+          } as MGLayer;
+        }),
+      })),
+    }));
+  }, [markDirty]);
+
+  const clearKeyframes = useCallback((layerId: string, property?: MGAnimatableProperty) => {
+    pushUndo();
+    markDirty();
+    setState((prev) => ({
+      ...prev,
+      scenes: prev.scenes.map((s) => ({
+        ...s,
+        layers: s.layers.map((l) => {
+          if (l.id !== layerId) return l;
+          const filtered = property
+            ? (l.keyframes || []).filter((k) => k.property !== property)
+            : [];
+          return { ...l, keyframes: filtered } as MGLayer;
+        }),
+      })),
+    }));
+  }, [pushUndo, markDirty]);
+
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
 
@@ -903,6 +1088,10 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       pushUndo,
       canUndo,
       canRedo,
+      addOrUpdateKeyframe,
+      removeKeyframe,
+      moveKeyframe,
+      clearKeyframes,
       totalDuration,
       getSceneAtTime,
       getSceneStartTime,

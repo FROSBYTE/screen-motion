@@ -14,8 +14,8 @@ export default function SmoothHero() {
         position: "relative",
         overflow: "hidden",
         minHeight: "100vh",
-        backgroundColor: "#0e0e14",
-        color: "#f8fafc",
+        backgroundColor: "#000000",
+        color: "#ffffff",
         fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif",
         display: "flex",
         flexDirection: "column",
@@ -39,13 +39,13 @@ export default function SmoothHero() {
           display: none;
         }
         .hero-btn-primary, .hero-btn-secondary {
-          height: 58px;
+          height: 54px;
           display: inline-flex;
           align-items: center;
-          justify-content: center;
-          border-radius: 18px;
-          font-size: 18px;
-          font-weight: 800;
+          justifyContent: center;
+          border-radius: 14px;
+          font-size: 16px;
+          font-weight: 700;
           text-decoration: none;
           white-space: nowrap;
         }
@@ -58,22 +58,7 @@ export default function SmoothHero() {
             display: none !important;
           }
           .nav-mobile-toggle {
-            display: flex !important;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .hero-btn-container {
-            flex-direction: column !important;
-            width: 100% !important;
-            padding: 0 16px !important;
-          }
-          .hero-btn-primary, .hero-btn-secondary {
-            width: 100% !important;
-            max-width: 320px !important;
-            height: 50px !important;
-            font-size: 15px !important;
-            padding: 0 20px !important;
+            display: inline-flex !important;
           }
         }
       `}</style>
@@ -94,23 +79,23 @@ export default function SmoothHero() {
       >
         {/* Brand Logo - Text Only */}
         <Link href="/" style={{ textDecoration: "none" }}>
-          <span style={{ fontSize: "24px", fontWeight: 800, color: "#EEEEEE", letterSpacing: "-0.03em" }}>
-            screen<span style={{ color: "#00ADB5" }}>motion</span>
+          <span style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.03em" }}>
+            screen<span style={{ color: "#ffffff", opacity: 0.85 }}>motion</span>
           </span>
         </Link>
 
         {/* Center Nav Links (Desktop) */}
         <nav className="nav-desktop-links">
-          <a href="#templates" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <a href="#templates" style={{ color: "#a1a1aa", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             3D Templates
           </a>
-          <Link href="/motion-graphics" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <Link href="/projects" style={{ color: "#a1a1aa", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             Motion Graphics
           </Link>
-          <Link href="/editor" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <Link href="/editor" style={{ color: "#a1a1aa", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             3D Editor
           </Link>
-          <a href="#faq" style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
+          <a href="#faq" style={{ color: "#a1a1aa", textDecoration: "none", fontSize: "14px", fontWeight: 600, transition: "color 0.15s" }}>
             FAQ
           </a>
         </nav>
@@ -124,13 +109,14 @@ export default function SmoothHero() {
           style={{
             fontSize: "13px",
             fontWeight: 700,
-            color: "#222831",
-            backgroundColor: "#00ADB5",
+            color: "#000000",
+            backgroundColor: "#ffffff",
             border: "none",
             padding: "8px 20px",
             borderRadius: "9999px",
             textDecoration: "none",
             transition: "all 0.15s ease",
+            boxShadow: "0 2px 12px rgba(255, 255, 255, 0.2)",
           }}
         >
           Join Waitlist
@@ -142,11 +128,11 @@ export default function SmoothHero() {
           className="nav-mobile-toggle"
           aria-label="Toggle Mobile Navigation Menu"
           style={{
-            background: "#393E46",
-            border: "1px solid #4f5663",
+            background: "#141414",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
             borderRadius: "10px",
             padding: "8px",
-            color: "#EEEEEE",
+            color: "#ffffff",
             cursor: "pointer",
             alignItems: "center",
             justifyContent: "center",
@@ -168,11 +154,11 @@ export default function SmoothHero() {
                 top: "100%",
                 left: "16px",
                 right: "16px",
-                backgroundColor: "#393E46",
-                border: "1px solid #4f5663",
+                backgroundColor: "#0a0a0a",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
                 borderRadius: "16px",
                 padding: "20px",
-                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.8)",
+                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.9)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -182,32 +168,32 @@ export default function SmoothHero() {
               <a
                 href="#templates"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+                style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
               >
                 3D Templates
               </a>
               <Link
-                href="/motion-graphics"
+                href="/projects"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+                style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
               >
                 Motion Graphics
               </Link>
               <Link
                 href="/editor"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+                style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
               >
                 3D Editor
               </Link>
               <a
                 href="#faq"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ color: "#EEEEEE", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
+                style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 600 }}
               >
                 FAQ
               </a>
-              <div style={{ height: "1px", backgroundColor: "#4f5663", margin: "4px 0" }} />
+              <div style={{ height: "1px", backgroundColor: "rgba(255, 255, 255, 0.1)", margin: "4px 0" }} />
               <a
                 href="https://forms.gle/rtfYsFTgRUP9RE79A"
                 target="_blank"
@@ -216,8 +202,8 @@ export default function SmoothHero() {
                 style={{
                   fontSize: "14px",
                   fontWeight: 700,
-                  color: "#222831",
-                  backgroundColor: "#00ADB5",
+                  color: "#000000",
+                  backgroundColor: "#ffffff",
                   padding: "12px",
                   borderRadius: "10px",
                   textDecoration: "none",
@@ -255,7 +241,7 @@ export default function SmoothHero() {
             lineHeight: 1.12,
             fontWeight: 800,
             letterSpacing: "-0.03em",
-            color: "#EEEEEE",
+            color: "#ffffff",
             margin: "0 0 20px 0",
             maxWidth: "920px",
           }}
@@ -268,7 +254,7 @@ export default function SmoothHero() {
           style={{
             fontSize: "clamp(0.95rem, 1.8vw, 1.25rem)",
             lineHeight: 1.5,
-            color: "#a0aab5",
+            color: "#a1a1aa",
             maxWidth: "760px",
             margin: "0 0 36px 0",
             fontWeight: 400,
@@ -277,31 +263,32 @@ export default function SmoothHero() {
           No need to learn After Effects and spend your unprofessional time in making videos. Choose from the variety of our templates and create video easily. Zero Experience required
         </p>
 
-        {/* Teal CTA Buttons */}
+        {/* Monochrome CTA Buttons */}
         <div className="hero-btn-container" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "48px" }}>
-          {/* Vibrant Teal Gradient Primary Button */}
+          {/* Solid White Primary Button */}
           <Link
             href="/editor"
             className="hero-btn-primary"
             style={{
               padding: "0 32px",
-              background: "linear-gradient(135deg, #00ADB5 0%, #008b92 100%)",
-              color: "#222831",
+              background: "#ffffff",
+              color: "#000000",
+              boxShadow: "0 4px 20px rgba(255, 255, 255, 0.25)",
               transition: "transform 0.2s ease",
             }}
           >
             Launch 3D Editor
           </Link>
 
-          {/* Secondary Medium Dark Button */}
+          {/* Secondary Pitch Dark Button */}
           <Link
-            href="/motion-graphics"
+            href="/projects"
             className="hero-btn-secondary"
             style={{
               padding: "0 28px",
-              backgroundColor: "#393E46",
-              border: "1.5px solid #4f5663",
-              color: "#EEEEEE",
+              backgroundColor: "#0f0f0f",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: "#ffffff",
               gap: "10px",
               transition: "transform 0.2s ease",
             }}
@@ -313,8 +300,8 @@ export default function SmoothHero() {
                 fontWeight: 800,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: "#222831",
-                backgroundColor: "#00ADB5",
+                color: "#000000",
+                backgroundColor: "#ffffff",
                 padding: "3px 8px",
                 borderRadius: "9999px",
                 lineHeight: 1,
@@ -335,9 +322,9 @@ export default function SmoothHero() {
             maxWidth: "1080px",
             borderRadius: "26px",
             overflow: "hidden",
-            backgroundColor: "#181824",
-            border: "1px solid #2a2a3c",
-            boxShadow: "0 25px 80px -10px rgba(0, 0, 0, 0.8)",
+            backgroundColor: "#0a0a0a",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            boxShadow: "0 25px 80px -10px rgba(0, 0, 0, 0.9)",
           }}
         >
           {/* Inner Studio Window */}
@@ -346,7 +333,7 @@ export default function SmoothHero() {
               width: "100%",
               borderRadius: "26px",
               overflow: "hidden",
-              backgroundColor: "#181824",
+              backgroundColor: "#0a0a0a",
               textAlign: "left",
             }}
           >
@@ -354,8 +341,8 @@ export default function SmoothHero() {
             <div
               style={{
                 height: "42px",
-                backgroundColor: "#181824",
-                borderBottom: "1px solid #222232",
+                backgroundColor: "#0a0a0a",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -372,30 +359,45 @@ export default function SmoothHero() {
               {/* Fake Address bar */}
               <div
                 style={{
-                  backgroundColor: "#0e0e14",
-                  border: "1px solid #2a2a3c",
+                  backgroundColor: "#141414",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
                   borderRadius: "6px",
                   padding: "3px 16px",
                   fontSize: "11px",
-                  color: "#94a3b8",
-                  fontWeight: 500,
-                  width: "280px",
-                  textAlign: "center",
+                  color: "#a1a1aa",
+                  letterSpacing: "0.02em",
                 }}
               >
-                screenmotion.app/editor
+                screenmotion.io/editor
               </div>
+
+              <div style={{ width: "42px" }} />
             </div>
 
-            {/* Showcase Video Mockup */}
-            <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", backgroundColor: "#0e0e14", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {/* Window Content / Canvas Video */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "clamp(300px, 50vw, 560px)",
+                overflow: "hidden",
+                backgroundColor: "#000000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <video
-                src="/showcase-videos/screen-motion-1080p-bounce-drop-1785438886976.webm"
+                src="/animation-card-videos/orbit-template.webm"
                 autoPlay
-                muted
                 loop
+                muted
                 playsInline
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
               />
             </div>
           </div>

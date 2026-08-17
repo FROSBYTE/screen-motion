@@ -178,12 +178,12 @@ export function MotionGraphicsStudioContent() {
                 padding: '4px 10px',
                 borderRadius: '8px',
                 background: hasUnsavedChanges
-                  ? 'rgba(245, 158, 11, 0.12)'
-                  : 'var(--bg-input)',
+                  ? 'rgba(255, 255, 255, 0.12)'
+                  : '#1a1a1a',
                 border: hasUnsavedChanges
-                  ? '1px solid rgba(245, 158, 11, 0.4)'
-                  : '1px solid var(--border-color)',
-                color: hasUnsavedChanges ? '#fbbf24' : 'var(--text-primary)',
+                  ? '1px solid rgba(255, 255, 255, 0.4)'
+                  : '1px solid #333333',
+                color: hasUnsavedChanges ? '#FFFFFF' : '#ffffff',
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer',
@@ -194,20 +194,20 @@ export function MotionGraphicsStudioContent() {
             >
               {saveStatus === 'saving' ? (
                 <>
-                  <Loader2 size={13} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />
+                  <Loader2 size={13} className="animate-spin" style={{ color: '#FFFFFF' }} />
                   <span>Saving…</span>
                 </>
               ) : saveStatus === 'saved' && !hasUnsavedChanges ? (
                 <>
-                  <Check size={13} style={{ color: '#10b981' }} />
-                  <span style={{ color: '#10b981' }}>Saved</span>
+                  <Check size={13} style={{ color: '#FFFFFF' }} />
+                  <span style={{ color: '#FFFFFF' }}>Saved</span>
                   <kbd style={{
                     fontSize: '10px',
                     fontFamily: 'inherit',
                     padding: '1px 5px',
                     borderRadius: '4px',
                     background: 'rgba(255,255,255,0.06)',
-                    color: 'var(--text-muted)',
+                    color: '#888888',
                     marginLeft: '2px',
                   }}>
                     Ctrl+S
@@ -220,15 +220,15 @@ export function MotionGraphicsStudioContent() {
                 </>
               ) : (
                 <>
-                  <Save size={13} style={{ color: '#fbbf24' }} />
+                  <Save size={13} style={{ color: '#FFFFFF' }} />
                   <span>Save</span>
                   <kbd style={{
                     fontSize: '10px',
                     fontFamily: 'inherit',
                     padding: '1px 5px',
                     borderRadius: '4px',
-                    background: 'rgba(245, 158, 11, 0.2)',
-                    color: '#fbbf24',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: '#FFFFFF',
                     marginLeft: '2px',
                   }}>
                     Ctrl+S
@@ -243,10 +243,10 @@ export function MotionGraphicsStudioContent() {
             <button
               onClick={handleCreateNew}
               style={{
-                background: 'var(--bg-input)',
-                border: '1px solid var(--border-color)',
+                background: '#1a1a1a',
+                border: '1px solid #333333',
                 borderRadius: '8px',
-                color: 'var(--text-primary)',
+                color: '#ffffff',
                 padding: '6px 12px',
                 fontSize: '12px',
                 fontWeight: 500,
@@ -258,33 +258,31 @@ export function MotionGraphicsStudioContent() {
               }}
               title="Create a fresh video project"
             >
-              <Plus size={14} style={{ color: 'var(--accent-primary)' }} />
+              <Plus size={14} style={{ color: '#FFFFFF' }} />
               <span>New Project</span>
             </button>
 
             <button
               onClick={() => setIsExportModalOpen(true)}
               style={{
-                background: 'var(--accent-primary)',
+                background: '#FFFFFF',
                 border: 'none',
                 borderRadius: '8px',
-                color: '#0f172a',
+                color: '#000000',
                 padding: '6px 14px',
                 fontSize: '12px',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                boxShadow: '0 2px 10px rgba(255,255,255,0.2)',
                 transition: 'all 0.15s ease',
-                fontFamily: '"Plus Jakarta Sans", sans-serif',
               }}
-              title="Export motion graphic as MP4 video"
+              title="Export Full Video (MP4 / WebM)"
             >
-              <Film size={14} />
-              <span>Export Video</span>
-              <Download size={13} style={{ opacity: 0.85 }} />
+              <Download size={14} style={{ color: '#000000' }} />
+              <span>Export</span>
             </button>
           </div>
         </header>

@@ -3,26 +3,26 @@
 @source "../";
 
 @theme {
-  --color-background: #222831;
-  --color-foreground: #EEEEEE;
-  --color-card: #393E46;
-  --color-card-foreground: #EEEEEE;
-  --color-popover: #393E46;
-  --color-popover-foreground: #EEEEEE;
-  --color-primary: #00ADB5;
-  --color-primary-foreground: #222831;
-  --color-secondary: #393E46;
-  --color-secondary-foreground: #EEEEEE;
-  --color-muted: #393E46;
-  --color-muted-foreground: #a0aab5;
-  --color-accent: #00ADB5;
-  --color-accent-foreground: #222831;
+  --color-background: #000000;
+  --color-foreground: #FFFFFF;
+  --color-card: #0d0d0d;
+  --color-card-foreground: #FFFFFF;
+  --color-popover: #0a0a0a;
+  --color-popover-foreground: #FFFFFF;
+  --color-primary: #FFFFFF;
+  --color-primary-foreground: #000000;
+  --color-secondary: #141414;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #171717;
+  --color-muted-foreground: #A1A1AA;
+  --color-accent: #FFFFFF;
+  --color-accent-foreground: #000000;
   --color-destructive: #ef4444;
-  --color-border: #393E46;
-  --color-input: #393E46;
-  --color-ring: #00ADB5;
-  --color-brand: #00ADB5;
-  --color-brand-secondary: #008b92;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-input: #141414;
+  --color-ring: #FFFFFF;
+  --color-brand: #FFFFFF;
+  --color-brand-secondary: #E4E4E7;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -38,23 +38,23 @@ html {
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* --- Color Schema: #222831, #393E46, #00ADB5, #EEEEEE --- */
-  --theme-bg-base: #222831;          /* Primary Deep Charcoal Backdrop */
-  --theme-bg-panel: #222831;         /* Panel background */
-  --theme-bg-inset: #2b303a;         /* Input controls & dropdown background */
-  --theme-bg-card: #393E46;          /* Medium Charcoal Card Container */
-  --theme-bg-card-hover: rgba(0, 173, 181, 0.15);
+  /* --- Color Schema: Pitch Black & White Monochrome (#000000 & #FFFFFF) --- */
+  --theme-bg-base: #000000;          /* True Pitch Black (OLED) Backdrop */
+  --theme-bg-panel: #0a0a0a;         /* Deep dark surface elevation */
+  --theme-bg-inset: #141414;         /* Recessed controls & inputs */
+  --theme-bg-card: #0d0d0d;          /* Card container background */
+  --theme-bg-card-hover: rgba(255, 255, 255, 0.08);
 
-  --theme-text-light: #EEEEEE;        /* Clean Primary Text */
-  --theme-text-muted: #a0aab5;        /* Secondary Muted Text */
-  --theme-text-dark: #707b88;         /* Sub-text & icons */
-  --theme-text-accent: #00ADB5;      /* Vibrant Teal Text Accent */
+  --theme-text-light: #FFFFFF;        /* Pure White Primary Text */
+  --theme-text-muted: #A1A1AA;        /* Light Gray Secondary Text */
+  --theme-text-dark: #71717A;         /* Neutral Muted Text & Icons */
+  --theme-text-accent: #FFFFFF;       /* Pure White Text Accent */
 
-  --theme-accent-primary: #00ADB5;    /* Vibrant Teal Primary Brand Accent */
-  --theme-accent-hover: #00c4ce;      /* Teal Hover State */
-  --theme-accent-secondary: #008b92;  /* Deep Teal Secondary Accent */
-  --theme-border: #393E46;            /* Border Line */
-  --theme-border-hover: rgba(0, 173, 181, 0.5);
+  --theme-accent-primary: #FFFFFF;    /* Pure White Primary Brand Accent */
+  --theme-accent-hover: #E4E4E7;      /* Soft Off-White Hover */
+  --theme-accent-secondary: #27272A;  /* Subtle Gray Secondary Accent */
+  --theme-border: rgba(255, 255, 255, 0.12); /* Clean Hairline Border */
+  --theme-border-hover: rgba(255, 255, 255, 0.35);
 
   /* --- UI CSS Variables (Components consume these directly) --- */
   --bg-primary: var(--theme-bg-base);
@@ -72,12 +72,12 @@ html {
   --accent-primary: var(--theme-accent-primary);
   --accent-primary-hover: var(--theme-accent-hover);
   --accent-secondary: var(--theme-accent-secondary);
-  --accent-gradient: var(--theme-accent-primary);
+  --accent-gradient: #FFFFFF;
   --accent-glow: none;
 
-  --success: var(--theme-accent-primary);
-  --warning: var(--theme-accent-secondary);
-  --error: #f87171;
+  --success: #FFFFFF;
+  --warning: #A1A1AA;
+  --error: #ef4444;
 
   --border-color: var(--theme-border);
   --border-color-hover: var(--theme-border-hover);
@@ -539,39 +539,63 @@ input[type="range"] {
   appearance: none;
   width: 100%;
   height: 6px;
-  border-radius: var(--radius-full);
-  background: #050507;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #FFFFFF var(--range-fill, 0%), #000000 var(--range-fill, 0%));
+  border: 1px solid rgba(255, 255, 255, 0.22);
   outline: none;
   cursor: pointer;
-  box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.8),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.03);
+  accent-color: #FFFFFF;
+  transition: border-color 0.15s ease;
+}
+
+input[type="range"]:hover {
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 20px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-  border: 1px solid var(--border-color);
-  box-shadow:
-    1px 1px 0px rgba(255, 255, 255, 0.3) inset,
-    -1px -1px 1px rgba(0, 0, 0, 0.3) inset,
-    0 2px 4px rgba(0, 0, 0, 0.6);
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 2px 5px rgba(0, 0, 0, 0.8);
   cursor: grab;
-  transition: transform 100ms ease, background 100ms ease;
+  transition: transform 0.1s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  background: linear-gradient(180deg, var(--text-primary) 0%, var(--text-primary) 100%);
-  transform: scale(1.05);
+  transform: scale(1.2);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
   cursor: grabbing;
-  background: linear-gradient(180deg, var(--text-secondary) 0%, var(--text-muted) 100%);
-  transform: scale(0.98);
+  transform: scale(1.05);
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 6px;
+  background: #FFFFFF;
+  border-radius: 9999px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 2px 5px rgba(0, 0, 0, 0.8);
+  cursor: grab;
 }
 
 /* ===== Delete Button Hover Style ===== */

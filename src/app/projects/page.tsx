@@ -14,12 +14,8 @@ import {
   Layers,
   Clock,
   ExternalLink,
-  Sparkles,
   Smartphone,
   FolderOpen,
-  Home,
-  Check,
-  X,
 } from 'lucide-react';
 import {
   listProjects,
@@ -78,7 +74,7 @@ export default function ProjectsPage() {
     e.stopPropagation();
     setActiveMenuId(null);
     try {
-      const cloned = await duplicateProject(id);
+      await duplicateProject(id);
       await fetchProjects();
     } catch (err) {
       console.error('Failed to duplicate project:', err);
@@ -146,17 +142,17 @@ export default function ProjectsPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-primary, #09090b)',
-      color: 'var(--text-primary, #f4f4f5)',
+      background: '#000000',
+      color: '#FFFFFF',
       fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       display: 'flex',
       flexDirection: 'column',
     }}>
       {/* Top Header Navigation */}
       <header style={{
-        height: '60px',
-        borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.08))',
-        background: 'var(--bg-secondary, rgba(18,18,20,0.85))',
+        height: '56px',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        background: '#0a0a0a',
         backdropFilter: 'blur(16px)',
         display: 'flex',
         alignItems: 'center',
@@ -167,37 +163,25 @@ export default function ProjectsPage() {
         zIndex: 50,
       }}>
         {/* Left: Brand / Home Link */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <Link
             href="/"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              color: 'var(--text-primary, #ffffff)',
+              color: '#FFFFFF',
               textDecoration: 'none',
-              fontWeight: 700,
-              fontSize: '15px',
-              letterSpacing: '-0.02em',
+              fontWeight: 800,
+              fontSize: '17px',
+              letterSpacing: '-0.03em',
             }}
           >
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 16px rgba(168, 85, 247, 0.4)',
-            }}>
-              <Film size={18} color="#ffffff" />
-            </div>
-            <span>Screen Motion</span>
+            <span>screen<span style={{ color: '#FFFFFF', opacity: 0.85 }}>motion</span></span>
           </Link>
 
-          <span style={{ color: 'var(--text-muted, #71717a)', fontSize: '13px' }}>/</span>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary, #e4e4e7)' }}>
+          <span style={{ color: '#71717A', fontSize: '13px' }}>/</span>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#A1A1AA' }}>
             Motion Graphics Projects
           </span>
         </div>
@@ -210,13 +194,13 @@ export default function ProjectsPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '7px 12px',
+              padding: '7px 14px',
               borderRadius: '8px',
-              background: 'transparent',
-              border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-              color: 'var(--text-muted, #a1a1aa)',
+              background: '#141414',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#A1A1AA',
               fontSize: '12px',
-              fontWeight: 500,
+              fontWeight: 600,
               textDecoration: 'none',
               transition: 'all 0.15s ease',
             }}
@@ -234,18 +218,18 @@ export default function ProjectsPage() {
               gap: '6px',
               padding: '8px 16px',
               borderRadius: '8px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              color: '#ffffff',
+              background: '#FFFFFF',
+              color: '#000000',
               border: 'none',
               fontSize: '13px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: isCreating ? 'not-allowed' : 'pointer',
-              boxShadow: '0 2px 10px rgba(99, 102, 241, 0.35)',
+              boxShadow: '0 2px 12px rgba(255, 255, 255, 0.2)',
               transition: 'all 0.15s ease',
               opacity: isCreating ? 0.7 : 1,
             }}
           >
-            <Plus size={16} />
+            <Plus size={16} strokeWidth={2.5} />
             {isCreating ? 'Creating...' : 'New Project'}
           </button>
         </div>
@@ -269,10 +253,10 @@ export default function ProjectsPage() {
           marginBottom: '28px',
         }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0, color: '#ffffff' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, color: '#FFFFFF' }}>
               Your Projects
             </h1>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted, #a1a1aa)', margin: '4px 0 0 0' }}>
+            <p style={{ fontSize: '13px', color: '#A1A1AA', margin: '4px 0 0 0' }}>
               {projects.length} {projects.length === 1 ? 'project' : 'projects'} saved locally in browser
             </p>
           </div>
@@ -290,7 +274,7 @@ export default function ProjectsPage() {
                 left: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: 'var(--text-muted, #71717a)',
+                color: '#71717A',
               }}
             />
             <input
@@ -302,9 +286,9 @@ export default function ProjectsPage() {
                 width: '100%',
                 padding: '8px 12px 8px 34px',
                 borderRadius: '8px',
-                background: 'var(--bg-secondary, #141417)',
-                border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-                color: '#ffffff',
+                background: '#141414',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#FFFFFF',
                 fontSize: '13px',
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -326,9 +310,9 @@ export default function ProjectsPage() {
                 style={{
                   height: '220px',
                   borderRadius: '12px',
-                  background: 'var(--bg-secondary, #141417)',
-                  border: '1px solid var(--border-color, rgba(255,255,255,0.06))',
-                  animation: 'pulse 1.5s infinite',
+                  background: '#0d0d0d',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  opacity: 0.5,
                 }}
               />
             ))}
@@ -341,8 +325,8 @@ export default function ProjectsPage() {
             justifyContent: 'center',
             padding: '64px 20px',
             textAlign: 'center',
-            background: 'var(--bg-secondary, #121215)',
-            border: '1px dashed var(--border-color, rgba(255,255,255,0.12))',
+            background: '#0a0a0a',
+            border: '1px dashed rgba(255, 255, 255, 0.15)',
             borderRadius: '16px',
             marginTop: '12px',
           }}>
@@ -350,20 +334,20 @@ export default function ProjectsPage() {
               width: '64px',
               height: '64px',
               borderRadius: '16px',
-              background: 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#818cf8',
+              color: '#FFFFFF',
               marginBottom: '16px',
             }}>
               <FolderOpen size={30} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 6px 0', color: '#ffffff' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 6px 0', color: '#FFFFFF' }}>
               {searchQuery ? 'No matching projects' : 'No projects yet'}
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted, #a1a1aa)', maxWidth: '360px', margin: '0 0 20px 0' }}>
+            <p style={{ fontSize: '13px', color: '#A1A1AA', maxWidth: '360px', margin: '0 0 20px 0' }}>
               {searchQuery
                 ? `No projects found matching "${searchQuery}". Try searching for something else.`
                 : 'Create your first motion graphics video with animated text, 3D device mockups, and smooth transitions.'}
@@ -375,18 +359,18 @@ export default function ProjectsPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '10px 20px',
+                padding: '10px 22px',
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                color: '#ffffff',
+                background: '#FFFFFF',
+                color: '#000000',
                 border: 'none',
                 fontSize: '13px',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                boxShadow: '0 4px 16px rgba(255, 255, 255, 0.2)',
               }}
             >
-              <Plus size={16} />
+              <Plus size={16} strokeWidth={2.5} />
               Create New Project
             </button>
           </div>
@@ -401,8 +385,8 @@ export default function ProjectsPage() {
               onClick={handleCreateNew}
               style={{
                 borderRadius: '12px',
-                border: '1px dashed var(--border-color, rgba(255,255,255,0.15))',
-                background: 'rgba(255,255,255,0.02)',
+                border: '1px dashed rgba(255, 255, 255, 0.2)',
+                background: 'rgba(255, 255, 255, 0.02)',
                 height: '240px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -412,29 +396,29 @@ export default function ProjectsPage() {
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#6366f1';
-                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)';
+                e.currentTarget.style.borderColor = '#FFFFFF';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
               }}
             >
               <div style={{
                 width: '44px',
                 height: '44px',
                 borderRadius: '50%',
-                background: 'rgba(99, 102, 241, 0.15)',
-                color: '#818cf8',
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: '12px',
               }}>
-                <Plus size={22} />
+                <Plus size={22} strokeWidth={2.5} />
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#e4e4e7' }}>New Video Project</span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted, #71717a)', marginTop: '4px' }}>Start from blank studio</span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF' }}>New Video Project</span>
+              <span style={{ fontSize: '12px', color: '#71717A', marginTop: '4px' }}>Start from blank studio</span>
             </div>
 
             {/* Existing Project Cards */}
@@ -445,46 +429,46 @@ export default function ProjectsPage() {
                 style={{
                   position: 'relative',
                   borderRadius: '12px',
-                  background: 'var(--bg-secondary, #141417)',
-                  border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+                  background: '#0d0d0d',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   overflow: 'hidden',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   height: '240px',
                   transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
-                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(99, 102, 241, 0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 255, 255, 0.1)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6)';
                 }}
               >
                 {/* Visual Thumbnail Area */}
                 <div style={{
                   height: '140px',
                   width: '100%',
-                  background: proj.thumbnailBg || '#0f0f11',
+                  background: proj.thumbnailBg || '#050505',
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.06))',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                   overflow: 'hidden',
                 }}>
                   {/* Subtle Grid Accent */}
                   <div style={{
                     position: 'absolute',
                     inset: 0,
-                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
                     backgroundSize: '16px 16px',
-                    opacity: 0.4,
+                    opacity: 0.3,
                   }} />
 
                   <Film size={36} color="rgba(255,255,255,0.25)" />
@@ -500,14 +484,15 @@ export default function ProjectsPage() {
                     <span style={{
                       padding: '3px 7px',
                       borderRadius: '6px',
-                      background: 'rgba(0,0,0,0.65)',
+                      background: 'rgba(0, 0, 0, 0.8)',
                       backdropFilter: 'blur(8px)',
-                      color: '#a1a1aa',
+                      color: '#A1A1AA',
                       fontSize: '10px',
                       fontWeight: 600,
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                     }}>
                       <Layers size={11} /> {proj.sceneCount} {proj.sceneCount === 1 ? 'Scene' : 'Scenes'}
                     </span>
@@ -521,15 +506,16 @@ export default function ProjectsPage() {
                     <span style={{
                       padding: '3px 7px',
                       borderRadius: '6px',
-                      background: 'rgba(0,0,0,0.7)',
+                      background: 'rgba(0, 0, 0, 0.85)',
                       backdropFilter: 'blur(8px)',
-                      color: '#e4e4e7',
+                      color: '#FFFFFF',
                       fontSize: '11px',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       fontVariantNumeric: 'tabular-nums',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                     }}>
                       <Clock size={11} /> {proj.duration.toFixed(1)}s
                     </span>
@@ -543,6 +529,7 @@ export default function ProjectsPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  background: '#0d0d0d',
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {editingId === proj.id ? (
@@ -560,10 +547,10 @@ export default function ProjectsPage() {
                           style={{
                             width: '100%',
                             padding: '3px 6px',
-                            background: 'var(--bg-input, #27272a)',
-                            border: '1px solid #6366f1',
+                            background: '#000000',
+                            border: '1px solid #FFFFFF',
                             borderRadius: '4px',
-                            color: '#ffffff',
+                            color: '#FFFFFF',
                             fontSize: '13px',
                             fontWeight: 600,
                             outline: 'none',
@@ -575,15 +562,15 @@ export default function ProjectsPage() {
                         <h4 style={{
                           margin: 0,
                           fontSize: '13px',
-                          fontWeight: 600,
-                          color: '#ffffff',
+                          fontWeight: 700,
+                          color: '#FFFFFF',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}>
                           {proj.title}
                         </h4>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted, #71717a)', marginTop: '2px', display: 'block' }}>
+                        <span style={{ fontSize: '11px', color: '#71717A', marginTop: '2px', display: 'block' }}>
                           Edited {formatRelativeTime(proj.updatedAt)}
                         </span>
                       </>
@@ -600,7 +587,7 @@ export default function ProjectsPage() {
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: 'var(--text-muted, #71717a)',
+                        color: '#71717A',
                         padding: '6px',
                         borderRadius: '6px',
                         cursor: 'pointer',
@@ -609,8 +596,8 @@ export default function ProjectsPage() {
                         justifyContent: 'center',
                         transition: 'all 0.15s ease',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#71717A')}
                     >
                       <MoreVertical size={16} />
                     </button>
@@ -623,10 +610,10 @@ export default function ProjectsPage() {
                           bottom: '100%',
                           marginBottom: '6px',
                           width: '140px',
-                          background: 'var(--bg-secondary, #18181b)',
-                          border: '1px solid var(--border-color, rgba(255,255,255,0.12))',
+                          background: '#0a0a0a',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
                           borderRadius: '8px',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
                           padding: '4px',
                           zIndex: 100,
                         }}
@@ -641,13 +628,13 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#e4e4e7',
+                            color: '#FFFFFF',
                             fontSize: '12px',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <ExternalLink size={13} /> Open
@@ -663,13 +650,13 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#e4e4e7',
+                            color: '#FFFFFF',
                             fontSize: '12px',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Edit2 size={13} /> Rename
@@ -685,19 +672,19 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#e4e4e7',
+                            color: '#FFFFFF',
                             fontSize: '12px',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Copy size={13} /> Duplicate
                         </button>
 
-                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+                        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
 
                         <button
                           onClick={(e) => handleDelete(e, proj.id, proj.title)}
@@ -715,7 +702,7 @@ export default function ProjectsPage() {
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Trash2 size={13} /> Delete
