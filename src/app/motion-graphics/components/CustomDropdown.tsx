@@ -32,7 +32,11 @@ export default function CustomDropdown({ value, onChange, options, style }: Cust
         step="0.1"
         min="0"
         style={{
-          padding: '8px',
+          boxSizing: 'border-box',
+          width: '82px',
+          minWidth: '82px',
+          flexShrink: 0,
+          padding: '7px 8px',
           background: 'var(--bg-primary)',
           border: '1px solid var(--accent-primary)',
           borderRadius: '6px',
@@ -57,7 +61,11 @@ export default function CustomDropdown({ value, onChange, options, style }: Cust
         }
       }}
       style={{
-        padding: '8px',
+        boxSizing: 'border-box',
+        width: '82px',
+        minWidth: '82px',
+        flexShrink: 0,
+        padding: '7px 4px 7px 8px',
         background: 'var(--bg-primary)',
         border: '1px solid var(--border-color)',
         borderRadius: '6px',

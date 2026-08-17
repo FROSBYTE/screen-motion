@@ -1,7 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { trackMixpanelEvent } from '@/lib/mixpanel';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { saveAsset, getAsset, loadDraft, clearDraft } from '@/lib/storage/indexedDb';
 import {
   AppState,
   DeviceType,
@@ -49,12 +51,72 @@ interface AppContextValue {
   state: AppState;
   dispatch: (update: AppUpdate | ((prev: AppState) => AppUpdate)) => void;
   uploadScreenshot: (file: File) => void;
+  resetProject: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Restore editor draft on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function hydrate() {
+      try {
+        const draft = await loadDraft<Partial<AppState>>('editor_active_draft');
+        const savedBlob = await getAsset('editor_screenshot');
+        let restoredScreenshotUrl: string | null = null;
+
+        if (savedBlob) {
+          restoredScreenshotUrl = URL.createObjectURL(savedBlob);
+        }
+
+        if (isMounted) {
+          if (draft && draft.data) {
+            setState((prev) => ({
+              ...prev,
+              ...draft.data,
+              screenshot: (savedBlob as File) || null,
+              screenshotUrl: restoredScreenshotUrl || null,
+            }));
+          } else if (savedBlob && restoredScreenshotUrl) {
+            setState((prev) => ({
+              ...prev,
+              screenshot: (savedBlob as File) || null,
+              screenshotUrl: restoredScreenshotUrl,
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('[AppProvider] Failed to hydrate editor draft:', err);
+      } finally {
+        if (isMounted) {
+          setIsHydrated(true);
+        }
+      }
+    }
+
+    hydrate();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Save serializable editor state
+  const serializableState = useMemo(() => {
+    const { screenshot, screenshotUrl, error, exportStatus, exportProgress, ...rest } = state;
+    return rest;
+  }, [state]);
+
+  useAutoSave({
+    key: 'editor_active_draft',
+    data: serializableState,
+    enabled: isHydrated,
+    debounceMs: 600,
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -145,6 +207,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       URL.revokeObjectURL(state.screenshotUrl);
     }
 
+    // Save screenshot blob to IndexedDB
+    saveAsset('editor_screenshot', file, file.name).catch((err) =>
+      console.error('Failed to save screenshot asset:', err)
+    );
+
     const url = URL.createObjectURL(file);
 
     if (isVideo) {
@@ -189,8 +256,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetProject = useCallback(async () => {
+    try {
+      await clearDraft('editor_active_draft');
+      await clearDraft('editor_screenshot');
+      if (state.screenshotUrl) {
+        URL.revokeObjectURL(state.screenshotUrl);
+      }
+      setState(initialState);
+    } catch (err) {
+      console.error('[AppProvider] Failed to reset project:', err);
+    }
+  }, [state.screenshotUrl]);
+
   return (
-    <AppContext.Provider value={{ undo, redo, canUndo, canRedo, state, dispatch, uploadScreenshot }}>
+    <AppContext.Provider value={{ undo, redo, canUndo, canRedo, state, dispatch, uploadScreenshot, resetProject }}>
       {children}
     </AppContext.Provider>
   );

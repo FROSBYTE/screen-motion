@@ -99,7 +99,7 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      uvAttr.setXY(i, (x - minX) / width, 1 - (y - minY) / height);
+      uvAttr.setXY(i, (x - minX) / width, (y - minY) / height);
     }
     uvAttr.needsUpdate = true;
     uvFixed.current = true;
@@ -134,10 +134,15 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
 
         const initial = initialColors.current[mat.uuid];
         const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch');
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch') ||
+          mat.name?.toLowerCase().includes('island') || mat.name?.toLowerCase().includes('hole') ||
+          mat.name?.toLowerCase().includes('camera') || mat.name?.toLowerCase().includes('lens') ||
+          mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker') ||
+          mat.name?.toLowerCase().includes('bezel');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
+          if (mat.map) mat.map = null;
         } else {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
@@ -205,7 +210,7 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      uvAttr.setXY(i, (x - minX) / width, 1 - (y - minY) / height);
+      uvAttr.setXY(i, (x - minX) / width, (y - minY) / height);
     }
     uvAttr.needsUpdate = true;
     uvFixed.current = true;
@@ -238,10 +243,13 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
 
         const initial = initialColors.current[mat.uuid];
         const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor';
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor' ||
+          mat.name === 'Bezel' || mat.name?.toLowerCase().includes('hole') || mat.name?.toLowerCase().includes('notch') ||
+          mat.name?.toLowerCase().includes('lens') || mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
+          if (mat.map) mat.map = null;
         } else {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;

@@ -42,7 +42,7 @@ import * as THREE from 'three';
 const IPHONE_SCREEN_MESH = 'Object_18';
 const ANDROID_SCREEN_MESH = 'S22_Ultra001_2';
 
-function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screenImage?: string }) {
+function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene, materials } = useGLTF('/models/iphone16.gltf') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
@@ -105,10 +105,15 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
 
         const initial = initialColors.current[mat.uuid];
         const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch');
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch') ||
+          mat.name?.toLowerCase().includes('island') || mat.name?.toLowerCase().includes('hole') ||
+          mat.name?.toLowerCase().includes('camera') || mat.name?.toLowerCase().includes('lens') ||
+          mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker') ||
+          mat.name?.toLowerCase().includes('bezel');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
+          if (mat.map) mat.map = null;
         } else {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
@@ -122,20 +127,38 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
     const screenMesh = cloned.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
 
-    if (screenImage) {
+    if (screenVideo) {
+      const video = document.createElement('video');
+      video.src = screenVideo;
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(() => {});
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.flipY = true;
+      screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
+    } else if (screenImage) {
       const loader = new THREE.TextureLoader();
       loader.load(screenImage, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.flipY = false;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture });
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.flipY = true;
+        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
       });
+    } else {
+      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
     }
-  }, [screenImage, cloned]);
+  }, [screenImage, screenVideo, cloned]);
 
   return <primitive object={cloned} />;
 }
 
-function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: string; screenImage?: string }) {
+function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene } = useGLTF('/models/S22Ultra.glb') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
@@ -197,10 +220,13 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
 
         const initial = initialColors.current[mat.uuid];
         const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor';
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor' ||
+          mat.name === 'Bezel' || mat.name?.toLowerCase().includes('hole') || mat.name?.toLowerCase().includes('notch') ||
+          mat.name?.toLowerCase().includes('lens') || mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
+          if (mat.map) mat.map = null;
         } else {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
@@ -214,7 +240,21 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
     const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
 
-    if (screenImage) {
+    if (screenVideo) {
+      const video = document.createElement('video');
+      video.src = screenVideo;
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(() => {});
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.flipY = true;
+      screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
+    } else if (screenImage) {
       const loader = new THREE.TextureLoader();
       loader.load(screenImage, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -226,7 +266,7 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
     } else {
       screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
     }
-  }, [screenImage, cloned]);
+  }, [screenImage, screenVideo, cloned]);
 
   return <primitive object={cloned} scale={88.58} />;
 }
@@ -235,6 +275,7 @@ function AnimatedDeviceInline({
   deviceType,
   deviceColor,
   screenImage,
+  screenVideo,
   animationTemplate,
   speed = 1,
   deviceSize = 1,
@@ -247,6 +288,7 @@ function AnimatedDeviceInline({
   deviceType: string;
   deviceColor: string;
   screenImage?: string;
+  screenVideo?: string;
   animationTemplate: string;
   speed: number;
   deviceSize: number;
@@ -359,9 +401,9 @@ function AnimatedDeviceInline({
         >
           <Center>
             {deviceType === 'iphone' ? (
-              <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} />
+              <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
             ) : (
-              <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} />
+              <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
             )}
           </Center>
         </group>
@@ -692,8 +734,8 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
   const wordLengthBoost = wordCount > 4 ? 1 + (wordCount - 4) * 0.15 : 1;
   const effectiveSpeed = basePacingSpeed * durationSpeedBoost * wordLengthBoost;
 
-  const effectiveEnterDur = Math.min((layer.enterDuration ?? 0.4) / effectiveSpeed, (layer.duration || 1) * 0.25);
-  const effectiveExitDur = Math.min((layer.exitDuration ?? 0.3) / effectiveSpeed, (layer.duration || 1) * 0.2);
+  const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / effectiveSpeed, (layer.duration || 1) * 0.4);
+  const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / effectiveSpeed, (layer.duration || 1) * 0.4);
 
   return (
     <div
@@ -887,8 +929,8 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
     : 1;
   const speed = basePacingSpeed * durationSpeedBoost;
 
-  const effectiveEnterDur = Math.min((layer.enterDuration ?? 0.4) / speed, (layer.duration || 1) * 0.25);
-  const effectiveExitDur = Math.min((layer.exitDuration ?? 0.3) / speed, (layer.duration || 1) * 0.2);
+  const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
+  const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
 
   const renderComponent = () => {
     switch (layer.templateId) {
@@ -1216,9 +1258,9 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
         // Layer visibility is strictly within this scene's local time
         const layerEnd = Math.min(layer.startTime + layer.duration, getSceneDuration(scene));
         const isVisible = localTime >= layer.startTime && localTime < layerEnd;
-        // Determine if layer is in its exit window (capped at max 20% of layer duration)
-        const rawExitDur = ('exitDuration' in layer ? layer.exitDuration : 0.3) || 0.3;
-        const exitDur = Math.min(rawExitDur, layer.duration * 0.2);
+        // Determine if layer is in its exit window (capped at max 40% of layer duration)
+        const rawExitDur = ('exitDuration' in layer ? layer.exitDuration : 1.0) || 1.0;
+        const exitDur = Math.min(rawExitDur, layer.duration * 0.4);
         const isExiting = isVisible && (layerEnd - localTime) <= exitDur;
 
         if (layer.type === 'component') {
@@ -1257,8 +1299,8 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
           ? Math.max(1, 2.5 / Math.max(0.3, layer.duration))
           : 1;
         const speed = basePacingSpeed * durationSpeedBoost;
-        const effectiveEnterDur = Math.min((layer.enterDuration ?? 0.4) / speed, (layer.duration || 1) * 0.25);
-        const effectiveExitDur = Math.min((layer.exitDuration ?? 0.3) / speed, (layer.duration || 1) * 0.2);
+        const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
+        const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
         const isExiting = isVisible && (layerEnd - localTime) <= effectiveExitDur;
 
         if (!isVisible) return null;
@@ -1298,6 +1340,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
                       deviceType={layer.props.deviceType ?? 'iphone'}
                       deviceColor={layer.props.deviceColor ?? '#1a1a1a'}
                       screenImage={layer.props.screenImage}
+                      screenVideo={layer.props.screenVideo}
                       animationTemplate={layer.props.animationTemplate ?? 'float'}
                       speed={(layer.pacingPreset === 'snappy' ? 1.8 : layer.pacingPreset === 'cinematic' ? 0.75 : 1.0) * ((layer.duration && layer.duration < 2.5) ? Math.max(1, 2.5 / Math.max(0.3, layer.duration)) : 1)}
                       deviceSize={layer.props.deviceSize ?? layer.scale ?? 1}

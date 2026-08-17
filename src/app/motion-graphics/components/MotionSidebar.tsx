@@ -10,12 +10,15 @@ import CustomDropdown from './CustomDropdown';
 import ComponentPicker from './ComponentPicker';
 import ColorPickerControl from './ColorPickerControl';
 import { TEMPLATES } from '@/types';
+import { saveAsset } from '@/lib/storage/indexedDb';
 
 export function applyVideoFileToLayer(
   file: File,
   updateFn: (updates: { duration?: number; props: any }) => void,
   currentProps: any
 ) {
+  const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  saveAsset(assetId, file, file.name).catch((err) => console.error('Failed to save video asset:', err));
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
   tempVideo.preload = 'metadata';
@@ -23,7 +26,7 @@ export function applyVideoFileToLayer(
     const dur = tempVideo.duration;
     const vw = tempVideo.videoWidth;
     const vh = tempVideo.videoHeight;
-    const updates: any = { props: { ...currentProps, src: url } };
+    const updates: any = { props: { ...currentProps, src: url, srcAssetId: assetId } };
     if (dur && isFinite(dur) && dur > 0) {
       updates.duration = Math.round(dur * 10) / 10;
     }
@@ -36,7 +39,7 @@ export function applyVideoFileToLayer(
     updateFn(updates);
   };
   tempVideo.onerror = () => {
-    updateFn({ props: { ...currentProps, src: url } });
+    updateFn({ props: { ...currentProps, src: url, srcAssetId: assetId } });
   };
   tempVideo.src = url;
 }
@@ -46,6 +49,8 @@ export function applyImageFileToLayer(
   updateFn: (updates: { props: any }) => void,
   currentProps: any
 ) {
+  const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  saveAsset(assetId, file, file.name).catch((err) => console.error('Failed to save image asset:', err));
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => {
@@ -58,20 +63,21 @@ export function applyImageFileToLayer(
         props: {
           ...currentProps,
           src: url,
+          srcAssetId: assetId,
           width: baseWidth,
           height: calcHeight,
         },
       });
     } else {
-      updateFn({ props: { ...currentProps, src: url } });
+      updateFn({ props: { ...currentProps, src: url, srcAssetId: assetId } });
     }
   };
   img.onerror = () => {
-    updateFn({ props: { ...currentProps, src: url } });
+    updateFn({ props: { ...currentProps, src: url, srcAssetId: assetId } });
   };
   img.src = url;
 }
-const DEFAULT_LOGO_LOOP_ITEMS: { type: string; value: string }[] = [
+const DEFAULT_LOGO_LOOP_ITEMS: { type: string; value: string; valueAssetId?: string }[] = [
   { type: 'text', value: 'React' },
   { type: 'text', value: 'Next.js' },
   { type: 'text', value: 'TypeScript' },
@@ -80,7 +86,7 @@ const DEFAULT_LOGO_LOOP_ITEMS: { type: string; value: string }[] = [
   { type: 'text', value: 'Docker' },
 ];
 
-const DEFAULT_BUBBLE_ITEMS: { label: string; color: string; imageUrl?: string }[] = [
+const DEFAULT_BUBBLE_ITEMS: { label: string; color: string; imageUrl?: string; imageAssetId?: string }[] = [
   { label: 'Home', color: '#6366f1' },
   { label: 'About', color: '#8b5cf6' },
   { label: 'Work', color: '#a855f7' },
@@ -663,11 +669,9 @@ export default function MotionSidebar() {
                       {ENTER_ANIMATION_OPTIONS.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
                     </select>
                     {(selectedLayer.enterAnimation && selectedLayer.enterAnimation !== 'none') && (
-                      <select value={selectedLayer.enterDuration ?? 0.4}
-                        onChange={(e) => updateLayer(selectedLayer.id, { enterDuration: Number(e.target.value) } as any)}
-                        style={{ width: '60px', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }}>
-                        {DURATION_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                      </select>
+                      <CustomDropdown value={selectedLayer.enterDuration ?? 1.0}
+                        onChange={(v) => updateLayer(selectedLayer.id, { enterDuration: v } as any)}
+                        options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
                     )}
                   </div>
                 </div>
@@ -682,11 +686,9 @@ export default function MotionSidebar() {
                       {EXIT_ANIMATION_OPTIONS.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
                     </select>
                     {(selectedLayer.exitAnimation && selectedLayer.exitAnimation !== 'none') && (
-                      <select value={selectedLayer.exitDuration ?? 0.3}
-                        onChange={(e) => updateLayer(selectedLayer.id, { exitDuration: Number(e.target.value) } as any)}
-                        style={{ width: '60px', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }}>
-                        {DURATION_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                      </select>
+                      <CustomDropdown value={selectedLayer.exitDuration ?? 1.0}
+                        onChange={(v) => updateLayer(selectedLayer.id, { exitDuration: v } as any)}
+                        options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
                     )}
                   </div>
                 </div>
@@ -720,9 +722,9 @@ export default function MotionSidebar() {
                     {ENTER_ANIMATION_OPTIONS.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
                   </select>
                   {(selectedLayer.enterAnimation && selectedLayer.enterAnimation !== 'none') && (
-                    <CustomDropdown value={selectedLayer.enterDuration ?? 0.4}
+                    <CustomDropdown value={selectedLayer.enterDuration ?? 1.0}
                       onChange={(v) => updateLayer(selectedLayer.id, { enterDuration: v } as any)}
-                      options={DURATION_OPTIONS} style={{ width: '70px' }} />
+                      options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
                   )}
                 </div>
 
@@ -735,9 +737,9 @@ export default function MotionSidebar() {
                     {EXIT_ANIMATION_OPTIONS.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
                   </select>
                   {(selectedLayer.exitAnimation && selectedLayer.exitAnimation !== 'none') && (
-                    <CustomDropdown value={selectedLayer.exitDuration ?? 0.3}
+                    <CustomDropdown value={selectedLayer.exitDuration ?? 1.0}
                       onChange={(v) => updateLayer(selectedLayer.id, { exitDuration: v } as any)}
-                      options={DURATION_OPTIONS} style={{ width: '70px' }} />
+                      options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
                   )}
                 </div>
 
@@ -854,7 +856,7 @@ export default function MotionSidebar() {
                     <ListItemEditor
                       items={selectedLayer.props.items || DEFAULT_LOGO_LOOP_ITEMS}
                       onChange={(items) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, items } } as any)}
-                      createNewItem={() => ({ type: 'text', value: `Item ${(selectedLayer.props.items || DEFAULT_LOGO_LOOP_ITEMS).length + 1}` })}
+                      createNewItem={() => ({ type: 'text', value: `Item ${(selectedLayer.props.items || DEFAULT_LOGO_LOOP_ITEMS).length + 1}` } as { type: string; value: string; valueAssetId?: string })}
                       addLabel="Add Logo"
                       renderItem={(item: any, idx, update) => (
                         <>
@@ -873,7 +875,11 @@ export default function MotionSidebar() {
                               <input type="file" accept="image/*" style={{ display: 'none' }}
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) update({ value: URL.createObjectURL(file) });
+                                  if (file) {
+                                    const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                                    saveAsset(assetId, file, file.name).catch((err) => console.error(err));
+                                    update({ value: URL.createObjectURL(file), valueAssetId: assetId });
+                                  }
                                 }} />
                             </label>
                           )}
@@ -1003,7 +1009,7 @@ export default function MotionSidebar() {
                     <ListItemEditor
                       items={selectedLayer.props.items || DEFAULT_BUBBLE_ITEMS}
                       onChange={(items) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, items } } as any)}
-                      createNewItem={() => ({ label: `Item ${(selectedLayer.props.items || DEFAULT_BUBBLE_ITEMS).length + 1}`, color: '#6366f1', imageUrl: undefined } as { label: string; color: string; imageUrl?: string })}
+                      createNewItem={() => ({ label: `Item ${(selectedLayer.props.items || DEFAULT_BUBBLE_ITEMS).length + 1}`, color: '#6366f1', imageUrl: undefined } as { label: string; color: string; imageUrl?: string; imageAssetId?: string })}
                       addLabel="Add Bubble"
                       renderItem={(item: any, idx, update) => (
                         <>
@@ -1016,7 +1022,11 @@ export default function MotionSidebar() {
                             <input type="file" accept="image/*" style={{ display: 'none' }}
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file) update({ imageUrl: URL.createObjectURL(file) });
+                                if (file) {
+                                  const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                                  saveAsset(assetId, file, file.name).catch((err) => console.error(err));
+                                  update({ imageUrl: URL.createObjectURL(file), imageAssetId: assetId });
+                                }
                               }} />
                           </label>
                           <input type="text" value={item.label || ''} placeholder="Label"
@@ -1201,7 +1211,11 @@ export default function MotionSidebar() {
                             <input type="file" accept="image/*" style={{ display: 'none' }}
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file) update({ imageUrl: URL.createObjectURL(file), emoji: undefined } as any);
+                                if (file) {
+                                  const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                                  saveAsset(assetId, file, file.name).catch((err) => console.error(err));
+                                  update({ imageUrl: URL.createObjectURL(file), imageAssetId: assetId, emoji: undefined } as any);
+                                }
                               }} />
                           </label>
                           <input type="text" value={item.emoji || ''} placeholder="emoji fallback"
@@ -1376,7 +1390,11 @@ export default function MotionSidebar() {
                       <input type="file" accept={(selectedLayer.props.mediaType ?? 'image') === 'video' ? 'video/*' : 'image/*'} style={{ display: 'none' }}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, src: URL.createObjectURL(file) } } as any);
+                          if (file) {
+                            const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                            saveAsset(assetId, file, file.name).catch((err) => console.error(err));
+                            updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, src: URL.createObjectURL(file), srcAssetId: assetId } } as any);
+                          }
                         }} />
                     </label>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Object Fit</label>
@@ -1674,11 +1692,13 @@ export default function MotionSidebar() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                            saveAsset(assetId, file, file.name).catch((err) => console.error(err));
                             const url = URL.createObjectURL(file);
                             if (file.type.startsWith('video/')) {
-                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenVideo: url, screenImage: undefined } } as any);
+                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenVideo: url, screenVideoAssetId: assetId, screenImage: undefined, screenImageAssetId: undefined } } as any);
                             } else {
-                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenImage: url, screenVideo: undefined } } as any);
+                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, screenImage: url, screenImageAssetId: assetId, screenVideo: undefined, screenVideoAssetId: undefined } } as any);
                             }
                           }
                         }} />
@@ -1891,7 +1911,11 @@ export default function MotionSidebar() {
                       <input type="file" accept={(selectedLayer.props.mediaType ?? 'image') === 'video' ? 'video/*' : 'image/*'} style={{ display: 'none' }}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, src: URL.createObjectURL(file) } } as any);
+                          if (file) {
+                            const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                            saveAsset(assetId, file, file.name).catch((err) => console.error(err));
+                            updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, src: URL.createObjectURL(file), srcAssetId: assetId } } as any);
+                          }
                         }} />
                     </label>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Reveal</label>
