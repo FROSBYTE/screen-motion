@@ -167,6 +167,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ===== SmoothUI Theme Candy ===== */
+:root[data-theme="candy"], .theme-candy {
+  --color-accent: oklch(0.72 0.2 352.53);
+  --color-accent-foreground: #ffffff;
+  --theme-accent-primary: oklch(0.72 0.2 352.53);
+  --theme-accent-secondary: oklch(0.66 0.21 354.31);
+  --theme-accent-hover: oklch(0.78 0.18 352.53);
+  --theme-text-accent: oklch(0.72 0.2 352.53);
+  --accent-primary: oklch(0.72 0.2 352.53);
+  --accent-primary-hover: oklch(0.78 0.18 352.53);
+  --accent-secondary: oklch(0.66 0.21 354.31);
+  --candy-pink: #ec4899;
+  --candy-rose: #f43f5e;
+  --candy-glow: rgba(236, 72, 153, 0.35);
+}
+
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
   width: 4px;

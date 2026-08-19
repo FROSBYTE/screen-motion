@@ -238,30 +238,8 @@ export function MotionGraphicsStudioContent() {
             </button>
           </div>
 
-          {/* Right: Actions (New Project + Export) */}
+          {/* Right: Actions (Export) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              onClick={handleCreateNew}
-              style={{
-                background: '#1a1a1a',
-                border: '1px solid #333333',
-                borderRadius: '8px',
-                color: '#ffffff',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease',
-              }}
-              title="Create a fresh video project"
-            >
-              <Plus size={14} style={{ color: '#FFFFFF' }} />
-              <span>New Project</span>
-            </button>
-
             <button
               onClick={() => setIsExportModalOpen(true)}
               style={{

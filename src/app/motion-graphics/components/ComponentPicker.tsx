@@ -21,6 +21,8 @@ import SkeletonShimmer from './templates/SkeletonShimmer';
 import Text3DFlip from './templates/Text3DFlip';
 import PhoneDevice from './templates/PhoneDevice';
 import VideoUpload from './templates/VideoUpload';
+import DiaTextReveal from './templates/DiaTextReveal';
+import DiaTextRevealUI from '@/components/ui/dia-text-reveal';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
 import KineticCenterBuild from '@/components/smoothui/kinetic-center-build';
 import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
@@ -31,6 +33,13 @@ import BlurOutUp from '@/components/smoothui/blur-out-up';
 import DepthParallaxWords from '@/components/smoothui/depth-parallax-words';
 import FadeThrough from '@/components/smoothui/fade-through';
 import FocusBlurResolve from '@/components/smoothui/focus-blur-resolve';
+import SoftBlurIn from '@/components/smoothui/soft-blur-in';
+import SpringScaleIn from '@/components/smoothui/spring-scale-in';
+import StaggerFromCenter from '@/components/smoothui/stagger-from-center';
+import MicroScaleFade from '@/components/smoothui/micro-scale-fade';
+import ScaleDownFade from '@/components/smoothui/scale-down-fade';
+import PerCharacterRise from '@/components/smoothui/per-character-rise';
+import PerWordCrossfade from '@/components/smoothui/per-word-crossfade';
 
 const PHONE_ANIMATION_PRESETS = [
   { id: 'anim-orbit', name: 'Orbit', video: '/animation-card-videos/orbit-template.webm' },
@@ -58,11 +67,20 @@ const TEXT_ANIMATION_OPTIONS = [
   { id: 'line-by-line-slide', name: 'Line By Line Slide' },
   { id: 'mask-reveal-up', name: 'Mask Reveal Up' },
   { id: 'reveal-text', name: 'Reveal Text' },
+  { id: 'text-reveal', name: 'Text Reveal' },
   { id: 'short-slide-down', name: 'Short Slide Down' },
   { id: 'blur-out-up', name: 'Blur Out Up' },
-  { id: 'depth-parallax-words', name: 'Depth Parallax Words' },
+  { id: 'soft-blur-in', name: 'Soft Blur In' },
+  { id: 'spring-scale-in', name: 'Spring Scale In' },
+  { id: 'stagger-from-center', name: 'Stagger Center' },
+  { id: 'depth-parallax-words', name: 'Depth Parallax' },
   { id: 'fade-through', name: 'Fade Through' },
   { id: 'focus-blur-resolve', name: 'Focus Blur Resolve' },
+  { id: 'micro-scale-fade', name: 'Micro Scale Fade' },
+  { id: 'scale-down-fade', name: 'Scale Down Fade' },
+  { id: 'per-character-rise', name: 'Per Char Rise' },
+  { id: 'per-word-crossfade', name: 'Per Word Crossfade' },
+  { id: 'dia-text-reveal', name: 'Dia Text Reveal' },
 ];
 
 function TextAnimationPreview({ animationId, isHovered }: { animationId: string; isHovered: boolean }) {
@@ -77,16 +95,34 @@ function TextAnimationPreview({ animationId, isHovered }: { animationId: string;
       return <MaskRevealUp className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</MaskRevealUp>;
     case 'reveal-text':
       return <RevealText className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</RevealText>;
+    case 'text-reveal':
+      return <TextReveal text="Reveal Text" speed={1} color="#ffffff" revealColor="#a855f7" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' />;
     case 'short-slide-down':
       return <ShortSlideDown phrases={['Sample Text', 'Animation']} className="text-white text-lg font-semibold" />;
     case 'blur-out-up':
       return <BlurOutUp className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</BlurOutUp>;
+    case 'soft-blur-in':
+      return <SoftBlurIn className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</SoftBlurIn>;
+    case 'spring-scale-in':
+      return <SpringScaleIn className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</SpringScaleIn>;
+    case 'stagger-from-center':
+      return <StaggerFromCenter className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</StaggerFromCenter>;
     case 'depth-parallax-words':
       return <DepthParallaxWords className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</DepthParallaxWords>;
     case 'fade-through':
       return <FadeThrough className="text-white text-lg font-semibold">Sample Text</FadeThrough>;
     case 'focus-blur-resolve':
       return <FocusBlurResolve className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</FocusBlurResolve>;
+    case 'micro-scale-fade':
+      return <MicroScaleFade className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</MicroScaleFade>;
+    case 'scale-down-fade':
+      return <ScaleDownFade className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</ScaleDownFade>;
+    case 'per-character-rise':
+      return <PerCharacterRise className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</PerCharacterRise>;
+    case 'per-word-crossfade':
+      return <PerWordCrossfade className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</PerWordCrossfade>;
+    case 'dia-text-reveal':
+      return <DiaTextRevealUI text="Sample Text" duration={1.5} repeat={true} className="text-white text-lg font-semibold" />;
     default:
       return null;
   }
@@ -125,7 +161,7 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
     case 'ai-loader':
       return <AILoader variant="dots" speed={1} color="#a855f7" />;
     case 'bubble-menu':
-      return <BubbleMenu items={[{ label: 'A', color: '#3b82f6' }, { label: 'B', color: '#8b5cf6' }]} speed={1} menuBg="transparent" radius={36} bubbleSize={20} />;
+      return <BubbleMenu items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} speed={1} menuBg="transparent" radius={36} bubbleSize={20} />;
     case 'folder':
       return <Folder color="#5227ff" size={0.6} items={[{ text: 'Doc', bgColor: '#fff', textColor: '#000' }]} speed={1} />;
     case 'unlumen-animated-list':
@@ -139,9 +175,11 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
     case 'highlighter':
       return <Highlighter text="Highlight me" highlightWords="Highlight" action="highlight" color="#ffd1dc" textColor="#ffffff" highlightTextColor="" strokeWidth={2} animationDuration={600} speed={1} fontSize={14} />;
     case 'orbiting-circles':
-      return <OrbitingCircles items={[{ emoji: '📁' }, { emoji: '📅' }, { emoji: '🖼️' }]} radius={45} speed={1} iconSize={24} orbitColor="rgba(255,255,255,0.15)" />;
+      return <OrbitingCircles items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} radius={45} speed={1} iconSize={24} />;
     case 'text-reveal':
       return <TextReveal text="Reveal" speed={1} color="#ffffff" revealColor="#a855f7" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' />;
+    case 'dia-text-reveal':
+      return <DiaTextReveal text="Dia Reveal" speed={1} fontSize={16} repeat={true} />;
     case 'skeleton-shimmer':
       return <SkeletonShimmer lines={2} showAvatar={false} showImage={false} baseColor="rgba(255,255,255,0.08)" shimmerColor="rgba(255,255,255,0.15)" speed={1} borderRadius={4} />;
     case 'text-3d-flip':

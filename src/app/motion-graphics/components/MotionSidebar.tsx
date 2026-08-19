@@ -86,12 +86,12 @@ const DEFAULT_LOGO_LOOP_ITEMS: { type: string; value: string; valueAssetId?: str
   { type: 'text', value: 'Docker' },
 ];
 
-const DEFAULT_BUBBLE_ITEMS: { label: string; color: string; imageUrl?: string; imageAssetId?: string }[] = [
-  { label: 'Home', color: '#6366f1' },
-  { label: 'About', color: '#8b5cf6' },
-  { label: 'Work', color: '#a855f7' },
-  { label: 'Blog', color: '#d946ef' },
-  { label: 'Contact', color: '#ec4899' },
+const DEFAULT_BUBBLE_ITEMS: { imageUrl?: string; imageAssetId?: string }[] = [
+  { imageUrl: undefined },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
 ];
 
 const DEFAULT_FOLDER_ITEMS: { text: string; bgColor: string; textColor: string }[] = [
@@ -122,6 +122,9 @@ const ANIMATION_OPTIONS: { id: MGTextAnimationType; label: string }[] = [
   { id: 'reveal-text', label: 'Reveal Text' },
   { id: 'short-slide-down', label: 'Short Slide Down' },
   { id: 'blur-out-up', label: 'Blur Out Up' },
+  { id: 'soft-blur-in', label: 'Soft Blur In' },
+  { id: 'spring-scale-in', label: 'Spring Scale In' },
+  { id: 'stagger-from-center', label: 'Stagger Center' },
   { id: 'depth-parallax-words', label: 'Depth Parallax Words' },
   { id: 'fade-through', label: 'Fade Through' },
   { id: 'focus-blur-resolve', label: 'Focus Blur Resolve' },
@@ -129,6 +132,8 @@ const ANIMATION_OPTIONS: { id: MGTextAnimationType; label: string }[] = [
   { id: 'per-character-rise', label: 'Per Character Rise' },
   { id: 'per-word-crossfade', label: 'Per Word Crossfade' },
   { id: 'scale-down-fade', label: 'Scale Down Fade' },
+  { id: 'text-reveal', label: 'Text Reveal' },
+  { id: 'dia-text-reveal', label: 'Dia Text Reveal' },
 ];
 
 const TRANSITION_OPTIONS: { id: SceneTransition; label: string; icon: string }[] = [
@@ -1279,6 +1284,27 @@ export default function MotionSidebar() {
                           onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, textColor: e.target.value } } as any)}
                           style={{ width: '100%', height: '34px', padding: '2px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer' }} />
                       </div>
+                      <div style={{ width: '48px' }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Bold</label>
+                        <button
+                          type="button"
+                          onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: selectedLayer.props.isBold === undefined ? false : !selectedLayer.props.isBold } } as any)}
+                          style={{
+                            width: '100%',
+                            height: '34px',
+                            background: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--bg-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '6px',
+                            color: (selectedLayer.props.isBold ?? true) ? '#0f172a' : 'var(--text-primary)',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                          }}
+                          title="Toggle Bold Text"
+                        >
+                          B
+                        </button>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                       <div style={{ flex: 1 }}>
@@ -1362,10 +1388,6 @@ export default function MotionSidebar() {
 
                 {selectedLayer.templateId === 'bubble-menu' && (
                   <>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Menu BG Color</label>
-                    <input type="color" value={selectedLayer.props.menuBg ?? '#ffffff'}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, menuBg: e.target.value } } as any)}
-                      style={{ width: '100%', height: '34px', padding: '2px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', marginBottom: '10px' }} />
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Radius</label>
@@ -1382,19 +1404,57 @@ export default function MotionSidebar() {
                           style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
                       </div>
                     </div>
+
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Center Circle & Image</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', background: 'var(--bg-primary)', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <label style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }} title="Upload Center Image">
+                        {selectedLayer.props.centerImageUrl ? (
+                          <img src={selectedLayer.props.centerImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>+ Img</span>
+                        )}
+                        <input type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                              saveAsset(assetId, file, file.name).catch((err) => console.error(err));
+                              updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, centerImageUrl: URL.createObjectURL(file), centerImageAssetId: assetId } } as any);
+                            }
+                          }} />
+                      </label>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>Center Image</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{selectedLayer.props.centerImageUrl ? 'Image attached' : 'Click circle to upload'}</div>
+                      </div>
+                      {selectedLayer.props.centerImageUrl && (
+                        <button
+                          onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, centerImageUrl: undefined, centerImageAssetId: undefined } } as any)}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', fontSize: '11px' }}
+                          title="Remove Center Image"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Center Size</label>
+                    <input type="number" value={selectedLayer.props.centerSize ?? (selectedLayer.props.bubbleSize ?? 44)}
+                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, centerSize: Number(e.target.value) } } as any)}
+                      min={16} max={120} step={2}
+                      style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Menu Items</label>
                     <ListItemEditor
                       items={selectedLayer.props.items || DEFAULT_BUBBLE_ITEMS}
                       onChange={(items) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, items } } as any)}
-                      createNewItem={() => ({ label: `Item ${(selectedLayer.props.items || DEFAULT_BUBBLE_ITEMS).length + 1}`, color: '#6366f1', imageUrl: undefined } as { label: string; color: string; imageUrl?: string; imageAssetId?: string })}
+                      createNewItem={() => ({ imageUrl: undefined } as { imageUrl?: string; imageAssetId?: string })}
                       addLabel="Add Bubble"
                       renderItem={(item: any, idx, update) => (
-                        <>
-                          <label style={{ width: '32px', height: '28px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }} title="Upload image">
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <label style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }} title="Upload image">
                             {item.imageUrl ? (
                               <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>img</span>
+                              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+ Img</span>
                             )}
                             <input type="file" accept="image/*" style={{ display: 'none' }}
                               onChange={(e) => {
@@ -1406,13 +1466,19 @@ export default function MotionSidebar() {
                                 }
                               }} />
                           </label>
-                          <input type="text" value={item.label || ''} placeholder="Label"
-                            onChange={(e) => update({ label: e.target.value })}
-                            style={{ flex: 1, minWidth: '70px', padding: '4px 6px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px' }} />
-                          <input type="color" value={item.color || '#6366f1'}
-                            onChange={(e) => update({ color: e.target.value })}
-                            style={{ width: '28px', height: '24px', padding: '1px', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer' }} />
-                        </>
+                          <span style={{ fontSize: '12px', color: item.imageUrl ? 'var(--text-primary)' : 'var(--text-muted)', flex: 1 }}>
+                            {item.imageUrl ? `Bubble Image ${idx + 1}` : `Click circle to upload image`}
+                          </span>
+                          {item.imageUrl && (
+                            <button
+                              onClick={() => update({ imageUrl: undefined, imageAssetId: undefined })}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px 4px', fontSize: '11px' }}
+                              title="Clear image"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
                       )}
                     />
                   </>
@@ -1571,19 +1637,19 @@ export default function MotionSidebar() {
 
                 {selectedLayer.templateId === 'orbiting-circles' && (
                   <>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Orbit Items (images)</label>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Orbit Items</label>
                     <ListItemEditor
-                      items={selectedLayer.props.items || [{ emoji: '⚛️' }, { emoji: '▲' }, { emoji: '🔷' }, { emoji: '🟢' }, { emoji: '⚡' }, { emoji: '🔮' }]}
+                      items={selectedLayer.props.items || [{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]}
                       onChange={(items) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, items } } as any)}
-                      createNewItem={() => ({ emoji: '⭐' } as any)}
+                      createNewItem={() => ({ imageUrl: undefined } as { imageUrl?: string; imageAssetId?: string })}
                       addLabel="Add Orbit Item"
                       renderItem={(item: any, idx, update) => (
-                        <>
-                          <label style={{ width: '32px', height: '28px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }} title="Upload image">
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <label style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }} title="Upload image">
                             {item.imageUrl ? (
                               <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '14px' }}>{item.emoji || '⭐'}</span>
+                              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+ Img</span>
                             )}
                             <input type="file" accept="image/*" style={{ display: 'none' }}
                               onChange={(e) => {
@@ -1591,14 +1657,23 @@ export default function MotionSidebar() {
                                 if (file) {
                                   const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
                                   saveAsset(assetId, file, file.name).catch((err) => console.error(err));
-                                  update({ imageUrl: URL.createObjectURL(file), imageAssetId: assetId, emoji: undefined } as any);
+                                  update({ imageUrl: URL.createObjectURL(file), imageAssetId: assetId });
                                 }
                               }} />
                           </label>
-                          <input type="text" value={item.emoji || ''} placeholder="emoji fallback"
-                            onChange={(e) => update({ emoji: e.target.value, imageUrl: undefined } as any)}
-                            style={{ flex: 1, padding: '4px 6px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px' }} />
-                        </>
+                          <span style={{ fontSize: '12px', color: item.imageUrl ? 'var(--text-primary)' : 'var(--text-muted)', flex: 1 }}>
+                            {item.imageUrl ? `Orbit Image ${idx + 1}` : `Click circle to upload image`}
+                          </span>
+                          {item.imageUrl && (
+                            <button
+                              onClick={() => update({ imageUrl: undefined, imageAssetId: undefined })}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px 4px', fontSize: '11px' }}
+                              title="Clear image"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
                       )}
                     />
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Radius (px)</label>
@@ -1611,10 +1686,11 @@ export default function MotionSidebar() {
                       onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, iconSize: Number(e.target.value) } } as any)}
                       min={20} max={60} step={2}
                       style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Orbit Color</label>
-                    <input type="color" value={selectedLayer.props.orbitColor ?? '#333333'}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, orbitColor: e.target.value } } as any)}
-                      style={{ width: '100%', height: '34px', padding: '2px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', marginBottom: '10px' }} />
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Orbit Speed ({selectedLayer.props.speed ?? 1}x)</label>
+                    <input type="range" value={selectedLayer.props.speed ?? 1}
+                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, speed: Number(e.target.value) } } as any)}
+                      min={0.2} max={5} step={0.1}
+                      style={{ width: '100%', marginBottom: '10px', accentColor: 'var(--accent-primary)' }} />
                   </>
                 )}
 
@@ -1638,6 +1714,43 @@ export default function MotionSidebar() {
                     </div>
                     <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Font Size (px)</label>
                     <input type="number" value={selectedLayer.props.fontSize ?? 32}
+                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
+                      min={12} max={120} step={2}
+                      style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
+                  </>
+                )}
+
+                {selectedLayer.templateId === 'dia-text-reveal' && (
+                  <>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Text / Phrases (one per line to rotate)</label>
+                    <textarea
+                      value={Array.isArray(selectedLayer.props.text) ? selectedLayer.props.text.join('\n') : (selectedLayer.props.text ?? 'Design Systems\nMotion Graphics\nSmooth UI')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const arr = val.split('\n').filter(Boolean);
+                        updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, text: arr.length > 1 ? arr : val } } as any);
+                      }}
+                      style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', minHeight: '60px', marginBottom: '10px', resize: 'vertical' }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      <ColorPickerControl
+                        label="Text Color"
+                        value={selectedLayer.props.textColor ?? '#ffffff'}
+                        onChange={(textColor) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, textColor } } as any)}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', background: 'var(--bg-primary)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 500, cursor: 'pointer' }} htmlFor="dia-text-reveal-loop">Repeat / Rotate</label>
+                      <input
+                        id="dia-text-reveal-loop"
+                        type="checkbox"
+                        checked={selectedLayer.props.repeat ?? true}
+                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, repeat: e.target.checked } } as any)}
+                        style={{ cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                      />
+                    </div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Font Size (px)</label>
+                    <input type="number" value={selectedLayer.props.fontSize ?? 36}
                       onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
                       min={12} max={120} step={2}
                       style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />

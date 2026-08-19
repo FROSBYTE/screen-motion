@@ -97,13 +97,16 @@ export default function MotionTimeline() {
             { time: layer.startTime + layer.duration, kind: 'layer-edge' as const },
           ]),
       ];
+      const MIN_LAYER_DURATION = 0.5;
+      const MAX_LAYER_DURATION = 60.0;
+
       const resolveSnap = (edges: { value: number; update: (target: number) => { startTime: number; duration: number } }[]) => {
         let closest: { time: number; kind: 'scene-start' | 'layer-edge'; update: { startTime: number; duration: number }; distance: number } | null = null;
         for (const candidate of candidates) {
           for (const edge of edges) {
             const update = edge.update(candidate.time);
             const distance = Math.abs(edge.value - candidate.time);
-            if (update.startTime < 0 || update.duration < 0.5 || distance > snapThreshold || (closest && distance >= closest.distance)) continue;
+            if (update.startTime < 0 || update.duration < MIN_LAYER_DURATION || update.duration > MAX_LAYER_DURATION || distance > snapThreshold || (closest && distance >= closest.distance)) continue;
             closest = { ...candidate, update, distance };
           }
         }
@@ -113,27 +116,35 @@ export default function MotionTimeline() {
       if (draggingLayer.type === 'move') {
         const startTime = Math.max(0, draggingLayer.startTime + dt);
         const snap = resolveSnap([
-          { value: startTime, update: (target) => ({ startTime: target, duration: draggingLayer.startDuration }) },
-          { value: startTime + draggingLayer.startDuration, update: (target) => ({ startTime: target - draggingLayer.startDuration, duration: draggingLayer.startDuration }) },
+          { value: startTime, update: (target) => ({ startTime: Math.max(0, target), duration: draggingLayer.startDuration }) },
+          { value: startTime + draggingLayer.startDuration, update: (target) => ({ startTime: Math.max(0, target - draggingLayer.startDuration), duration: draggingLayer.startDuration }) },
         ]);
         setSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
         updateLayer(draggingLayer.id, snap?.update ?? { startTime, duration: draggingLayer.startDuration });
       } else if (draggingLayer.type === 'resize-right') {
-        const duration = Math.max(0.5, draggingLayer.startDuration + dt);
+        const rawDuration = draggingLayer.startDuration + dt;
+        const duration = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, rawDuration));
         const snap = resolveSnap([
-          { value: draggingLayer.startTime + duration, update: (target) => ({ startTime: draggingLayer.startTime, duration: target - draggingLayer.startTime }) },
+          { value: draggingLayer.startTime + duration, update: (target) => ({ startTime: draggingLayer.startTime, duration: Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, target - draggingLayer.startTime)) }) },
         ]);
         setSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
         updateLayer(draggingLayer.id, snap?.update ?? { startTime: draggingLayer.startTime, duration });
       } else {
+        // resize-left (stretch/compress from left edge)
         const endTime = draggingLayer.startTime + draggingLayer.startDuration;
-        const startTime = Math.min(Math.max(0, draggingLayer.startTime + dt), endTime - 0.5);
-        const duration = endTime - startTime;
+        const rawStartTime = draggingLayer.startTime + dt;
+        const startTime = Math.max(0, Math.min(rawStartTime, endTime - MIN_LAYER_DURATION));
+        const duration = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, endTime - startTime));
+        const clampedStartTime = endTime - duration;
         const snap = resolveSnap([
-          { value: startTime, update: (target) => ({ startTime: target, duration: endTime - target }) },
+          { value: clampedStartTime, update: (target) => {
+            const newStart = Math.max(0, Math.min(target, endTime - MIN_LAYER_DURATION));
+            const newDur = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, endTime - newStart));
+            return { startTime: endTime - newDur, duration: newDur };
+          }},
         ]);
         setSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
-        updateLayer(draggingLayer.id, snap?.update ?? { startTime, duration });
+        updateLayer(draggingLayer.id, snap?.update ?? { startTime: clampedStartTime, duration });
       }
     };
     const handleUp = () => {
@@ -169,16 +180,49 @@ export default function MotionTimeline() {
     };
   }, [draggingKeyframe, pxPerSec, moveKeyframe, seekTo]);
 
-  // Ruler ticks
-  const tickSpacing = pxPerSec; // 1 tick per second at current zoom
-  const majorEvery = 5;
+  // Adaptive ruler interval calculation based on pxPerSec
+  let labelInterval = 5;
+  let minorTickInterval = 1;
+
+  if (pxPerSec >= 80) {
+    labelInterval = 1;
+    minorTickInterval = 0.25;
+  } else if (pxPerSec >= 32) {
+    labelInterval = 1;
+    minorTickInterval = 0.5;
+  } else if (pxPerSec >= 16) {
+    labelInterval = 2;
+    minorTickInterval = 1;
+  } else if (pxPerSec >= 8) {
+    labelInterval = 5;
+    minorTickInterval = 1;
+  } else {
+    labelInterval = 10;
+    minorTickInterval = 5;
+  }
+
   const ticks: { x: number; major: boolean; label?: string }[] = [];
-  for (let t = 0; t <= Math.ceil(scaleDuration); t++) {
-    const isMajor = t % majorEvery === 0;
+  const maxTime = Math.ceil(scaleDuration);
+  const stepCount = Math.ceil(maxTime / minorTickInterval);
+
+  for (let i = 0; i <= stepCount; i++) {
+    const t = Number((i * minorTickInterval).toFixed(2));
+    if (t > maxTime + 0.01) break;
+
+    const isMajor = Math.abs(t % labelInterval) < 0.001 || Math.abs((t % labelInterval) - labelInterval) < 0.001;
+    const isWholeSecond = Math.abs(t % 1) < 0.001;
+
+    let label: string | undefined = undefined;
+    if (isMajor) {
+      const mins = Math.floor(t / 60).toString().padStart(2, '0');
+      const secs = Math.floor(t % 60).toString().padStart(2, '0');
+      label = `${mins}:${secs}`;
+    }
+
     ticks.push({
       x: t * pxPerSec,
-      major: isMajor,
-      label: isMajor ? `${Math.floor(t / 60).toString().padStart(2, '0')}:${(t % 60).toString().padStart(2, '0')}` : undefined,
+      major: isMajor || isWholeSecond,
+      label,
     });
   }
 
@@ -456,7 +500,7 @@ export default function MotionTimeline() {
                 <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '32px', background: 'var(--bg-inset)', borderBottom: '1px solid var(--border-color)' }} />
                 {ticks.map((tick, i) => (
                   <div key={i} style={{ position: 'absolute', top: '6px', left: `${tick.x}px` }}>
-                    <div style={{ width: '1px', height: tick.major ? '16px' : '8px', background: tick.major ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }} />
+                    <div style={{ width: '1px', height: tick.label ? '12px' : (tick.major ? '8px' : '4px'), background: tick.label ? 'rgba(255,255,255,0.45)' : (tick.major ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)') }} />
                     {tick.label && (
                       <span style={{ position: 'absolute', top: '100%', left: '4px', fontSize: '9px', fontWeight: 500, color: 'var(--text-muted)', transform: 'translateY(-50%) scale(0.9)', transformOrigin: 'left', whiteSpace: 'nowrap' }}>
                         {tick.label}
@@ -516,39 +560,55 @@ export default function MotionTimeline() {
                       <div
                         key={layer.id}
                         data-layer-clip
-                        onClick={() => {
-                          // Switch to this layer's scene if not already active and show components tab
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Single click only selects the component
                           dispatch({
                             activeSceneId: sceneId,
                             selectedLayerId: layer.id,
                             activeSidebarTab: 'components',
-                            playbackRange: { start: layerSceneStart + layer.startTime, end: layerSceneStart + layer.startTime + layer.duration },
                           });
-                          seekTo(layerSceneStart + layer.startTime);
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          // Double click moves cursor to start of component and plays component-only loop
+                          const compStart = layerSceneStart + layer.startTime;
+                          const compEnd = compStart + layer.duration;
+                          dispatch({
+                            activeSceneId: sceneId,
+                            selectedLayerId: layer.id,
+                            activeSidebarTab: 'components',
+                            playbackRange: { start: compStart, end: compEnd },
+                          });
+                          seekTo(compStart);
+                          play();
                         }}
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           dispatch({
                             activeSceneId: sceneId,
+                            selectedLayerId: layer.id,
+                            activeSidebarTab: 'components',
                           });
-                          seekTo(layerSceneStart + layer.startTime);
                           pushUndo();
                           setDraggingLayer({ id: layer.id, sceneId, type: 'move', startX: e.clientX, startTime: layer.startTime, startDuration: layer.duration });
                         }}
                         style={{
                           position: 'absolute', left: `${left}px`, width: `${width}px`, height: '34px', top: '4px',
-                          background: isFromActiveScene
-                            ? `linear-gradient(to bottom, ${colorScheme.bg}, #0f172a)`
-                            : 'var(--bg-input)',
-                          border: isSelected ? '2px solid var(--accent-primary)' : `1px solid ${isFromActiveScene ? colorScheme.border + '60' : 'var(--border-color)'}`,
-                          borderBottom: isSelected ? '2px solid var(--accent-primary)' : `3px solid ${isFromActiveScene ? colorScheme.border + '40' : 'var(--border-color)'}`,
+                          background: isSelected
+                            ? '#9333ea'
+                            : (isFromActiveScene
+                              ? `linear-gradient(to bottom, ${colorScheme.bg}, #0f172a)`
+                              : 'var(--bg-input)'),
+                          border: isSelected ? '2px solid #a855f7' : `1px solid ${isFromActiveScene ? colorScheme.border + '60' : 'var(--border-color)'}`,
                           borderRadius: '8px', cursor: 'grab',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           overflow: 'hidden', transition: 'border-color 75ms, opacity 150ms',
                           opacity: isFromActiveScene ? 1 : 0.5,
+                          boxShadow: isSelected ? '0 0 0 1px rgba(168,85,247,0.4), 0 2px 8px rgba(0,0,0,0.4)' : 'none',
                         }}
                       >
-                        {/* Left cap */}
+                        {/* Left cap handle */}
                         <div
                           onPointerDown={(e) => {
                             e.stopPropagation();
@@ -556,15 +616,46 @@ export default function MotionTimeline() {
                             pushUndo();
                             setDraggingLayer({ id: layer.id, sceneId, type: 'resize-left', startX: e.clientX, startTime: layer.startTime, startDuration: layer.duration });
                           }}
-                          style={{ position: 'absolute', left: 0, top: 0, width: '10px', height: '100%', cursor: 'ew-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px 0 0 8px' }}
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            width: '14px',
+                            height: '100%',
+                            cursor: 'col-resize',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: isSelected ? '#a855f7' : 'rgba(255,255,255,0.06)',
+                            borderRight: isSelected ? '1px solid rgba(0,0,0,0.25)' : 'none',
+                            borderRadius: '6px 0 0 6px',
+                            zIndex: 10,
+                          }}
+                          title="Drag to trim left"
                         >
-                          <div style={{ width: '2px', height: '14px', background: 'rgba(255,255,255,0.2)', borderRadius: '1px' }} />
+                          <div style={{ width: '3px', height: '14px', background: '#ffffff', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,0.4)' }} />
                         </div>
 
                         {/* Label */}
-                        <span style={{ fontSize: '11px', color: isFromActiveScene ? '#f8fafc' : 'var(--text-muted)', fontWeight: 600, opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pointerEvents: 'none', padding: '0 14px' }}>
-                          {label}
-                        </span>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          fontSize: '11px',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          pointerEvents: 'none',
+                          padding: '0 18px',
+                          userSelect: 'none',
+                        }}>
+                          {layer.type === 'text' && <span style={{ fontFamily: 'serif', fontSize: '13px', fontWeight: 800, opacity: 0.9 }}>T</span>}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {label}
+                          </span>
+                        </div>
 
                         {/* Keyframe Diamond Markers */}
                         {layer.keyframes && layer.keyframes.length > 0 && (
@@ -614,7 +705,7 @@ export default function MotionTimeline() {
                           </div>
                         )}
 
-                        {/* Right cap */}
+                        {/* Right cap handle */}
                         <div
                           onPointerDown={(e) => {
                             e.stopPropagation();
@@ -622,9 +713,24 @@ export default function MotionTimeline() {
                             pushUndo();
                             setDraggingLayer({ id: layer.id, sceneId, type: 'resize-right', startX: e.clientX, startTime: layer.startTime, startDuration: layer.duration });
                           }}
-                          style={{ position: 'absolute', right: 0, top: 0, width: '10px', height: '100%', cursor: 'ew-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0 8px 8px 0' }}
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            width: '14px',
+                            height: '100%',
+                            cursor: 'col-resize',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: isSelected ? '#a855f7' : 'rgba(255,255,255,0.06)',
+                            borderLeft: isSelected ? '1px solid rgba(0,0,0,0.25)' : 'none',
+                            borderRadius: '0 6px 6px 0',
+                            zIndex: 10,
+                          }}
+                          title="Drag to trim right"
                         >
-                          <div style={{ width: '2px', height: '14px', background: 'rgba(0,0,0,0.15)', borderRadius: '1px' }} />
+                          <div style={{ width: '3px', height: '14px', background: '#ffffff', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,0.4)' }} />
                         </div>
                       </div>
                     );

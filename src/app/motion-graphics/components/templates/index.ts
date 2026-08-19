@@ -17,6 +17,7 @@ export { default as VideoUpload } from './VideoUpload';
 export { default as ImageUpload } from './ImageUpload';
 export { default as PhoneDevice } from './PhoneDevice';
 export { default as MaskedHeading } from './MaskedHeading';
+export { default as DiaTextReveal } from './DiaTextReveal';
 
 export type ComponentTemplateName =
   | 'count-up'
@@ -31,6 +32,7 @@ export type ComponentTemplateName =
   | 'animated-beam'
   | 'orbiting-circles'
   | 'text-reveal'
+  | 'dia-text-reveal'
   | 'skeleton-shimmer'
   | 'text-3d-flip'
   | 'camera-zoom'
@@ -141,9 +143,9 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     source: 'reactbits',
   },
   {
-    id: 'text-reveal',
-    name: 'Text Reveal',
-    description: 'Words revealed by a sweeping color block',
+    id: 'dia-text-reveal',
+    name: 'Dia Text Reveal',
+    description: 'Horizontal gradient color band shine sweep across text',
     category: 'text',
     source: 'smoothui',
   },

@@ -8,12 +8,24 @@ import { useAlignmentGuides } from '@/context/AlignmentContext';
 import { TextAnimate } from '@/components/ui/text-animate';
 import { TypingAnimation } from '@/components/ui/typing-animation';
 import { TextReveal } from '@/components/ui/text-reveal';
+import DiaTextReveal from '@/components/ui/dia-text-reveal';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
 import KineticCenterBuild from '@/components/smoothui/kinetic-center-build';
 import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
 import MaskRevealUp from '@/components/smoothui/mask-reveal-up';
 import RevealText from '@/components/smoothui/reveal-text';
 import ShortSlideDown from '@/components/smoothui/short-slide-down';
+import BlurOutUp from '@/components/smoothui/blur-out-up';
+import DepthParallaxWords from '@/components/smoothui/depth-parallax-words';
+import FadeThrough from '@/components/smoothui/fade-through';
+import FocusBlurResolve from '@/components/smoothui/focus-blur-resolve';
+import SoftBlurIn from '@/components/smoothui/soft-blur-in';
+import SpringScaleIn from '@/components/smoothui/spring-scale-in';
+import StaggerFromCenter from '@/components/smoothui/stagger-from-center';
+import MicroScaleFade from '@/components/smoothui/micro-scale-fade';
+import ScaleDownFade from '@/components/smoothui/scale-down-fade';
+import PerCharacterRise from '@/components/smoothui/per-character-rise';
+import PerWordCrossfade from '@/components/smoothui/per-word-crossfade';
 
 function ShortSlideDownWrapper({ children, speed = 1 }: { children?: string; speed?: number }) {
   const text = children || '';
@@ -27,6 +39,17 @@ const smoothAnimMap: Record<string, React.FC<any>> = {
   'mask-reveal-up': MaskRevealUp,
   'reveal-text': RevealText,
   'short-slide-down': ShortSlideDownWrapper,
+  'blur-out-up': BlurOutUp,
+  'soft-blur-in': SoftBlurIn,
+  'spring-scale-in': SpringScaleIn,
+  'stagger-from-center': StaggerFromCenter,
+  'depth-parallax-words': DepthParallaxWords,
+  'fade-through': FadeThrough,
+  'focus-blur-resolve': FocusBlurResolve,
+  'micro-scale-fade': MicroScaleFade,
+  'scale-down-fade': ScaleDownFade,
+  'per-character-rise': PerCharacterRise,
+  'per-word-crossfade': PerWordCrossfade,
 };
 
 export const ENABLED_ANIMATIONS = new Set<string>([
@@ -36,6 +59,19 @@ export const ENABLED_ANIMATIONS = new Set<string>([
   'mask-reveal-up',
   'reveal-text',
   'short-slide-down',
+  'blur-out-up',
+  'soft-blur-in',
+  'spring-scale-in',
+  'stagger-from-center',
+  'depth-parallax-words',
+  'fade-through',
+  'focus-blur-resolve',
+  'micro-scale-fade',
+  'scale-down-fade',
+  'per-character-rise',
+  'per-word-crossfade',
+  'text-reveal',
+  'dia-text-reveal',
 ]);
 
 const legacyMap: Record<string, string> = {
@@ -264,10 +300,10 @@ function OverlayText({
         {/* 4 Corner Selection Points */}
         {showSelectionUI && (
           <>
-            <div style={{ position: 'absolute', top: -5, left: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', top: -5, right: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -5, left: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -5, right: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: -5, left: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: -5, right: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -5, left: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -5, right: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
           </>
         )}
 
@@ -305,8 +341,27 @@ function OverlayText({
               return <TypingAnimation key={`${animTrigger}-${effectiveType}-${animSpeed}`} duration={100 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TypingAnimation>;
             }
 
+            if (effectiveType === 'text-reveal') {
+              return (
+                <TextReveal
+                  key={`${animTrigger}-${effectiveType}-${animSpeed}`}
+                  duration={3000 / animSpeed}
+                >
+                  {displayText}
+                </TextReveal>
+              );
+            }
+
             if (effectiveType === 'dia-text-reveal') {
-              return <TextReveal key={`${animTrigger}-${effectiveType}-${animSpeed}`} duration={3000 / animSpeed}>{displayText}</TextReveal>;
+              return (
+                <DiaTextReveal
+                  key={`${animTrigger}-${effectiveType}-${animSpeed}`}
+                  text={displayText.includes('\n') ? displayText.split('\n').filter(Boolean) : displayText}
+                  duration={1.5 / animSpeed}
+                  textColor={config.color || '#ffffff'}
+                  repeat={true}
+                />
+              );
             }
 
             return <TextAnimate key={`${animTrigger}-${effectiveType}-${animSpeed}`} animation="fadeIn" duration={2 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;

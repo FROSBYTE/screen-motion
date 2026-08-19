@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Copy } from 'lucide-react';
 
 interface ListItemEditorProps<T> {
   items: T[];
@@ -29,6 +29,19 @@ export default function ListItemEditor<T>({
     } else {
       next[index] = patch as T;
     }
+    onChange(next);
+  };
+
+  const handleDuplicate = (index: number) => {
+    const next = [...items];
+    const current = next[index];
+    let clone: T;
+    if (typeof current === 'object' && current !== null) {
+      clone = Array.isArray(current) ? ([...current] as unknown as T) : ({ ...current });
+    } else {
+      clone = current;
+    }
+    next.splice(index + 1, 0, clone);
     onChange(next);
   };
 
@@ -62,6 +75,13 @@ export default function ListItemEditor<T>({
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {renderItem(item, idx, (patch) => handleUpdate(idx, patch))}
           </div>
+          <button
+            onClick={() => handleDuplicate(idx)}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', flexShrink: 0 }}
+            title="Duplicate item"
+          >
+            <Copy size={13} />
+          </button>
           <button
             className="delete-btn-hover"
             onClick={() => handleRemove(idx)}

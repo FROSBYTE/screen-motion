@@ -10,6 +10,18 @@ import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
 import MaskRevealUp from '@/components/smoothui/mask-reveal-up';
 import RevealText from '@/components/smoothui/reveal-text';
 import ShortSlideDown from '@/components/smoothui/short-slide-down';
+import BlurOutUp from '@/components/smoothui/blur-out-up';
+import DepthParallaxWords from '@/components/smoothui/depth-parallax-words';
+import FadeThrough from '@/components/smoothui/fade-through';
+import FocusBlurResolve from '@/components/smoothui/focus-blur-resolve';
+import SoftBlurIn from '@/components/smoothui/soft-blur-in';
+import SpringScaleIn from '@/components/smoothui/spring-scale-in';
+import StaggerFromCenter from '@/components/smoothui/stagger-from-center';
+import MicroScaleFade from '@/components/smoothui/micro-scale-fade';
+import ScaleDownFade from '@/components/smoothui/scale-down-fade';
+import PerCharacterRise from '@/components/smoothui/per-character-rise';
+import PerWordCrossfade from '@/components/smoothui/per-word-crossfade';
+import DiaTextRevealUI from '@/components/ui/dia-text-reveal';
 import CountUp from './templates/CountUp';
 import AnimatedList from './templates/AnimatedList';
 import LogoLoop from './templates/LogoLoop';
@@ -22,6 +34,7 @@ import Highlighter from './templates/Highlighter';
 import AnimatedBeam from './templates/AnimatedBeam';
 import OrbitingCircles from './templates/OrbitingCircles';
 import TextReveal from './templates/TextReveal';
+import DiaTextReveal from './templates/DiaTextReveal';
 import SkeletonShimmer from './templates/SkeletonShimmer';
 import Text3DFlip from './templates/Text3DFlip';
 import MediaUploadComponent from './templates/MediaUpload';
@@ -500,6 +513,19 @@ const animationMap: Record<string, React.FC<any>> = {
   'mask-reveal-up': MaskRevealUp,
   'reveal-text': RevealText,
   'short-slide-down': ShortSlideDownWrapper,
+  'blur-out-up': BlurOutUp,
+  'soft-blur-in': SoftBlurIn,
+  'spring-scale-in': SpringScaleIn,
+  'stagger-from-center': StaggerFromCenter,
+  'depth-parallax-words': DepthParallaxWords,
+  'fade-through': FadeThrough,
+  'focus-blur-resolve': FocusBlurResolve,
+  'micro-scale-fade': MicroScaleFade,
+  'scale-down-fade': ScaleDownFade,
+  'per-character-rise': PerCharacterRise,
+  'per-word-crossfade': PerWordCrossfade,
+  'text-reveal': (props: any) => <TextReveal text={props.children} speed={props.speed || 1} color={props.color || '#ffffff'} revealColor="#a855f7" fontSize={props.fontSize} fontFamily={props.fontFamily} />,
+  'dia-text-reveal': (props: any) => <DiaTextRevealUI text={props.children} duration={1.5 / (props.speed || 1)} repeat={true} />,
 };
 
 type CanvasAxis = 'x' | 'y';
@@ -684,7 +710,7 @@ function SelectionCornerHandles({
             height: '7px',
             borderRadius: '50%',
             background: '#ffffff',
-            border: '1.5px solid var(--accent-primary)',
+            border: '1.5px solid #000000',
             boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
             cursor: c.cursor,
             zIndex: 50,
@@ -701,7 +727,7 @@ function SelectionCornerHandles({
 const _canvasDragState = { isDragging: false, draggedLayerId: null as string | null };
 
 function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
-  const { state, dispatch, updateLayer } = useMGState();
+  const { state, dispatch, updateLayer, seekTo, play, getSceneStartTime } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -751,6 +777,20 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
         if (_canvasDragState.draggedLayerId === layer.id) {
           _canvasDragState.draggedLayerId = null;
         }
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        const sStart = getSceneStartTime(sceneId);
+        const compStart = sStart + layer.startTime;
+        const compEnd = compStart + layer.duration;
+        dispatch({
+          selectedLayerId: layer.id,
+          activeSceneId: sceneId,
+          activeSidebarTab: 'components',
+          playbackRange: { start: compStart, end: compEnd },
+        });
+        seekTo(compStart);
+        play();
       }}
       onPointerDown={(e) => {
         if (!e.isPrimary || e.button !== 0) return;
@@ -844,7 +884,7 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
           fontWeight: layer.isBold ? 800 : 400,
           fontStyle: layer.isItalic ? 'italic' : 'normal',
           cursor: isDragging ? 'grabbing' : 'grab',
-          border: isSelected ? '2px dashed rgba(255, 255, 255, 0.85)' : '2px solid transparent',
+          border: isSelected ? '2px dashed rgba(168, 85, 247, 0.85)' : '2px solid transparent',
           borderRadius: '4px',
           padding: '8px 16px',
           transition: 'border-color 0.15s ease',
@@ -908,7 +948,7 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
 }
 
 function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGComponentLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
-  const { state, dispatch, updateLayer } = useMGState();
+  const { state, dispatch, updateLayer, seekTo, play, getSceneStartTime } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -950,11 +990,11 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
       case 'animated-list':
         return <AnimatedList key={triggerKey} items={layer.props.items} speed={speed} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} />;
       case 'logo-loop':
-        return <LogoLoop key={triggerKey} items={layer.props.items} speed={speed} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} />;
+        return <LogoLoop key={triggerKey} items={layer.props.items} speed={speed} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} />;
       case 'ai-loader':
         return <AILoader key={triggerKey} variant={layer.props.variant ?? 'dots'} speed={speed} color={layer.props.color ?? '#a855f7'} />;
       case 'bubble-menu':
-        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg={layer.props.menuBg ?? '#ffffff'} radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} />;
+        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} />;
       case 'folder':
         return <Folder key={triggerKey} color={layer.props.color ?? '#5227ff'} size={layer.props.size ?? 1.5} items={layer.props.items} speed={speed} />;
       case 'unlumen-animated-list':
@@ -966,9 +1006,11 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
       case 'animated-beam':
         return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} />;
       case 'orbiting-circles':
-        return <OrbitingCircles key={triggerKey} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed} iconSize={layer.props.iconSize ?? 36} orbitColor={layer.props.orbitColor ?? 'rgba(255,255,255,0.1)'} />;
+        return <OrbitingCircles key={triggerKey} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} />;
       case 'text-reveal':
         return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} />;
+      case 'dia-text-reveal':
+        return <DiaTextReveal key={triggerKey} text={layer.props.text ?? 'Dia Text Reveal'} colors={layer.props.colors} textColor={layer.props.textColor ?? '#ffffff'} duration={layer.props.duration ?? 1.5} speed={speed} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} repeat={layer.props.repeat ?? true} repeatDelay={layer.props.repeatDelay ?? 0.5} />;
       case 'skeleton-shimmer':
         return <SkeletonShimmer key={triggerKey} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} baseColor={layer.props.baseColor ?? 'rgba(255,255,255,0.08)'} shimmerColor={layer.props.shimmerColor ?? 'rgba(255,255,255,0.15)'} speed={speed} borderRadius={layer.props.borderRadius ?? 6} />;
       case 'text-3d-flip':
@@ -1066,6 +1108,20 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         if (_canvasDragState.draggedLayerId === layer.id) {
           _canvasDragState.draggedLayerId = null;
         }
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        const sStart = getSceneStartTime(sceneId);
+        const compStart = sStart + layer.startTime;
+        const compEnd = compStart + layer.duration;
+        dispatch({
+          selectedLayerId: layer.id,
+          activeSceneId: sceneId,
+          activeSidebarTab: 'components',
+          playbackRange: { start: compStart, end: compEnd },
+        });
+        seekTo(compStart);
+        play();
       }}
       onPointerDown={(e) => {
         if (!e.isPrimary || e.button !== 0) return;

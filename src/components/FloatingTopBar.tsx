@@ -92,7 +92,29 @@ export default function FloatingTopBar() {
 
       // Compute maximum text animation completion time (delay + duration)
       let maxTextDurationSec = 0;
-      const ENABLED_ANIMATIONS = new Set(['mask-reveal-up', 'typing-animation', 'focus-blur-resolve', 'depth-parallax-words', 'per-word-crossfade']);
+      const ENABLED_ANIMATIONS = new Set([
+        'bottom-up-letters',
+        'kinetic-center-build',
+        'line-by-line-slide',
+        'mask-reveal-up',
+        'reveal-text',
+        'short-slide-down',
+        'blur-out-up',
+        'soft-blur-in',
+        'spring-scale-in',
+        'stagger-from-center',
+        'depth-parallax-words',
+        'fade-through',
+        'focus-blur-resolve',
+        'micro-scale-fade',
+        'scale-down-fade',
+        'per-character-rise',
+        'per-word-crossfade',
+        'text-reveal',
+        'dia-text-reveal',
+        'typing-animation',
+        'text-animate',
+      ]);
       (state.scene.texts || []).forEach((t) => {
         if (t.animationType && t.animationType !== 'none') {
           const delaySec = t.delay || 0;

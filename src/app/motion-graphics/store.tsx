@@ -58,7 +58,12 @@ export type MGTextAnimationType =
   | 'micro-scale-fade'
   | 'per-character-rise'
   | 'per-word-crossfade'
-  | 'scale-down-fade';
+  | 'scale-down-fade'
+  | 'soft-blur-in'
+  | 'spring-scale-in'
+  | 'stagger-from-center'
+  | 'text-reveal'
+  | 'dia-text-reveal';
 
 export type MGComponentPacingPreset = 'snappy' | 'balanced' | 'cinematic';
 export type MGPacingPreset = MGComponentPacingPreset;
@@ -717,6 +722,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       text: partial?.text || 'New Text',
       animationType: partial?.animationType || 'mask-reveal-up',
       animationSpeed: partial?.animationSpeed ?? 1,
+      pacingPreset: partial?.pacingPreset ?? 'balanced',
       color: partial?.color || '#ffffff',
       fontSize: partial?.fontSize ?? 48,
       fontFamily: partial?.fontFamily || '"Plus Jakarta Sans", sans-serif',
@@ -724,7 +730,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       isBold: partial?.isBold ?? true,
       isItalic: partial?.isItalic ?? false,
       startTime: partial?.startTime ?? 0,
-      duration: partial?.duration ?? 3,
+      duration: partial?.duration ?? 5,
       position: partial?.position ?? { x: 50, y: 50 },
       enterAnimation: partial?.enterAnimation ?? 'fade-in',
       enterDuration: partial?.enterDuration ?? 1.0,
@@ -744,12 +750,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
 
   const addComponentLayer = useCallback((templateId: ComponentTemplateName, props?: Record<string, any>) => {
     const id = `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    let initialDuration = 2;
-    if (templateId === 'phone-device') {
-      const animName = props?.animationTemplate || 'float';
-      const animConfig = TEMPLATES.find((t) => t.id === animName);
-      initialDuration = animConfig ? animConfig.duration : 6;
-    }
+    const initialDuration = 5;
     const newLayer: MGComponentLayer = {
       id,
       type: 'component',
@@ -757,6 +758,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       props: props || {},
       startTime: 0,
       duration: initialDuration,
+      pacingPreset: 'balanced',
       position: { x: 50, y: 50 },
       scale: 1,
       enterAnimation: 'fade-in',
@@ -793,7 +795,20 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       ...prev,
       scenes: prev.scenes.map((s) =>
         s.layers.some((l) => l.id === id)
-          ? { ...s, layers: s.layers.map((l) => (l.id === id ? { ...l, ...updates } as MGLayer : l)) }
+          ? {
+              ...s,
+              layers: s.layers.map((l) => {
+                if (l.id !== id) return l;
+                const next = { ...l, ...updates } as MGLayer;
+                if (next.duration !== undefined) {
+                  next.duration = Math.max(0.5, Math.min(60, next.duration));
+                }
+                if (next.startTime !== undefined) {
+                  next.startTime = Math.max(0, next.startTime);
+                }
+                return next;
+              }),
+            }
           : s
       ),
     }));
@@ -850,7 +865,8 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
                     ...l,
                     position: { x: 50, y: 50 },
                     startTime: 0,
-                    duration: 3,
+                    duration: 5,
+                    pacingPreset: 'balanced',
                     ...(l.type === 'component' ? { scale: 1 } : {}),
                   })),
                 }
@@ -868,7 +884,8 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
               ...l,
               position: { x: 50, y: 50 },
               startTime: 0,
-              duration: 3,
+              duration: 5,
+              pacingPreset: 'balanced',
               ...(l.type === 'component' ? { scale: 1 } : {}),
             };
           }),
@@ -1034,25 +1051,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
     });
   }, []);
 
-  // ── Auto-seek playhead cursor to beginning of component on layer selection ──
-  const prevSelectedLayerIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const selectedId = state.selectedLayerId;
-    if (selectedId && selectedId !== prevSelectedLayerIdRef.current) {
-      let sceneStart = 0;
-      for (const scene of state.scenes) {
-        const layer = scene.layers.find((l) => l.id === selectedId);
-        if (layer) {
-          const componentStart = sceneStart + layer.startTime;
-          setState((prev) => ({ ...prev, currentTime: componentStart }));
-          break;
-        }
-        sceneStart += getSceneDuration(scene);
-      }
-    }
-    prevSelectedLayerIdRef.current = selectedId;
-  }, [state.selectedLayerId]);
 
   return (
     <MGContext.Provider value={{

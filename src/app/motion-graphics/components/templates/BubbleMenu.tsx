@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export interface BubbleMenuItem {
-  label: string;
-  color: string;
-  imageUrl?: string; // optional image URL; if absent, shows first letter of label
+  imageUrl?: string;
+  imageAssetId?: string;
 }
 
 export interface BubbleMenuProps {
@@ -15,15 +14,18 @@ export interface BubbleMenuProps {
   menuBg?: string;
   radius?: number;
   bubbleSize?: number;
+  centerImageUrl?: string;
+  centerBg?: string;
+  centerSize?: number;
   className?: string;
 }
 
 const DEFAULT_ITEMS: BubbleMenuItem[] = [
-  { label: 'Home', color: '#6366f1' },
-  { label: 'About', color: '#8b5cf6' },
-  { label: 'Work', color: '#a855f7' },
-  { label: 'Blog', color: '#d946ef' },
-  { label: 'Contact', color: '#ec4899' },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
+  { imageUrl: undefined },
 ];
 
 export default function BubbleMenu({
@@ -32,6 +34,9 @@ export default function BubbleMenu({
   menuBg = 'transparent',
   radius = 90,
   bubbleSize = 44,
+  centerImageUrl,
+  centerBg = 'transparent',
+  centerSize,
   className = '',
 }: BubbleMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,16 +49,33 @@ export default function BubbleMenu({
   const staggerDelay = 0.12 / speed;
   const duration = 0.5 / speed;
 
+  const effectiveCenterSize = centerSize ?? bubbleSize;
+
   return (
     <div className={className} style={{ position: 'relative', width: `${radius * 2 + bubbleSize + 20}px`, height: `${radius * 2 + bubbleSize + 20}px`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: menuBg, borderRadius: '50%' }}>
-      {/* Center anchor point (background only, no toggle button) */}
+      {/* Center anchor circle (supports image attachment) */}
       <div style={{
-        width: `${bubbleSize * 0.3}px`,
-        height: `${bubbleSize * 0.3}px`,
+        position: 'relative',
+        width: `${effectiveCenterSize}px`,
+        height: `${effectiveCenterSize}px`,
         borderRadius: '50%',
-        background: 'rgba(0,0,0,0.1)',
+        background: centerImageUrl ? 'transparent' : (centerBg === 'transparent' ? 'rgba(255, 255, 255, 0.05)' : centerBg),
+        border: centerImageUrl ? 'none' : '1px dashed rgba(255, 255, 255, 0.2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        boxShadow: centerImageUrl ? 'none' : '0 2px 10px rgba(0,0,0,0.2)',
         zIndex: 5,
-      }} />
+      }}>
+        {centerImageUrl ? (
+          <img
+            src={centerImageUrl}
+            alt="Center"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }}
+          />
+        ) : null}
+      </div>
 
       {/* Bubbles */}
       <AnimatePresence>
@@ -80,24 +102,25 @@ export default function BubbleMenu({
                 width: `${bubbleSize}px`,
                 height: `${bubbleSize}px`,
                 borderRadius: '50%',
-                background: item.color,
+                background: item.imageUrl ? 'transparent' : 'rgba(255, 255, 255, 0.08)',
+                border: item.imageUrl ? 'none' : '1px solid rgba(255, 255, 255, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                boxShadow: item.imageUrl ? 'none' : '0 2px 12px rgba(0,0,0,0.3)',
                 overflow: 'hidden',
               }}
             >
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
-                  alt={item.label}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                  alt={`Bubble ${index + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }}
                 />
               ) : (
-                <span style={{ fontSize: `${bubbleSize * 0.4}px`, lineHeight: 1, color: '#fff', fontWeight: 700 }}>
-                  {item.label.charAt(0)}
-                </span>
+                <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)', fontSize: `${Math.max(10, bubbleSize * 0.28)}px`, fontWeight: 600 }}>
+                  Img
+                </div>
               )}
             </motion.div>
           );
