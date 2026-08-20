@@ -12,6 +12,9 @@ export interface AnimatedListProps {
   fontSize?: number;
   borderRadius?: number;
   isBold?: boolean;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 function parseItemToString(item: any): string {
@@ -39,6 +42,9 @@ export default function AnimatedList({
   fontSize = 14,
   borderRadius = 8,
   isBold = false,
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: AnimatedListProps) {
   const normalizedItems = useMemo(() => {
     const raw = Array.isArray(items) ? items : typeof items === 'object' && items !== null ? Object.values(items) : [items];
@@ -52,6 +58,7 @@ export default function AnimatedList({
   const itemsKey = useMemo(() => JSON.stringify(normalizedItems), [normalizedItems]);
 
   useEffect(() => {
+    if (localTime !== undefined) return;
     itemsRef.current = normalizedItems;
     if (visibleItems.length > 0) {
       setVisibleItems(normalizedItems.slice(0, Math.max(visibleItems.length, normalizedItems.length)));
@@ -59,18 +66,61 @@ export default function AnimatedList({
       setVisibleItems([]);
       setCurrentIndex(0);
     }
-  }, [itemsKey]);
+  }, [itemsKey, localTime]);
 
   useEffect(() => {
+    if (localTime !== undefined) return;
     if (currentIndex >= itemsRef.current.length) return;
 
     const timer = setTimeout(() => {
       setVisibleItems((prev) => [...prev, itemsRef.current[currentIndex]]);
       setCurrentIndex((i) => i + 1);
-    }, (400 / speed));
+    }, (400 / Math.max(0.1, speed)));
 
     return () => clearTimeout(timer);
-  }, [currentIndex, speed]);
+  }, [currentIndex, speed, localTime]);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const itemInterval = 0.4 / Math.max(0.1, speed);
+    const visibleCount = Math.min(normalizedItems.length, Math.floor(elapsed / itemInterval) + 1);
+    const displayedItems = normalizedItems.slice(0, visibleCount);
+
+    return (
+      <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '320px' }}>
+        {displayedItems.map((item, index) => {
+          const itemTime = index * itemInterval;
+          const itemAge = Math.max(0, elapsed - itemTime);
+          const animDur = 0.3 / Math.max(0.1, speed);
+          const t = Math.min(1, itemAge / animDur);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const opacity = eased;
+          const x = (1 - eased) * -20;
+
+          return (
+            <div
+              key={index}
+              style={{
+                opacity,
+                transform: `translateX(${x}px)`,
+                padding: '10px 16px',
+                background: itemBg,
+                borderRadius: `${borderRadius}px`,
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                fontSize: `${fontSize}px`,
+                color: textColor,
+                fontWeight: isBold ? 800 : 500,
+                fontFamily: '"Plus Jakarta Sans", sans-serif',
+              }}
+            >
+              {item}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '320px' }}>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical } from 'lucide-react';
 import { useMGState, getSceneDuration, SceneTransition } from '../store';
 import { COMPONENT_TEMPLATES } from './templates';
 import { Reorder } from 'motion/react';
@@ -11,6 +11,12 @@ const TRANSITION_OPTIONS: { id: SceneTransition; label: string; icon: string }[]
   { id: 'none', label: 'None (Cut)', icon: '⚡' },
   { id: 'clip-wipe', label: 'Clip Wipe', icon: '◧' },
   { id: 'fade', label: 'Fade', icon: '🌫️' },
+  { id: 'slide-left', label: 'Slide Left', icon: '⬅' },
+  { id: 'slide-right', label: 'Slide Right', icon: '➡' },
+  { id: 'slide-up', label: 'Slide Up', icon: '⬆' },
+  { id: 'slide-down', label: 'Slide Down', icon: '⬇' },
+  { id: 'zoom', label: 'Zoom', icon: '🔍' },
+  { id: 'blur', label: 'Blur', icon: '💠' },
   { id: 'iris', label: 'Iris', icon: '⊙' },
   { id: 'iris-click', label: 'Iris Click', icon: '◎' },
   { id: 'loading-line', label: 'Loading Line', icon: '━' },
@@ -18,7 +24,7 @@ const TRANSITION_OPTIONS: { id: SceneTransition; label: string; icon: string }[]
 
 export default function HierarchyPanel() {
   const {
-    state, dispatch, removeScene, updateScene, duplicateScene, setScenes,
+    state, dispatch, addScene, removeScene, updateScene, duplicateScene, setScenes,
     addLayer, addComponentLayer, removeLayer, updateLayer, duplicateLayer, setLayers, seekTo, getSceneStartTime
   } = useMGState();
   const { scenes, activeSceneId, selectedLayerId } = state;
@@ -74,7 +80,8 @@ export default function HierarchyPanel() {
       <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
         {/* ===== SCENES TAB ===== */}
         {activeTab === 'scene' && (
-          <Reorder.Group
+          <>
+            <Reorder.Group
             axis="y"
             values={scenes}
             onReorder={setScenes}
@@ -218,6 +225,39 @@ export default function HierarchyPanel() {
               );
             })}
           </Reorder.Group>
+          <button
+            onClick={() => addScene()}
+            className="mg-btn-interactive"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px dashed var(--border-color)',
+              color: 'var(--text-primary)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              marginTop: '4px',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            <Plus size={13} strokeWidth={2.5} />
+            New Scene
+          </button>
+        </>
         )}
 
         {/* ===== COMPONENTS TAB ===== */}
@@ -361,6 +401,38 @@ export default function HierarchyPanel() {
                 );
               })}
             </Reorder.Group>
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="mg-btn-interactive"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px dashed var(--border-color)',
+                color: 'var(--text-primary)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                marginTop: '4px',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              New Component
+            </button>
           </>
         )}
       </div>

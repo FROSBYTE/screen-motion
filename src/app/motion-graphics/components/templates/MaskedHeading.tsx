@@ -29,6 +29,9 @@ export interface MaskedHeadingProps {
   textScale?: number;
   className?: string;
   style?: React.CSSProperties;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 export default function MaskedHeading({
@@ -54,6 +57,9 @@ export default function MaskedHeading({
   textScale = 0.115,
   className = '',
   style,
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
   ...rest
 }: MaskedHeadingProps) {
   const rootRef = useRef<HTMLElement>(null);
@@ -194,6 +200,37 @@ export default function MaskedHeading({
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reveal === 'none' || reduce) {
       settle();
+      return;
+    }
+
+    if (localTime !== undefined) {
+      const elapsed = Math.max(0, localTime - layerStartTime);
+      const riseDist = riseDistance();
+
+      if (reveal === 'rise') {
+        gsap.set(layer, { opacity: 1, scale: 1, clipPath: 'inset(0% 0% 0% 0%)' });
+        glyphs.forEach((glyph, i) => {
+          const charElapsed = Math.max(0, elapsed - i * stagger);
+          const t = Math.min(1, charElapsed / Math.max(0.01, duration));
+          const eased = 1 - Math.pow(1 - t, 4);
+          gsap.set(glyph, { y: (1 - eased) * riseDist });
+        });
+      } else if (reveal === 'wipe') {
+        glyphs.forEach((glyph) => gsap.set(glyph, { y: 0 }));
+        const t = Math.min(1, elapsed / Math.max(0.01, duration));
+        const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        const p = (1 - eased) * 100;
+        layer.style.clipPath = `inset(0% ${p.toFixed(1)}% 0% 0%)`;
+        layer.style.opacity = '1';
+      } else if (reveal === 'fade') {
+        glyphs.forEach((glyph) => gsap.set(glyph, { y: 0 }));
+        const t = Math.min(1, elapsed / Math.max(0.01, duration));
+        const eased = 1 - Math.pow(1 - t, 3);
+        layer.style.opacity = `${eased.toFixed(2)}`;
+        layer.style.transform = `scale(${(1.08 - eased * 0.08).toFixed(2)})`;
+      } else {
+        settle();
+      }
       return;
     }
 

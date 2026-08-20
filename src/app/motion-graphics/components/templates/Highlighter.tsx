@@ -17,11 +17,72 @@ export interface HighlighterProps {
   speed?: number;
   fontSize?: number;
   className?: string;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
-function AnnotationMark({ action, color, strokeWidth, triggered, effectiveDuration }: {
-  action: HighlighterAction; color: string; strokeWidth: number; triggered: boolean; effectiveDuration: number;
+function AnnotationMark({ action, color, strokeWidth, triggered, effectiveDuration, deterministicProgress }: {
+  action: HighlighterAction; color: string; strokeWidth: number; triggered: boolean; effectiveDuration: number; deterministicProgress?: number | null;
 }) {
+  if (deterministicProgress !== undefined && deterministicProgress !== null) {
+    const p = deterministicProgress;
+    switch (action) {
+      case 'highlight':
+        return (
+          <span
+            style={{
+              position: 'absolute', bottom: 0, left: 0, height: '40%',
+              width: `${(p * 100).toFixed(1)}%`,
+              background: color, opacity: 0.5, borderRadius: '2px', zIndex: 0,
+            }}
+          />
+        );
+      case 'underline':
+        return (
+          <span
+            style={{
+              position: 'absolute', bottom: '-2px', left: 0, height: `${strokeWidth}px`,
+              width: `${(p * 100).toFixed(1)}%`,
+              background: color, borderRadius: '1px', zIndex: 0,
+            }}
+          />
+        );
+      case 'box':
+        return (
+          <span
+            style={{
+              position: 'absolute', inset: `-${strokeWidth + 2}px`, border: `${strokeWidth}px solid ${color}`, borderRadius: '4px', zIndex: 0,
+              opacity: p,
+              transform: `scale(${(0.9 + p * 0.1).toFixed(2)})`,
+            }}
+          />
+        );
+      case 'circle':
+        return (
+          <span
+            style={{
+              position: 'absolute', inset: `-${strokeWidth + 4}px`, border: `${strokeWidth}px solid ${color}`, borderRadius: '50%', zIndex: 0,
+              opacity: p,
+              transform: `scale(${(0.8 + p * 0.2).toFixed(2)})`,
+            }}
+          />
+        );
+      case 'strike-through':
+        return (
+          <span
+            style={{
+              position: 'absolute', top: '50%', left: 0, height: `${strokeWidth}px`,
+              width: `${(p * 100).toFixed(1)}%`,
+              background: color, transform: 'translateY(-50%)', zIndex: 2,
+            }}
+          />
+        );
+      default:
+        return null;
+    }
+  }
+
   switch (action) {
     case 'highlight':
       return (
@@ -85,14 +146,27 @@ export default function Highlighter({
   speed = 1,
   fontSize = 32,
   className = '',
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: HighlighterProps) {
   const [triggered, setTriggered] = useState(false);
   const effectiveDuration = animationDuration / speed / 1000;
 
   useEffect(() => {
+    if (localTime !== undefined) return;
     const timer = setTimeout(() => setTriggered(true), 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [localTime]);
+
+  const deterministicProgress = localTime !== undefined
+    ? (() => {
+        const elapsed = Math.max(0, localTime - layerStartTime);
+        const animStart = 0.1;
+        const animT = Math.max(0, Math.min(1, (elapsed - animStart) / Math.max(0.01, effectiveDuration)));
+        return 1 - Math.pow(1 - animT, 3);
+      })()
+    : null;
 
   // Parse highlight words
   const wordsToHighlight = highlightWords.split(',').map((w) => w.trim()).filter(Boolean);
@@ -138,7 +212,14 @@ export default function Highlighter({
       {segments.map((seg, i) => (
         seg.isHighlighted ? (
           <span key={i} style={{ position: 'relative', display: 'inline-block', color: highlightTextColor || textColor }}>
-            <AnnotationMark action={action} color={color} strokeWidth={strokeWidth} triggered={triggered} effectiveDuration={effectiveDuration} />
+            <AnnotationMark
+              action={action}
+              color={color}
+              strokeWidth={strokeWidth}
+              triggered={triggered}
+              effectiveDuration={effectiveDuration}
+              deterministicProgress={deterministicProgress}
+            />
             <span style={{ position: 'relative', zIndex: 1 }}>{seg.text}</span>
           </span>
         ) : (

@@ -13,6 +13,9 @@ export interface SkeletonShimmerProps {
   speed?: number;
   borderRadius?: number;
   className?: string;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 function parseShimmerColors(color?: string, baseColor?: string, shimmerColor?: string) {
@@ -39,10 +42,14 @@ function parseShimmerColors(color?: string, baseColor?: string, shimmerColor?: s
   };
 }
 
-function ShimmerBar({ width, height, baseColor, shimmerColor, speed, borderRadius, delay = 0 }: {
-  width: string; height: string; baseColor: string; shimmerColor: string; speed: number; borderRadius: number; delay?: number;
+function ShimmerBar({ width, height, baseColor, shimmerColor, speed, borderRadius, delay = 0, localTime, layerStartTime = 0 }: {
+  width: string; height: string; baseColor: string; shimmerColor: string; speed: number; borderRadius: number; delay?: number; localTime?: number; layerStartTime?: number;
 }) {
   const duration = 1.5 / Math.max(0.1, speed);
+  const deterministicX = localTime !== undefined
+    ? -100 + (((Math.max(0, localTime - layerStartTime + delay)) % duration) / duration) * 300
+    : null;
+
   return (
     <div style={{
       width,
@@ -52,18 +59,32 @@ function ShimmerBar({ width, height, baseColor, shimmerColor, speed, borderRadiu
       position: 'relative',
       overflow: 'hidden',
     }}>
-      <motion.div
-        animate={{ x: ['-100%', '200%'] }}
-        transition={{ duration, repeat: Infinity, ease: 'easeInOut', delay }}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '50%',
-          height: '100%',
-          background: `linear-gradient(90deg, transparent, ${shimmerColor}, transparent)`,
-        }}
-      />
+      {deterministicX !== null ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '50%',
+            height: '100%',
+            background: `linear-gradient(90deg, transparent, ${shimmerColor}, transparent)`,
+            transform: `translateX(${deterministicX}%)`,
+          }}
+        />
+      ) : (
+        <motion.div
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration, repeat: Infinity, ease: 'easeInOut', delay }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '50%',
+            height: '100%',
+            background: `linear-gradient(90deg, transparent, ${shimmerColor}, transparent)`,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -78,6 +99,9 @@ export default function SkeletonShimmer({
   speed = 1,
   borderRadius = 6,
   className = '',
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: SkeletonShimmerProps) {
   const { effectiveBase, effectiveShimmer } = parseShimmerColors(color, baseColor, shimmerColor);
   return (
@@ -89,17 +113,20 @@ export default function SkeletonShimmer({
             width="40px" height="40px"
             baseColor={effectiveBase} shimmerColor={effectiveShimmer}
             speed={speed} borderRadius={20}
+            localTime={localTime} layerStartTime={layerStartTime}
           />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <ShimmerBar
               width="60%" height="12px"
               baseColor={effectiveBase} shimmerColor={effectiveShimmer}
               speed={speed} borderRadius={borderRadius} delay={0.1}
+              localTime={localTime} layerStartTime={layerStartTime}
             />
             <ShimmerBar
               width="40%" height="10px"
               baseColor={effectiveBase} shimmerColor={effectiveShimmer}
               speed={speed} borderRadius={borderRadius} delay={0.2}
+              localTime={localTime} layerStartTime={layerStartTime}
             />
           </div>
         </div>
@@ -108,28 +135,28 @@ export default function SkeletonShimmer({
       {/* Image placeholder */}
       {showImage && (
         <ShimmerBar
-          width="100%" height="140px"
+          width="100%" height="120px"
           baseColor={effectiveBase} shimmerColor={effectiveShimmer}
           speed={speed} borderRadius={borderRadius} delay={0.15}
+          localTime={localTime} layerStartTime={layerStartTime}
         />
       )}
 
       {/* Text lines */}
-      {Array.from({ length: lines }).map((_, i) => {
-        const widths = ['100%', '90%', '75%', '85%', '60%'];
-        return (
-          <ShimmerBar
-            key={i}
-            width={widths[i % widths.length]}
-            height="12px"
-            baseColor={effectiveBase}
-            shimmerColor={effectiveShimmer}
-            speed={speed}
-            borderRadius={borderRadius}
-            delay={i * 0.1}
-          />
-        );
-      })}
+      {Array.from({ length: lines }).map((_, i) => (
+        <ShimmerBar
+          key={i}
+          width={i === lines - 1 ? '70%' : '100%'}
+          height="12px"
+          baseColor={effectiveBase}
+          shimmerColor={effectiveShimmer}
+          speed={speed}
+          borderRadius={borderRadius}
+          delay={i * 0.1}
+          localTime={localTime}
+          layerStartTime={layerStartTime}
+        />
+      ))}
     </div>
   );
 }

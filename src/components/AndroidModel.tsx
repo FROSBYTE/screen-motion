@@ -149,7 +149,8 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
         const isBodyOrBack =
           mat.name === 'Rearcase' ||
           mat.name === 'Back_Cover_Glass' ||
-          mat.name === 'BackCamDeco';
+          mat.name === 'BackCamDeco' ||
+          mat.name === 'Cam_Body';
 
         if (isBodyOrBack) {
           color.set(state.deviceColor);
@@ -202,7 +203,7 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
   }, [nodes.S22_Ultra001_2]);
 
   return (
-    <group {...props} dispose={null} scale={88.58}>
+    <group {...props} dispose={null} position={[0, -7.3704, 0]} scale={88.58}>
       <mesh geometry={nodes.S22_Ultra001.geometry} material={bodyMaterial} />
       <mesh geometry={nodes.S22_Ultra001_1.geometry} material={materials.Bezel} />
       

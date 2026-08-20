@@ -160,6 +160,12 @@ const TRANSITION_OPTIONS: { id: SceneTransition; label: string; icon: string }[]
   { id: 'none', label: 'None (Cut)', icon: '⚡' },
   { id: 'clip-wipe', label: 'Clip Wipe', icon: '◧' },
   { id: 'fade', label: 'Fade', icon: '🌫️' },
+  { id: 'slide-left', label: 'Slide Left', icon: '⬅' },
+  { id: 'slide-right', label: 'Slide Right', icon: '➡' },
+  { id: 'slide-up', label: 'Slide Up', icon: '⬆' },
+  { id: 'slide-down', label: 'Slide Down', icon: '⬇' },
+  { id: 'zoom', label: 'Zoom', icon: '🔍' },
+  { id: 'blur', label: 'Blur', icon: '💠' },
   { id: 'iris', label: 'Iris', icon: '⊙' },
   { id: 'iris-click', label: 'Iris Click', icon: '◎' },
   { id: 'loading-line', label: 'Loading Line', icon: '━' },
@@ -2573,7 +2579,28 @@ export default function PropertiesPanel() {
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to change)</span>
                       </>
                     ) : (
-                      <span>🖼️ Upload Image or Video</span>
+                      <>
+                        <div style={{
+                          width: '100%',
+                          maxHeight: '100px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(0,0,0,0.3)',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          padding: '4px',
+                          border: '1px dashed var(--border-color)',
+                        }}>
+                          <img
+                            src="/Drag_And_Drop.png"
+                            alt="Default Screen Placeholder"
+                            style={{ maxWidth: '100%', maxHeight: '90px', objectFit: 'contain', borderRadius: '4px', opacity: 0.75 }}
+                          />
+                        </div>
+                        <span>🖼️ Upload Image or Video</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to upload custom screen)</span>
+                      </>
                     )}
                     <input type="file" accept="image/*,video/*" style={{ display: 'none' }}
                       onChange={(e) => {
@@ -2603,7 +2630,7 @@ export default function PropertiesPanel() {
                         type="button"
                         onClick={() => {
                           const newPos = { ...selectedLayer.position, x: 50, y: 50 };
-                          updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: 0, posY: 0, rotX: 0, rotY: 0 } } as any);
+                          updateLayer(selectedLayer.id, { position: newPos, scale: 1, props: { ...selectedLayer.props, deviceSize: 1, size: 1, posX: 0, posY: 0, rotX: 0, rotY: 0 } } as any);
                         }}
                         title="Reset Device Settings"
                         style={{
@@ -2629,6 +2656,52 @@ export default function PropertiesPanel() {
                       >
                         <RotateCcw size={14} />
                       </button>
+                    </div>
+
+                    {/* Size Slider */}
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={H2_STYLE}>Size</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                            {(selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1).toFixed(2)}x
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateLayer(selectedLayer.id, { scale: 1, props: { ...selectedLayer.props, deviceSize: 1, size: 1 } } as any);
+                            }}
+                            title="Reset Size to 1.00x"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--text-secondary, #6b7280)',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              opacity: (selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1) !== 1 ? 1 : 0.35,
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <RotateCcw size={12} />
+                          </button>
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.3}
+                        max={3.0}
+                        step={0.05}
+                        value={selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          updateLayer(selectedLayer.id, { scale: val, props: { ...selectedLayer.props, deviceSize: val, size: val } } as any);
+                        }}
+                        style={{ width: '100%' }}
+                      />
                     </div>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                       <div style={{ flex: 1 }}>
@@ -2884,6 +2957,50 @@ export default function PropertiesPanel() {
             Select a scene or component to view properties
           </div>
         )}
+      </div>
+
+      {/* Pinned Bottom Footer Action */}
+      <div style={{
+        padding: '12px',
+        borderTop: '1px solid var(--border-color)',
+        background: 'var(--bg-secondary)',
+        flexShrink: 0,
+      }}>
+        <button
+          type="button"
+          onClick={() => dispatch({ isPickerOpen: true, activeSidebarTab: 'components' })}
+          className="mg-btn-interactive"
+          style={{
+            width: '100%',
+            height: '38px',
+            background: '#FFFFFF',
+            color: '#000000',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 10px rgba(255, 255, 255, 0.15)',
+            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(255, 255, 255, 0.35)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+          title="Add a new component to current scene"
+        >
+          <Plus size={15} strokeWidth={2.5} style={{ color: '#000000' }} />
+          New Component
+        </button>
       </div>
     </div>
   );

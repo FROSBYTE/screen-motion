@@ -90,21 +90,6 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
   }, [cloned]);
 
   useEffect(() => {
-    if (appliedColor.current === deviceColor) return;
-    appliedColor.current = deviceColor;
-
-    if (Object.keys(initialColors.current).length === 0) {
-      cloned.traverse((child: any) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat: any) => {
-          if (mat && mat.color && !initialColors.current[mat.uuid]) {
-            initialColors.current[mat.uuid] = mat.color.clone();
-          }
-        });
-      });
-    }
-
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.name === IPHONE_SCREEN_MESH) return;
@@ -112,15 +97,15 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
+        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'Object_18') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const initial = initialColors.current[mat.uuid];
-        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch') ||
-          mat.name?.toLowerCase().includes('island') || mat.name?.toLowerCase().includes('hole') ||
-          mat.name?.toLowerCase().includes('camera') || mat.name?.toLowerCase().includes('lens') ||
-          mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker') ||
-          mat.name?.toLowerCase().includes('bezel');
+        const name = (mat.name || '').toLowerCase();
+        const isNotchOrLens =
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || name.includes('notch') ||
+          name.includes('island') || name.includes('hole') || name.includes('camera') ||
+          name.includes('lens') || name.includes('sensor') || name.includes('speaker') ||
+          name.includes('bezel');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
@@ -152,17 +137,16 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
       videoTexture.magFilter = THREE.LinearFilter;
       videoTexture.flipY = true;
       screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
-    } else if (screenImage) {
+    } else {
+      const imgUrl = screenImage || '/Drag_And_Drop.png';
       const loader = new THREE.TextureLoader();
-      loader.load(screenImage, (texture) => {
+      loader.load(imgUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.flipY = true;
         screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
       });
-    } else {
-      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
     }
   }, [screenImage, screenVideo, cloned]);
 
@@ -172,8 +156,6 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
 function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene } = useGLTF('/models/S22Ultra.glb') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
-  const initialColors = useRef<Record<string, THREE.Color>>({});
-  const appliedColor = useRef('');
 
   const uvFixed = useRef(false);
 
@@ -205,21 +187,6 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
   }, [cloned]);
 
   useEffect(() => {
-    if (appliedColor.current === deviceColor) return;
-    appliedColor.current = deviceColor;
-
-    if (Object.keys(initialColors.current).length === 0) {
-      cloned.traverse((child: any) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat: any) => {
-          if (mat && mat.color && !initialColors.current[mat.uuid]) {
-            initialColors.current[mat.uuid] = mat.color.clone();
-          }
-        });
-      });
-    }
-
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.name === ANDROID_SCREEN_MESH) return;
@@ -227,21 +194,44 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
+        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'S22_Ultra001_2') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const initial = initialColors.current[mat.uuid];
-        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor' ||
-          mat.name === 'Bezel' || mat.name?.toLowerCase().includes('hole') || mat.name?.toLowerCase().includes('notch') ||
-          mat.name?.toLowerCase().includes('lens') || mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker');
+        const isBodyPart =
+          mat.name === 'Rearcase' ||
+          mat.name === 'Back_Cover_Glass' ||
+          mat.name === 'BackCamDeco' ||
+          mat.name === 'Cam_Body' ||
+          mat.name === 'Rearcase_hole' ||
+          mat.name === 'BackCover_Glass_hole' ||
+          child.name === 'S22_Ultra001' ||
+          child.name === 'S22_Ultra001_16' ||
+          child.name === 'S22_Ultra001_17' ||
+          child.name === 'S22_Ultra001_10';
 
-        if (isNotchOrLens) {
-          mat.color.set('#000000');
-          if (mat.map) mat.map = null;
-        } else {
+        if (isBodyPart) {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
+          mat.needsUpdate = true;
+          return;
         }
+
+        const isHardware =
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' ||
+          mat.name === 'Black_hole' || mat.name === 'Sensor' || mat.name === 'Bezel' ||
+          mat.name === 'Cam_Bezel' || mat.name === 'Cam_Glass' || mat.name === 'Flash_Glass' ||
+          mat.name === 'Usb_1' || mat.name === 'Usb_2' || mat.name === 'Antenna_Plastic' ||
+          mat.name === 'Speaker/Mic';
+
+        if (isHardware) {
+          mat.color.set('#000000');
+          if (mat.map) mat.map = null;
+          mat.needsUpdate = true;
+          return;
+        }
+
+        mat.color.set(deviceColor);
+        if (mat.map) mat.map = null;
         mat.needsUpdate = true;
       });
     });
@@ -265,21 +255,24 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
       videoTexture.magFilter = THREE.LinearFilter;
       videoTexture.flipY = true;
       screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
-    } else if (screenImage) {
+    } else {
+      const imgUrl = screenImage || '/Drag_And_Drop.png';
       const loader = new THREE.TextureLoader();
-      loader.load(screenImage, (texture) => {
+      loader.load(imgUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.flipY = true;
         screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
       });
-    } else {
-      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
     }
   }, [screenImage, screenVideo, cloned]);
 
-  return <primitive object={cloned} scale={88.58} />;
+  return (
+    <group position={[0, -7.3704, 0]} scale={88.58}>
+      <primitive object={cloned} />
+    </group>
+  );
 }
 
 function AnimatedDeviceInline({
@@ -410,13 +403,11 @@ function AnimatedDeviceInline({
           rotation-x={(rotX * Math.PI) / 180}
           rotation-y={(rotY * Math.PI) / 180}
         >
-          <Center>
-            {deviceType === 'iphone' ? (
-              <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
-            ) : (
-              <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
-            )}
-          </Center>
+          {deviceType === 'iphone' ? (
+            <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
+          ) : (
+            <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
+          )}
         </group>
       </group>
     </group>
@@ -464,6 +455,104 @@ const EXIT_TARGET: Record<ExitAnimType, any> = {
   'blur-out': { opacity: 0, filter: 'blur(12px)' },
 };
 
+function easeCubicOut(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeCubicInOut(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function computeEnterExitStyle(
+  enterAnimation: EnterAnimType,
+  enterDuration: number,
+  exitAnimation: ExitAnimType,
+  exitDuration: number,
+  localTime?: number,
+  layerStartTime?: number,
+  layerDuration?: number
+): React.CSSProperties | null {
+  if (localTime === undefined || layerStartTime === undefined || layerDuration === undefined) {
+    return null;
+  }
+
+  const relTime = localTime - layerStartTime;
+  const layerEnd = layerStartTime + layerDuration;
+  const timeUntilEnd = layerEnd - localTime;
+
+  let opacity = 1;
+  let translateY = 0;
+  let translateX = 0;
+  let scale = 1;
+  let blur = 0;
+
+  // Enter Phase
+  if (enterAnimation !== 'none' && relTime < enterDuration && enterDuration > 0) {
+    const t = easeCubicOut(Math.max(0, Math.min(1, relTime / enterDuration)));
+    if (enterAnimation === 'fade-in') {
+      opacity = t;
+    } else if (enterAnimation === 'slide-up') {
+      opacity = t;
+      translateY = (1 - t) * 40;
+    } else if (enterAnimation === 'slide-down') {
+      opacity = t;
+      translateY = (1 - t) * -40;
+    } else if (enterAnimation === 'slide-left') {
+      opacity = t;
+      translateX = (1 - t) * 40;
+    } else if (enterAnimation === 'slide-right') {
+      opacity = t;
+      translateX = (1 - t) * -40;
+    } else if (enterAnimation === 'scale-up') {
+      opacity = t;
+      scale = 0.6 + t * 0.4;
+    } else if (enterAnimation === 'blur-in') {
+      opacity = t;
+      blur = (1 - t) * 12;
+    }
+  }
+
+  // Exit Phase
+  if (exitAnimation !== 'none' && timeUntilEnd <= exitDuration && exitDuration > 0) {
+    const t = easeCubicInOut(Math.max(0, Math.min(1, (exitDuration - timeUntilEnd) / exitDuration)));
+    if (exitAnimation === 'fade-out') {
+      opacity = Math.min(opacity, 1 - t);
+    } else if (exitAnimation === 'slide-up') {
+      opacity = Math.min(opacity, 1 - t);
+      translateY = -t * 40;
+    } else if (exitAnimation === 'slide-down') {
+      opacity = Math.min(opacity, 1 - t);
+      translateY = t * 40;
+    } else if (exitAnimation === 'slide-left') {
+      opacity = Math.min(opacity, 1 - t);
+      translateX = -t * 40;
+    } else if (exitAnimation === 'slide-right') {
+      opacity = Math.min(opacity, 1 - t);
+      translateX = t * 40;
+    } else if (exitAnimation === 'scale-down') {
+      opacity = Math.min(opacity, 1 - t);
+      scale = 1 - t * 0.4;
+    } else if (exitAnimation === 'blur-out') {
+      opacity = Math.min(opacity, 1 - t);
+      blur = Math.max(blur, t * 12);
+    }
+  }
+
+  const transformParts: string[] = [];
+  if (translateX !== 0 || translateY !== 0) {
+    transformParts.push(`translate(${translateX}px, ${translateY}px)`);
+  }
+  if (scale !== 1) {
+    transformParts.push(`scale(${scale})`);
+  }
+
+  return {
+    opacity,
+    transform: transformParts.length > 0 ? transformParts.join(' ') : undefined,
+    filter: blur > 0 ? `blur(${blur.toFixed(1)}px)` : undefined,
+  };
+}
+
 function EnterAnimationWrapper({
   enterAnimation,
   enterDuration,
@@ -471,6 +560,9 @@ function EnterAnimationWrapper({
   exitDuration,
   triggerKey,
   isExiting,
+  localTime,
+  layerStartTime,
+  layerDuration,
   children,
   style,
 }: {
@@ -480,10 +572,31 @@ function EnterAnimationWrapper({
   exitDuration: number;
   triggerKey: number;
   isExiting: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
   children: React.ReactNode;
   style?: React.CSSProperties;
 }) {
   if (enterAnimation === 'none' && exitAnimation === 'none') return <div style={style}>{children}</div>;
+
+  const deterministicStyle = computeEnterExitStyle(
+    enterAnimation,
+    enterDuration,
+    exitAnimation,
+    exitDuration,
+    localTime,
+    layerStartTime,
+    layerDuration
+  );
+
+  if (deterministicStyle) {
+    return (
+      <div style={{ ...style, ...deterministicStyle }}>
+        {children}
+      </div>
+    );
+  }
 
   const animateTarget = isExiting && exitAnimation !== 'none'
     ? EXIT_TARGET[exitAnimation]
@@ -602,6 +715,24 @@ export function getOutgoingTransitionStyle(transition: SceneTransition, progress
     case 'fade':
       return { opacity: 1 - eased };
 
+    case 'slide-left':
+      return { transform: `translateX(-${eased * 100}%)` };
+
+    case 'slide-right':
+      return { transform: `translateX(${eased * 100}%)` };
+
+    case 'slide-up':
+      return { transform: `translateY(-${eased * 100}%)` };
+
+    case 'slide-down':
+      return { transform: `translateY(${eased * 100}%)` };
+
+    case 'zoom':
+      return { transform: `scale(${1 + eased * 0.5})`, opacity: 1 - eased };
+
+    case 'blur':
+      return { filter: `blur(${eased * 24}px)`, opacity: 1 - eased };
+
     case 'clip-wipe':
       // Wipe from left to right: previous scene clips away from left
       return { clipPath: `inset(0 0 0 ${eased * 100}%)` };
@@ -627,7 +758,6 @@ export function getOutgoingTransitionStyle(transition: SceneTransition, progress
 
     case 'loading-line': {
       // Black screen phase then reveal
-      const linePhase = Math.min(progress / 0.7, 1);
       const revealPhase = Math.max((progress - 0.7) / 0.3, 0);
       const revealEased = 1 - Math.pow(1 - revealPhase, 2);
       // During line phase, show fully opaque (black will be overlaid)
@@ -895,7 +1025,17 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
         };
       })()}
     >
-      <EnterAnimationWrapper enterAnimation={layer.enterAnimation || 'none'} enterDuration={effectiveEnterDur} exitAnimation={layer.exitAnimation || 'none'} exitDuration={effectiveExitDur} triggerKey={triggerKey} isExiting={isExiting}>
+      <EnterAnimationWrapper
+        enterAnimation={layer.enterAnimation || 'none'}
+        enterDuration={effectiveEnterDur}
+        exitAnimation={layer.exitAnimation || 'none'}
+        exitDuration={effectiveExitDur}
+        triggerKey={triggerKey}
+        isExiting={isExiting}
+        localTime={localTime}
+        layerStartTime={layer.startTime}
+        layerDuration={layer.duration}
+      >
         {layer.animationType === 'none' || !AnimComp ? (
           <span>{layer.text}</span>
         ) : (
@@ -986,31 +1126,31 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
   const renderComponent = () => {
     switch (layer.templateId) {
       case 'count-up':
-        return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 48} layerDuration={layer.duration} />;
+        return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 48} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'animated-list':
-        return <AnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} />;
+        return <AnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'logo-loop':
-        return <LogoLoop key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} />;
+        return <LogoLoop key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'ai-loader':
-        return <AILoader key={`${triggerKey}-${layer.props.speed ?? 1}`} variant={layer.props.variant ?? 'dots'} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} />;
+        return <AILoader key={`${triggerKey}-${layer.props.speed ?? 1}`} variant={layer.props.variant ?? 'dots'} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'bubble-menu':
-        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} />;
+        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'unlumen-animated-list':
-        return <UnlumenAnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} count={layer.props.count} speed={speed * (layer.props.speed ?? 1)} />;
+        return <UnlumenAnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} count={layer.props.count} speed={speed * (layer.props.speed ?? 1)} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'word-rotate':
-        return <WordRotate key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} />;
+        return <WordRotate key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'highlighter':
-        return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 32} />;
+        return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 32} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'animated-beam':
-        return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} />;
+        return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'orbiting-circles':
-        return <OrbitingCircles key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} />;
+        return <OrbitingCircles key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'text-reveal':
-        return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} />;
+        return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'skeleton-shimmer':
-        return <SkeletonShimmer key={`${triggerKey}-${layer.props.color ?? '#ffffff'}-${layer.props.speed ?? 1}`} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} color={layer.props.color ?? '#ffffff'} baseColor={layer.props.baseColor} shimmerColor={layer.props.shimmerColor} speed={speed * (layer.props.speed ?? 1)} borderRadius={layer.props.borderRadius ?? 6} />;
+        return <SkeletonShimmer key={`${triggerKey}-${layer.props.color ?? '#ffffff'}-${layer.props.speed ?? 1}`} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} color={layer.props.color ?? '#ffffff'} baseColor={layer.props.baseColor} shimmerColor={layer.props.shimmerColor} speed={speed * (layer.props.speed ?? 1)} borderRadius={layer.props.borderRadius ?? 6} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'text-3d-flip':
-        return <Text3DFlip key={`${triggerKey}-${layer.props.rotateDirection ?? 'top'}-${layer.props.staggerFrom ?? 'first'}-${layer.props.isLoop ?? true}-${layer.props.speed ?? 1}`} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed * (layer.props.speed ?? 1)} autoPlay={true} isLoop={layer.props.isLoop ?? true} />;
+        return <Text3DFlip key={`${triggerKey}-${layer.props.rotateDirection ?? 'top'}-${layer.props.staggerFrom ?? 'first'}-${layer.props.isLoop ?? true}-${layer.props.speed ?? 1}`} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed * (layer.props.speed ?? 1)} autoPlay={true} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'camera-zoom':
         return <div style={{ width: '150px', height: '100px' }} />;
       case 'media-upload':
@@ -1064,7 +1204,7 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
           />
         );
       case 'phone-device':
-        return null; // rendered separately in SceneRenderer 3D Canvas
+        return null;
       case 'masked-heading':
         return (
           <MaskedHeadingComponent
@@ -1088,6 +1228,9 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             tracking={layer.props.tracking ?? -0.03}
             lineHeight={layer.props.lineHeight ?? 1.06}
             textScale={layer.props.textScale ?? 0.115}
+            layerDuration={layer.duration}
+            localTime={localTime}
+            layerStartTime={layer.startTime}
           />
         );
       default:
@@ -1229,7 +1372,17 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         };
       })()}
     >
-      <EnterAnimationWrapper enterAnimation={layer.enterAnimation || 'none'} enterDuration={effectiveEnterDur} exitAnimation={layer.exitAnimation || 'none'} exitDuration={effectiveExitDur} triggerKey={triggerKey} isExiting={isExiting}>
+      <EnterAnimationWrapper
+        enterAnimation={layer.enterAnimation || 'none'}
+        enterDuration={effectiveEnterDur}
+        exitAnimation={layer.exitAnimation || 'none'}
+        exitDuration={effectiveExitDur}
+        triggerKey={triggerKey}
+        isExiting={isExiting}
+        localTime={localTime}
+        layerStartTime={layer.startTime}
+        layerDuration={layer.duration}
+      >
         {renderComponent()}
       </EnterAnimationWrapper>
       {isSelected && (
@@ -1405,6 +1558,9 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
               exitDuration={effectiveExitDur}
               triggerKey={1}
               isExiting={isExiting}
+              localTime={localTime}
+              layerStartTime={layer.startTime}
+              layerDuration={layer.duration}
               style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 'inherit' }}
             >
               <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
@@ -1425,7 +1581,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
                       screenVideo={layer.props.screenVideo}
                       animationTemplate={layer.props.animationTemplate ?? 'float'}
                       speed={(layer.pacingPreset === 'snappy' ? 1.8 : layer.pacingPreset === 'cinematic' ? 0.75 : 1.0) * ((layer.duration && layer.duration < 2.5) ? Math.max(1, 2.5 / Math.max(0.3, layer.duration)) : 1)}
-                      deviceSize={layer.props.deviceSize ?? layer.scale ?? 1}
+                      deviceSize={layer.props.deviceSize ?? layer.props.size ?? layer.scale ?? 1}
                       posX={layer.props.posX ?? 0}
                       posY={layer.props.posY ?? 0}
                       rotX={layer.props.rotX ?? 0}

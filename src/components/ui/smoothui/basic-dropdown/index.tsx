@@ -235,6 +235,9 @@ export default function BasicDropdown({
                 listStyle: 'none',
                 maxHeight: '252px',
                 overflowY: 'auto',
+                overflowX: 'hidden',
+                width: '100%',
+                boxSizing: 'border-box',
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(255, 255, 255, 0.25) transparent',
               }}
@@ -248,11 +251,10 @@ export default function BasicDropdown({
                     key={String(item.id)}
                     role="option"
                     aria-selected={isSelected}
-                    initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -8 }}
+                    initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -6 }}
                     animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
-                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15, delay: index * 0.015 }}
-                    whileHover={shouldReduceMotion ? {} : { x: 3 }}
-                    style={{ listStyle: 'none', margin: '1px 0' }}
+                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, delay: index * 0.012 }}
+                    style={{ listStyle: 'none', margin: '1px 0', width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}
                   >
                     <button
                       type="button"
@@ -271,7 +273,7 @@ export default function BasicDropdown({
                         backgroundColor: isSelected
                           ? 'rgba(255, 255, 255, 0.12)'
                           : isFocused
-                          ? 'rgba(255, 255, 255, 0.06)'
+                          ? 'rgba(255, 255, 255, 0.08)'
                           : 'transparent',
                         border: isSelected ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid transparent',
                         borderRadius: '6px',
@@ -279,6 +281,7 @@ export default function BasicDropdown({
                         textAlign: 'left',
                         transition: 'background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease',
                         boxSizing: 'border-box',
+                        overflow: 'hidden',
                       }}
                     >
                       <span
