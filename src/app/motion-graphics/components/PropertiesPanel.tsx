@@ -833,18 +833,18 @@ export default function PropertiesPanel() {
 
               {selectedLayer.templateId === 'count-up' && (
                 <>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>From</label>
                       <input type="number" value={selectedLayer.props.from ?? 0}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, from: Number(e.target.value) } } as any)}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>To</label>
                       <input type="number" value={selectedLayer.props.to ?? 100}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, to: Number(e.target.value) } } as any)}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
                     </div>
                   </div>
 
@@ -1239,13 +1239,15 @@ export default function PropertiesPanel() {
 
               {selectedLayer.templateId === 'ai-loader' && (
                 <>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Variant</label>
                       <BasicDropdown
                         items={AI_LOADER_VARIANT_OPTIONS}
                         value={selectedLayer.props.variant ?? 'dots'}
                         onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, variant: val } } as any)}
+                        compact={true}
+                        buttonStyle={{ height: '36px' }}
                       />
                     </div>
                     <ColorPickerControl
@@ -1276,20 +1278,30 @@ export default function PropertiesPanel() {
 
               {selectedLayer.templateId === 'bubble-menu' && (
                 <>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Radius</label>
-                      <input type="number" value={selectedLayer.props.radius ?? 90}
+                      <input
+                        type="number"
+                        value={selectedLayer.props.radius ?? 90}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, radius: Number(e.target.value) } } as any)}
-                        min={40} max={200} step={5}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        min={40}
+                        max={200}
+                        step={5}
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Bubble Size</label>
-                      <input type="number" value={selectedLayer.props.bubbleSize ?? 44}
+                      <input
+                        type="number"
+                        value={selectedLayer.props.bubbleSize ?? 44}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, bubbleSize: Number(e.target.value) } } as any)}
-                        min={24} max={80} step={2}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        min={24}
+                        max={80}
+                        step={2}
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
                     </div>
                   </div>
 
@@ -1819,7 +1831,7 @@ export default function PropertiesPanel() {
                   <input type="text" value={selectedLayer.props.text ?? 'Reveal This Text'}
                     onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, text: e.target.value } } as any)}
                     style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
                     <ColorPickerControl
                       label="Text Color"
                       value={selectedLayer.props.color ?? '#ffffff'}
@@ -2823,36 +2835,36 @@ export default function PropertiesPanel() {
                         style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Parallax</label>
                       <input type="number" value={selectedLayer.props.parallax ?? 26}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, parallax: Number(e.target.value) } } as any)}
                         min={0} max={80} step={2}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Drift</label>
                       <input type="number" value={selectedLayer.props.drift ?? 18}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, drift: Number(e.target.value) } } as any)}
                         min={0} max={50} step={2}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Fill Scale</label>
                       <input type="number" value={selectedLayer.props.fillScale ?? 1.25}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fillScale: Number(e.target.value) } } as any)}
                         min={1} max={2} step={0.05}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={H2_STYLE}>Brightness</label>
                       <input type="number" value={selectedLayer.props.brightness ?? 1}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, brightness: Number(e.target.value) } } as any)}
                         min={0.2} max={2} step={0.1}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
                     </div>
                   </div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', cursor: 'pointer' }}>
