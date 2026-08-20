@@ -39,6 +39,15 @@ export const metadata: Metadata = {
   title: "Screen Motion: 3D Device Mockup Generator",
   description:
     "Generate stunning 3D Android & iOS device mockup videos. Upload a screenshot, choose a template, and export professional MP4 animations in seconds.",
+  icons: {
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/icon-transparent.png', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon-transparent.png',
+    apple: '/icon.png',
+  },
 };
 
 export default function RootLayout({
@@ -60,6 +69,8 @@ export default function RootLayout({
       )}
     >
       <head>
+        <link rel="icon" href="/icon-transparent.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link

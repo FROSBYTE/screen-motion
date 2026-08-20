@@ -47,6 +47,7 @@ export default function HierarchyPanel() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
+            className="mg-btn-interactive"
             style={{
               flex: 1, padding: '12px 0', background: 'none', border: 'none',
               borderBottom: activeTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent',
@@ -54,6 +55,13 @@ export default function HierarchyPanel() {
               fontSize: '12px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
               fontFamily: '"Plus Jakarta Sans", sans-serif',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== tab) e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== tab) e.currentTarget.style.color = 'var(--text-muted)';
             }}
           >
             {tab === 'scene' ? <Film size={13} /> : <Box size={13} />}
@@ -82,13 +90,27 @@ export default function HierarchyPanel() {
                     dispatch({ activeSceneId: scene.id, selectedLayerId: null, activeSidebarTab: 'scene' });
                     seekTo(getSceneStartTime(scene.id));
                   }}
+                  className="mg-btn-interactive"
                   style={{
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: isActive ? 'rgba(168, 85, 247, 0.1)' : 'rgba(255,255,255,0.02)',
-                    border: isActive ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid var(--border-color)',
+                    background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255,255,255,0.02)',
+                    border: isActive ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid var(--border-color)',
                     cursor: 'pointer',
                     userSelect: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                    }
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -139,16 +161,49 @@ export default function HierarchyPanel() {
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
                       {getSceneDuration(scene).toFixed(1)}s
                     </span>
-                    <button onClick={(e) => { e.stopPropagation(); duplicateScene(scene.id); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
-                      title="Duplicate Scene">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); duplicateScene(scene.id); }}
+                      className="mg-btn-interactive"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#ffffff';
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'var(--text-muted)';
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                      title="Duplicate Scene"
+                    >
                       <Copy size={12} />
                     </button>
                     {scenes.length > 1 && (
-                      <button onClick={(e) => { e.stopPropagation(); removeScene(scene.id); }}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeScene(scene.id); }}
                         className="delete-btn-hover"
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
-                        title="Delete Scene">
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Delete Scene"
+                      >
                         <Trash2 size={12} />
                       </button>
                     )}
@@ -195,12 +250,30 @@ export default function HierarchyPanel() {
                     key={layer.id}
                     value={layer}
                     onClick={() => dispatch({ selectedLayerId: layer.id })}
+                    className="mg-btn-interactive"
                     style={{
-                      padding: '8px 10px', borderRadius: '6px',
-                      background: isSelected ? 'rgba(168, 85, 247, 0.1)' : 'rgba(255,255,255,0.02)',
-                      border: isSelected ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid var(--border-color)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255,255,255,0.02)',
+                      border: isSelected ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid var(--border-color)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
                       userSelect: 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                      }
                     }}
                   >
                     <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
@@ -240,15 +313,48 @@ export default function HierarchyPanel() {
                         title="Click to rename component"
                       />
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
-                      title="Duplicate Component">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
+                      className="mg-btn-interactive"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#ffffff';
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'var(--text-muted)';
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                      title="Duplicate Component"
+                    >
                       <Copy size={12} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); removeLayer(layer.id); }}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeLayer(layer.id); }}
                       className="delete-btn-hover"
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
-                      title="Delete Component">
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title="Delete Component"
+                    >
                       <Trash2 size={12} />
                     </button>
                   </Reorder.Item>

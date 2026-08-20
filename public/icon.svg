@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="screen-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Motion Trail 1 -->
+  <path d="M120 180 C120 140 145 125 175 125 L195 125 C198 125 200 127 200 130 L200 200 C200 203 198 205 195 205 L160 205 C140 205 120 220 120 240 L120 260 C120 263 118 265 115 265 L100 265 C97 265 95 263 95 260 L95 210 C95 195 105 180 120 180 Z" fill="currentColor"/>
+  
+  <!-- Background Motion Trail 2 -->
+  <path d="M165 145 C165 110 190 95 220 95 L245 95 C248 95 250 97 250 100 L250 170 C250 173 248 175 245 175 L210 175 C190 175 170 190 170 210 L170 230 C170 233 168 235 165 235 L150 235 C147 235 145 233 145 230 L145 175 C145 160 155 145 165 145 Z" fill="currentColor"/>
+
+  <!-- Horizontal Speed Streaks -->
+  <rect x="160" y="245" width="65" height="18" rx="9" fill="currentColor"/>
+  <rect x="100" y="278" width="110" height="18" rx="9" fill="currentColor"/>
+  <rect x="55" y="311" width="135" height="18" rx="9" fill="currentColor"/>
+  <rect x="135" y="344" width="85" height="18" rx="9" fill="currentColor"/>
+
+  <!-- Main 3D Angled Screen Body -->
+  <path d="M225 155 C220 135 235 120 255 120 L400 150 C420 154 435 175 432 198 L405 345 C402 365 385 380 365 378 L250 365 C230 362 215 342 218 322 Z" fill="currentColor"/>
+
+  <!-- Inner Screen Cutout (Negative Space Screen) -->
+  <path d="M260 165 L385 188 C395 190 402 200 400 210 L382 320 C380 330 370 336 360 335 L260 325 C250 324 242 315 244 305 L252 180 C253 172 258 165 260 165 Z" fill="#000000"/>
+</svg>

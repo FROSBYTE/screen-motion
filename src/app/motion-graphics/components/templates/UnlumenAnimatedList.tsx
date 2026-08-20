@@ -33,6 +33,7 @@ export default function UnlumenAnimatedList({
   speed = 1,
   className = '',
 }: UnlumenAnimatedListProps) {
+  const safeSpeed = Math.max(0.1, speed || 1);
   const effectiveItems = typeof count === 'number' ? items.slice(0, count) : items;
   const [visibleItems, setVisibleItems] = useState<typeof effectiveItems>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -41,22 +42,18 @@ export default function UnlumenAnimatedList({
 
   useEffect(() => {
     itemsRef.current = effectiveItems;
-    if (visibleItems.length > 0) {
-      setVisibleItems(effectiveItems.slice(0, Math.max(visibleItems.length, effectiveItems.length)));
-    } else {
-      setVisibleItems([]);
-      setCurrentIndex(0);
-    }
-  }, [itemsKey]);
+    setVisibleItems([]);
+    setCurrentIndex(0);
+  }, [itemsKey, safeSpeed]);
 
   useEffect(() => {
     if (currentIndex >= itemsRef.current.length) return;
     const timer = setTimeout(() => {
       setVisibleItems((prev) => [itemsRef.current[currentIndex], ...prev]);
       setCurrentIndex((i) => i + 1);
-    }, 800 / speed);
+    }, 800 / safeSpeed);
     return () => clearTimeout(timer);
-  }, [currentIndex, speed]);
+  }, [currentIndex, safeSpeed]);
 
   return (
     <div className={className} style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -66,7 +63,7 @@ export default function UnlumenAnimatedList({
             key={index}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 / speed, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.3 / safeSpeed, ease: [0.25, 0.46, 0.45, 0.94] }}
             layout={false}
             style={{
               padding: '12px 16px',

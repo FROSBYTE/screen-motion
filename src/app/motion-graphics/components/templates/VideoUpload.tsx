@@ -19,6 +19,11 @@ export interface VideoUploadProps {
   poster?: string;
   className?: string;
   onUpload?: (file: File) => void;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
+  originalDuration?: number;
+  isPlaying?: boolean;
 }
 
 export default function VideoUpload({
@@ -37,18 +42,55 @@ export default function VideoUpload({
   poster,
   className = '',
   onUpload,
+  localTime,
+  layerStartTime = 0,
+  layerDuration = 10,
+  originalDuration,
+  isPlaying = false,
 }: VideoUploadProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const [nativeDuration, setNativeDuration] = useState<number | null>(originalDuration || null);
+
+  const origDur = originalDuration || nativeDuration || layerDuration || 1;
+  const effectiveSpeed = Math.max(0.1, Math.min(16, (origDur / Math.max(0.1, layerDuration)) * playbackRate));
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = playbackRate;
+    const video = videoRef.current;
+    if (!video || !src) return;
+
+    video.playbackRate = effectiveSpeed;
+    video.muted = muted;
+    video.loop = loop;
+
+    if (localTime !== undefined) {
+      const elapsed = Math.max(0, localTime - layerStartTime);
+      const progress = elapsed / Math.max(0.01, layerDuration);
+      const targetTime = loop
+        ? (progress % 1) * origDur
+        : Math.min(origDur, progress * origDur);
+
+      if (!isPlaying) {
+        video.pause();
+        if (Math.abs(video.currentTime - targetTime) > 0.04) {
+          try { video.currentTime = targetTime; } catch {}
+        }
+      } else {
+        if (Math.abs(video.currentTime - targetTime) > 0.3) {
+          try { video.currentTime = targetTime; } catch {}
+        }
+        video.play().catch(() => {});
+      }
+    } else {
+      if (isPlaying) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
     }
-  }, [playbackRate, src]);
+  }, [src, localTime, layerStartTime, layerDuration, origDur, isPlaying, effectiveSpeed, loop, muted]);
 
   useEffect(() => {
     if (videoRef.current && videoRef.current.videoWidth && videoRef.current.videoHeight) {
@@ -60,6 +102,9 @@ export default function VideoUpload({
     const video = e.currentTarget;
     if (video.videoWidth && video.videoHeight) {
       setAspectRatio(video.videoWidth / video.videoHeight);
+    }
+    if (video.duration && isFinite(video.duration) && video.duration > 0) {
+      setNativeDuration(video.duration);
     }
   };
 

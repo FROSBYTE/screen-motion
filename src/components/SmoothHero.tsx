@@ -77,8 +77,9 @@ export default function SmoothHero() {
           position: "relative",
         }}
       >
-        {/* Brand Logo - Text Only */}
-        <Link href="/" style={{ textDecoration: "none" }}>
+        {/* Brand Logo with Icon */}
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "10px" }}>
+          <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: "30px", height: "30px", objectFit: "contain" }} />
           <span style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.03em" }}>
             screen<span style={{ color: "#ffffff", opacity: 0.85 }}>motion</span>
           </span>

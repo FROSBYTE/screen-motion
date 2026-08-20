@@ -177,6 +177,7 @@ export default function ProjectsPage() {
               letterSpacing: '-0.03em',
             }}
           >
+            <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
             <span>screen<span style={{ color: '#FFFFFF', opacity: 0.85 }}>motion</span></span>
           </Link>
 

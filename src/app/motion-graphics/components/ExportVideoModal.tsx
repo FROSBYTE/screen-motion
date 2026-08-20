@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Download, Film, X, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import BasicDropdown from '@/components/ui/smoothui/basic-dropdown';
 import { useMGState, getSceneDuration } from '../store';
 
 interface ExportVideoModalProps {
@@ -551,16 +552,26 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
           {!isExporting && (
             <button
               onClick={handleClose}
+              className="mg-btn-interactive"
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#a0aab5',
+                color: 'var(--text-muted, #a0aab5)',
                 cursor: 'pointer',
-                padding: '4px',
+                padding: '6px',
                 borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-muted, #a0aab5)';
+                e.currentTarget.style.background = 'transparent';
               }}
             >
               <X size={16} />
@@ -581,36 +592,26 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                 <label style={{ fontSize: '12px', color: '#a0aab5', fontWeight: 500, display: 'block', marginBottom: '6px' }}>
                   Resolution
                 </label>
-                <select
+                <BasicDropdown
+                  items={[
+                    { id: '1080p', label: '1080p (Full HD)' },
+                    { id: '720p', label: '720p (HD)' },
+                  ]}
                   value={resolution}
-                  onChange={(e) => setResolution(e.target.value as any)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    background: '#393E46',
-                    border: '1px solid #4f5663',
-                    borderRadius: '8px',
-                    color: '#EEEEEE',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="1080p" style={{ background: '#393E46', color: '#EEEEEE' }}>1080p</option>
-                  <option value="720p" style={{ background: '#393E46', color: '#EEEEEE' }}>720p</option>
-                </select>
+                  onChange={(val) => setResolution(val as any)}
+                />
               </div>
 
               <button
                 onClick={handleExport}
+                className="mg-btn-interactive"
                 style={{
                   width: '100%',
                   padding: '12px',
-                  background: 'linear-gradient(135deg, #00ADB5 0%, #008b92 100%)',
+                  background: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
-                  color: '#222831',
+                  color: '#000000',
                   fontSize: '13px',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -618,6 +619,16 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
+                  boxShadow: '0 2px 10px rgba(255, 255, 255, 0.15)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(255, 255, 255, 0.35)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 255, 255, 0.15)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
                 <Download size={15} /> Export Video
@@ -629,7 +640,7 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
           {isExporting && (
             <div style={{ textAlign: 'center', padding: '24px 12px 16px' }}>
               <div style={{ width: '48px', height: '48px', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader2 size={42} className="animate-spin" style={{ color: '#00ADB5' }} />
+                <Loader2 size={42} className="animate-spin" style={{ color: '#FFFFFF' }} />
               </div>
 
               <h4 style={{ margin: '0', fontSize: '15px', fontWeight: 700, color: '#EEEEEE' }}>
@@ -639,7 +650,7 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
               <div style={{
                 width: '100%',
                 height: '6px',
-                background: '#393E46',
+                background: 'rgba(255, 255, 255, 0.1)',
                 borderRadius: '3px',
                 overflow: 'hidden',
                 marginTop: '20px',
@@ -647,7 +658,7 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                 <div style={{
                   height: '100%',
                   width: `${progress}%`,
-                  background: 'linear-gradient(90deg, #00ADB5, #008b92)',
+                  background: '#FFFFFF',
                   borderRadius: '3px',
                   transition: 'width 0.2s ease',
                 }} />
@@ -662,9 +673,9 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                 width: '52px',
                 height: '52px',
                 borderRadius: '50%',
-                background: 'rgba(0, 173, 181, 0.15)',
-                border: '1px solid rgba(0, 173, 181, 0.3)',
-                color: '#00ADB5',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -681,12 +692,13 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                 <a
                   href={downloadUrl}
                   download={exportedFileName}
+                  className="mg-btn-interactive"
                   style={{
                     flex: 1,
                     padding: '11px',
-                    background: 'linear-gradient(135deg, #00ADB5 0%, #008b92 100%)',
+                    background: '#FFFFFF',
                     borderRadius: '8px',
-                    color: '#222831',
+                    color: '#000000',
                     fontSize: '13px',
                     fontWeight: 800,
                     textDecoration: 'none',
@@ -694,21 +706,41 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
+                    transition: 'all 0.15s ease',
+                    boxShadow: '0 2px 8px rgba(255, 255, 255, 0.15)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(255, 255, 255, 0.35)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(255, 255, 255, 0.15)';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
                   <Download size={14} /> Download Video
                 </a>
                 <button
                   onClick={handleClose}
+                  className="mg-btn-interactive"
                   style={{
                     padding: '11px 20px',
-                    background: '#393E46',
-                    border: '1px solid #4f5663',
+                    background: 'var(--bg-input, #141414)',
+                    border: '1px solid var(--border-color, rgba(255, 255, 255, 0.15))',
                     borderRadius: '8px',
                     color: '#EEEEEE',
                     fontSize: '13px',
                     fontWeight: 600,
                     cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--bg-input, #141414)';
+                    e.currentTarget.style.borderColor = 'var(--border-color, rgba(255, 255, 255, 0.15))';
                   }}
                 >
                   Done

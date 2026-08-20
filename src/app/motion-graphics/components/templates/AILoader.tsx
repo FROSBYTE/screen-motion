@@ -13,9 +13,9 @@ export interface AILoaderProps {
 const CYCLE_DURATION = 1.8; // seconds
 
 function DotsLoader({ speed, color }: { speed: number; color: string }) {
-  const duration = CYCLE_DURATION / speed;
+  const duration = Math.max(0.1, CYCLE_DURATION / speed);
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <div key={`dots-${speed}`} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
@@ -42,9 +42,9 @@ function DotsLoader({ speed, color }: { speed: number; color: string }) {
 }
 
 function BarLoader({ speed, color }: { speed: number; color: string }) {
-  const duration = CYCLE_DURATION / speed;
+  const duration = Math.max(0.1, CYCLE_DURATION / speed);
   return (
-    <div style={{ width: '120px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
+    <div key={`bar-${speed}`} style={{ width: '120px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
       <motion.div
         animate={{ x: ['-100%', '200%'] }}
         transition={{ duration, repeat: Infinity, ease: 'easeInOut' }}
@@ -61,9 +61,9 @@ function BarLoader({ speed, color }: { speed: number; color: string }) {
 }
 
 function GridLoader({ speed, color }: { speed: number; color: string }) {
-  const duration = CYCLE_DURATION / speed;
+  const duration = Math.max(0.1, CYCLE_DURATION / speed);
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+    <div key={`grid-${speed}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
       {Array.from({ length: 9 }).map((_, i) => (
         <motion.div
           key={i}
@@ -92,14 +92,15 @@ function GridLoader({ speed, color }: { speed: number; color: string }) {
 export default function AILoader({
   variant = 'dots',
   speed = 1,
-  color = '#a855f7',
+  color = '#ffffff',
   className = '',
 }: AILoaderProps) {
+  const safeSpeed = Math.max(0.1, speed || 1);
   return (
-    <div className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} role="status" aria-label="Loading">
-      {variant === 'dots' && <DotsLoader speed={speed} color={color} />}
-      {variant === 'bar' && <BarLoader speed={speed} color={color} />}
-      {variant === 'grid' && <GridLoader speed={speed} color={color} />}
+    <div key={`${variant}-${safeSpeed}-${color}`} className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} role="status" aria-label="Loading">
+      {variant === 'dots' && <DotsLoader speed={safeSpeed} color={color} />}
+      {variant === 'bar' && <BarLoader speed={safeSpeed} color={color} />}
+      {variant === 'grid' && <GridLoader speed={safeSpeed} color={color} />}
     </div>
   );
 }

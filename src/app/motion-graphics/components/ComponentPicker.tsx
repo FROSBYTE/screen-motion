@@ -263,40 +263,68 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
             <div style={{ display: 'flex', gap: '2px', background: 'var(--bg-inset)', borderRadius: '8px', padding: '3px' }}>
               <button
                 onClick={() => setActiveTab('text')}
+                className="mg-btn-interactive"
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
                   background: activeTab === 'text' ? 'var(--bg-primary)' : 'transparent', 
                   color: activeTab === 'text' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Text
               </button>
               <button
                 onClick={() => setActiveTab('component')}
+                className="mg-btn-interactive"
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
                   background: activeTab === 'component' ? 'var(--bg-primary)' : 'transparent', 
                   color: activeTab === 'component' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Component
               </button>
               <button
                 onClick={() => setActiveTab('devices')}
+                className="mg-btn-interactive"
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
                   background: activeTab === 'devices' ? 'var(--bg-primary)' : 'transparent', 
                   color: activeTab === 'devices' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Devices
               </button>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+          <button
+            onClick={onClose}
+            className="mg-btn-interactive"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
             <X size={18} />
           </button>
         </div>

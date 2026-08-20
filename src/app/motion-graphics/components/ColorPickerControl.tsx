@@ -61,11 +61,12 @@ export default function ColorPickerControl({
   return (
     <div style={{ flex: 1, ...style }}>
       {label && (
-        <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block', fontWeight: 500 }}>
+        <label style={{ fontSize: '13px', color: '#ffffff', marginBottom: '5px', display: 'block', fontWeight: 600 }}>
           {label}
         </label>
       )}
       <div
+        className="mg-btn-interactive"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -78,10 +79,13 @@ export default function ColorPickerControl({
           transition: 'all 0.15s ease',
           position: 'relative',
         }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.28)')}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-color)')}
       >
         {/* Clickable Swatch Dot */}
         <div
           onClick={() => colorInputRef.current?.click()}
+          className="mg-color-swatch-card"
           style={{
             width: '18px',
             height: '18px',

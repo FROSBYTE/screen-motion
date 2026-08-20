@@ -262,6 +262,7 @@ export default function VideoEditorPanel() {
     background: 'var(--bg-input)', border: '1px solid var(--border-color)',
     borderRadius: '8px', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)',
     cursor: 'pointer', whiteSpace: 'nowrap',
+    transition: 'all 0.15s ease',
   };
   const iconBtnStyle: React.CSSProperties = { ...btnStyle, padding: '6px 10px' };
 
@@ -279,17 +280,86 @@ export default function VideoEditorPanel() {
     }}>
       {/* Progress row */}
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
-        <button onClick={() => seekTo(currentTime - 5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: 'var(--text-muted)' }} title="-5s">
+        <button
+          onClick={() => seekTo(currentTime - 5)}
+          className="mg-btn-interactive"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-muted)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.background = 'transparent';
+          }}
+          title="-5s"
+        >
           <Rewind size={16} />
         </button>
-        <button onClick={() => isPlaying ? pause() : play()} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }} title={isPlaying ? "Pause" : "Play"}>
+        <button
+          onClick={() => isPlaying ? pause() : play()}
+          className="mg-btn-interactive"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+          title={isPlaying ? "Pause" : "Play"}
+        >
           {isPlaying ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-primary)"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
           ) : (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-primary)"><path d="M8 5v14l11-7z"/></svg>
           )}
         </button>
-        <button onClick={() => seekTo(currentTime + 5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: 'var(--text-muted)' }} title="+5s">
+        <button
+          onClick={() => seekTo(currentTime + 5)}
+          className="mg-btn-interactive"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-muted)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.background = 'transparent';
+          }}
+          title="+5s"
+        >
           <FastForward size={16} />
         </button>
 
@@ -305,18 +375,37 @@ export default function VideoEditorPanel() {
           {Math.floor((totalDuration % 1) * 100).toString().padStart(2, '0')}
         </span>
         {/* Scrubber */}
-        <div style={{
-          flex: 1,
-          height: '6px',
-          background: 'var(--bg-inset)',
-          border: '1px solid rgba(255, 255, 255, 0.22)',
-          borderRadius: '9999px',
-          position: 'relative',
-          cursor: 'pointer',
-          marginLeft: '8px',
-          overflow: 'hidden',
-        }}
-          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seekTo(((e.clientX - r.left) / r.width) * totalDuration); }}>
+        <div
+          style={{
+            flex: 1,
+            height: '6px',
+            background: 'var(--bg-inset)',
+            border: '1px solid rgba(255, 255, 255, 0.22)',
+            borderRadius: '9999px',
+            position: 'relative',
+            cursor: 'pointer',
+            marginLeft: '8px',
+            overflow: 'hidden',
+            touchAction: 'none',
+          }}
+          onPointerDown={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            const time = Math.max(0, Math.min(totalDuration, ((e.clientX - r.left) / r.width) * totalDuration));
+            seekTo(time);
+            const targetEl = e.currentTarget;
+            const handleMove = (moveEvent: PointerEvent) => {
+              const moveR = targetEl.getBoundingClientRect();
+              const moveTime = Math.max(0, Math.min(totalDuration, ((moveEvent.clientX - moveR.left) / moveR.width) * totalDuration));
+              seekTo(moveTime);
+            };
+            const handleUp = () => {
+              window.removeEventListener('pointermove', handleMove);
+              window.removeEventListener('pointerup', handleUp);
+            };
+            window.addEventListener('pointermove', handleMove);
+            window.addEventListener('pointerup', handleUp);
+          }}
+        >
           <div style={{
             width: `${totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0}%`,
             height: '100%',
@@ -343,6 +432,7 @@ export default function VideoEditorPanel() {
       }}>
         <button
           onClick={() => dispatch({ isPickerOpen: true, activeSidebarTab: 'components' })}
+          className="mg-btn-interactive"
           style={{
             ...btnStyle,
             borderRadius: '8px',
@@ -351,6 +441,14 @@ export default function VideoEditorPanel() {
             fontWeight: 700,
             border: '1px solid #FFFFFF',
             boxShadow: '0 2px 8px rgba(255, 255, 255, 0.15)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 14px rgba(255, 255, 255, 0.35)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.transform = 'translateY(0)';
           }}
           title="Add a component"
         >
@@ -368,12 +466,57 @@ export default function VideoEditorPanel() {
         </button>
 
         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-          <button style={iconBtnStyle} title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={undo}><Undo2 size={14} /></button>
-          <button style={iconBtnStyle} title="Redo (Ctrl+Y)" disabled={!canRedo} onClick={redo}><Redo2 size={14} /></button>
+          <button
+            style={iconBtnStyle}
+            className="mg-btn-interactive"
+            title="Undo (Ctrl+Z)"
+            disabled={!canUndo}
+            onClick={undo}
+            onMouseEnter={(e) => {
+              if (canUndo) {
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
+                e.currentTarget.style.borderColor = 'var(--border-color-hover)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--bg-input)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            <Undo2 size={14} />
+          </button>
+          <button
+            style={iconBtnStyle}
+            className="mg-btn-interactive"
+            title="Redo (Ctrl+Y)"
+            disabled={!canRedo}
+            onClick={redo}
+            onMouseEnter={(e) => {
+              if (canRedo) {
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
+                e.currentTarget.style.borderColor = 'var(--border-color-hover)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--bg-input)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            <Redo2 size={14} />
+          </button>
           <button
             style={btnStyle}
+            className="mg-btn-interactive"
             title="Reset selected component properties (or all components in scene)"
             onClick={resetSelectedComponent}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
+              e.currentTarget.style.borderColor = 'var(--border-color-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--bg-input)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
           >
             <RotateCcw size={14} style={{ opacity: 0.65 }} /> Reset Component
           </button>
@@ -393,7 +536,26 @@ export default function VideoEditorPanel() {
         }}>
           <button
             onClick={() => setZoom((z) => Math.max(MIN_ZOOM, Number((z - 0.15).toFixed(2))))}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--text-muted)', padding: '2px' }}
+            className="mg-btn-interactive"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-muted)',
+              padding: '4px',
+              borderRadius: '4px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
             title="Zoom out"
           >
             <Minus size={13} />
@@ -424,7 +586,26 @@ export default function VideoEditorPanel() {
           </div>
           <button
             onClick={() => setZoom((z) => Math.min(MAX_ZOOM, Number((z + 0.15).toFixed(2))))}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--text-muted)', padding: '2px' }}
+            className="mg-btn-interactive"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-muted)',
+              padding: '4px',
+              borderRadius: '4px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
             title="Zoom in"
           >
             <Plus size={13} />
@@ -435,21 +616,26 @@ export default function VideoEditorPanel() {
       {/* Tracks container */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', margin: '0 24px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
         {/* Scrollable tracks */}
-        <div ref={trackAreaRef} onPointerDown={(e) => { if (e.target === e.currentTarget || !(e.target as HTMLElement).closest('[data-layer-clip]')) { dispatch({ selectedLayerId: null, activeSidebarTab: 'components', playbackRange: null }); } }} style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', position: 'relative' }}>
+        <div
+          ref={trackAreaRef}
+          onPointerDown={(e) => {
+            const target = e.target as HTMLElement;
+            if (
+              (target === e.currentTarget || target.dataset.emptyLane === 'true') &&
+              !target.closest('[data-layer-clip]') &&
+              !target.closest('[data-scene-strip]') &&
+              !target.closest('[data-ruler]')
+            ) {
+              dispatch({ selectedLayerId: null, playbackRange: null });
+            }
+          }}
+          style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', position: 'relative' }}
+        >
           <div 
             style={{ position: 'relative', minWidth: `${timelineWidth}px`, minHeight: '100%' }}
-            onPointerDown={(e) => {
-              if (!(e.target as HTMLElement).closest('[data-layer-clip]')) {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const time = Math.max(0, x / pxPerSec);
-                seekTo(time);
-                setIsDraggingPlayhead(true);
-              }
-            }}
           >
             {/* Scene Strip – locked top row (above ruler) */}
-            <div style={{ position: 'sticky', top: 0, zIndex: 32, height: '30px', display: 'flex', alignItems: 'stretch', background: 'var(--bg-inset)' }}>
+            <div data-scene-strip onPointerDown={(e) => e.stopPropagation()} style={{ position: 'sticky', top: 0, zIndex: 32, height: '30px', display: 'flex', alignItems: 'stretch', background: 'var(--bg-inset)' }}>
               {scenes.map((scene, idx) => {
                 const sceneDur = getSceneDuration(scene);
                 if (sceneDur <= 0) return null;
@@ -461,9 +647,21 @@ export default function VideoEditorPanel() {
                 return (
                   <div
                     key={scene.id}
-                    onClick={() => {
-                      dispatch({ activeSceneId: scene.id, selectedLayerId: null, activeSidebarTab: 'scene' });
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const sceneDur = getSceneDuration(scene);
+                      const sceneEnd = sStart + sceneDur;
+                      dispatch({
+                        activeSceneId: scene.id,
+                        selectedLayerId: null,
+                        activeSidebarTab: 'scene',
+                        playbackRange: { start: sStart, end: sceneEnd },
+                      });
                       seekTo(sStart);
+                      play();
                     }}
                     style={{
                       position: 'absolute',
@@ -505,15 +703,30 @@ export default function VideoEditorPanel() {
               })}
             </div>
 
-            {/* Ruler */}
+            {/* Ruler - supports click & drag to scrub */}
             {anySceneHasLayers && (
-              <div style={{ position: 'sticky', top: '30px', zIndex: 30, pointerEvents: 'none', height: '32px' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '32px', background: 'var(--bg-inset)', borderBottom: '1px solid var(--border-color)' }} />
+              <div
+                data-ruler
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  seekTo(getTimeFromX(e.clientX));
+                  setIsDraggingPlayhead(true);
+                }}
+                style={{
+                  position: 'sticky',
+                  top: '30px',
+                  zIndex: 30,
+                  height: '32px',
+                  cursor: 'ew-resize',
+                  touchAction: 'none',
+                }}
+              >
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '32px', background: 'var(--bg-inset)', borderBottom: '1px solid var(--border-color)', pointerEvents: 'none' }} />
                 {ticks.map((tick, i) => (
-                  <div key={i} style={{ position: 'absolute', top: '6px', left: `${tick.x}px` }}>
+                  <div key={i} style={{ position: 'absolute', top: '6px', left: `${tick.x}px`, pointerEvents: 'none' }}>
                     <div style={{ width: '1px', height: tick.label ? '12px' : (tick.major ? '8px' : '4px'), background: tick.label ? 'rgba(255,255,255,0.45)' : (tick.major ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)') }} />
                     {tick.label && (
-                      <span style={{ position: 'absolute', top: '100%', left: '4px', fontSize: '9px', fontWeight: 500, color: 'var(--text-muted)', transform: 'translateY(-50%) scale(0.9)', transformOrigin: 'left', whiteSpace: 'nowrap' }}>
+                      <span style={{ position: 'absolute', top: '100%', left: '4px', fontSize: '9px', fontWeight: 500, color: 'var(--text-muted)', transform: 'translateY(-50%) scale(0.9)', transformOrigin: 'left', whiteSpace: 'nowrap', userSelect: 'none' }}>
                         {tick.label}
                       </span>
                     )}
@@ -522,14 +735,38 @@ export default function VideoEditorPanel() {
               </div>
             )}
 
-            {/* Playhead */}
-            {anySceneHasLayers && (selectedLayerId !== null || activeSidebarTab === 'scene' || isPlaying || isDraggingPlayhead) && (
+            {/* Playhead - supports click & drag to scrub */}
+            {anySceneHasLayers && (
               <div
-                onPointerDown={(e) => { e.stopPropagation(); setIsDraggingPlayhead(true); }}
-                style={{ position: 'absolute', top: 0, left: `${currentTime * pxPerSec}px`, width: '24px', height: '100%', transform: 'translateX(-50%)', zIndex: 40, cursor: 'ew-resize', touchAction: 'none' }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  setIsDraggingPlayhead(true);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: `${currentTime * pxPerSec}px`,
+                  width: '24px',
+                  height: '100%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 40,
+                  cursor: 'ew-resize',
+                  touchAction: 'none',
+                }}
+                title={`Current time: ${currentTime.toFixed(2)}s (Drag to scrub)`}
               >
-                <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '2px', height: '100%', background: 'var(--accent-primary)', opacity: 0.8 }} />
-                <div style={{ position: 'relative', left: '50%', transform: 'translateX(-50%) rotate(180deg)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '8px solid var(--accent-primary)' }} />
+                <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '2px', height: '100%', background: 'var(--accent-primary)', opacity: 0.85, pointerEvents: 'none' }} />
+                <div style={{
+                  position: 'relative',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  top: '30px',
+                  width: '10px',
+                  height: '12px',
+                  background: 'var(--accent-primary)',
+                  clipPath: 'polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+                }} />
               </div>
             )}
 
@@ -573,7 +810,14 @@ export default function VideoEditorPanel() {
                         data-layer-clip
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Single click selects, moves cursor to start of component, and plays component-only loop
+                          dispatch({
+                            activeSceneId: sceneId,
+                            selectedLayerId: layer.id,
+                            activeSidebarTab: 'components',
+                          });
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
                           const compStart = layerSceneStart + layer.startTime;
                           const compEnd = compStart + layer.duration;
                           dispatch({

@@ -473,19 +473,22 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
   // ── Explicit Manual Save ──
   const saveCurrentProject = useCallback(async () => {
     const s = stateRef.current;
-    if (!s.projectId || s.projectId === 'default') return;
+    const projId = s.projectId && s.projectId !== 'default' ? s.projectId : `mg-proj-${Date.now()}`;
     try {
       setSaveStatus('saving');
       const assetIds = extractAssetIds(s.scenes);
       await saveProject({
-        id: s.projectId,
-        title: s.title,
+        id: projId,
+        title: s.title || 'Untitled Project',
         createdAt: createdAtRef.current,
         updatedAt: Date.now(),
         scenes: s.scenes,
         assetIds,
       }, assetIds);
       await saveDraft('mg_active_draft', s.scenes, assetIds);
+      if (s.projectId !== projId) {
+        setState((prev) => ({ ...prev, projectId: projId }));
+      }
       setHasUnsavedChanges(false);
       setSaveStatus('saved');
     } catch (err) {

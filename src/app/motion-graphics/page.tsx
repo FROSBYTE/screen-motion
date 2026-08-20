@@ -97,10 +97,26 @@ export function MotionGraphicsStudioContent() {
           padding: '0 16px',
           zIndex: 100,
         }}>
-          {/* Left: Projects Link + Editable Title + Save Status */}
+          {/* Left: App Logo + Projects Link + Editable Title + Save Status */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Link
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#FFFFFF',
+                textDecoration: 'none',
+                padding: '2px',
+              }}
+              title="Screen Motion Home"
+            >
+              <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+            </Link>
+
+            <Link
               href="/projects"
+              className="mg-btn-interactive"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -148,17 +164,25 @@ export function MotionGraphicsStudioContent() {
             ) : (
               <div
                 onClick={() => setIsEditingTitle(true)}
+                className="mg-btn-interactive"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   cursor: 'pointer',
-                  padding: '3px 6px',
+                  padding: '4px 8px',
                   borderRadius: '6px',
                   transition: 'background 0.15s ease',
+                  border: '1px solid transparent',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
                 title="Click to rename project"
               >
                 <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
@@ -172,6 +196,7 @@ export function MotionGraphicsStudioContent() {
             <button
               onClick={() => saveCurrentProject()}
               disabled={saveStatus === 'saving'}
+              className="mg-btn-interactive"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -179,36 +204,36 @@ export function MotionGraphicsStudioContent() {
                 padding: '4px 10px',
                 borderRadius: '8px',
                 background: hasUnsavedChanges
-                  ? 'rgba(255, 255, 255, 0.12)'
-                  : '#1a1a1a',
+                  ? 'rgba(239, 68, 68, 0.12)'
+                  : 'rgba(34, 197, 94, 0.12)',
                 border: hasUnsavedChanges
-                  ? '1px solid rgba(255, 255, 255, 0.4)'
-                  : '1px solid #333333',
-                color: hasUnsavedChanges ? '#FFFFFF' : '#ffffff',
+                  ? '1px solid rgba(239, 68, 68, 0.35)'
+                  : '1px solid rgba(34, 197, 94, 0.35)',
+                color: hasUnsavedChanges ? '#f87171' : '#4ade80',
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer',
                 transition: 'all 0.15s ease',
                 marginLeft: '4px',
               }}
-              title="Save project changes (Ctrl + S)"
+              title={hasUnsavedChanges ? 'Unsaved changes (Ctrl + S to save)' : 'All changes saved (Ctrl + S)'}
             >
               {saveStatus === 'saving' ? (
                 <>
-                  <Loader2 size={13} className="animate-spin" style={{ color: '#FFFFFF' }} />
-                  <span>Saving…</span>
+                  <Loader2 size={13} className="animate-spin" style={{ color: '#fbbf24' }} />
+                  <span style={{ color: '#fbbf24' }}>Saving…</span>
                 </>
               ) : saveStatus === 'saved' && !hasUnsavedChanges ? (
                 <>
-                  <Check size={13} style={{ color: '#FFFFFF' }} />
-                  <span style={{ color: '#FFFFFF' }}>Saved</span>
+                  <Check size={13} style={{ color: '#4ade80' }} />
+                  <span style={{ color: '#4ade80' }}>Saved</span>
                   <kbd style={{
                     fontSize: '10px',
                     fontFamily: 'inherit',
                     padding: '1px 5px',
                     borderRadius: '4px',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#888888',
+                    background: 'rgba(74, 222, 128, 0.12)',
+                    color: '#86efac',
                     marginLeft: '2px',
                   }}>
                     Ctrl+S
@@ -221,15 +246,15 @@ export function MotionGraphicsStudioContent() {
                 </>
               ) : (
                 <>
-                  <Save size={13} style={{ color: '#FFFFFF' }} />
-                  <span>Save</span>
+                  <Save size={13} style={{ color: '#f87171' }} />
+                  <span style={{ color: '#f87171' }}>Unsaved</span>
                   <kbd style={{
                     fontSize: '10px',
                     fontFamily: 'inherit',
                     padding: '1px 5px',
                     borderRadius: '4px',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    color: '#FFFFFF',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#fca5a5',
                     marginLeft: '2px',
                   }}>
                     Ctrl+S
@@ -243,6 +268,7 @@ export function MotionGraphicsStudioContent() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={() => setIsExportModalOpen(true)}
+              className="mg-btn-interactive"
               style={{
                 background: '#FFFFFF',
                 border: 'none',
@@ -257,6 +283,14 @@ export function MotionGraphicsStudioContent() {
                 gap: '6px',
                 boxShadow: '0 2px 10px rgba(255,255,255,0.2)',
                 transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(255,255,255,0.4)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 2px 10px rgba(255,255,255,0.2)';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
               title="Export Full Video (MP4 / WebM)"
             >

@@ -1777,3 +1777,86 @@ input[type="range"]::-moz-range-thumb {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
+
+/* ===== Motion Graphics & Global Interactive Buttons Hover System ===== */
+
+/* Base transition and subtle hover elevation for all interactive buttons */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+.mg-btn-interactive {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s ease,
+              border-color 0.15s ease,
+              box-shadow 0.15s ease,
+              color 0.15s ease,
+              filter 0.15s ease,
+              opacity 0.15s ease !important;
+}
+
+button:not(:disabled):hover,
+[role="button"]:not([aria-disabled="true"]):hover,
+.mg-btn-interactive:hover {
+  filter: brightness(1.08);
+}
+
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+.mg-btn-interactive:active {
+  transform: scale(0.97) !important;
+  filter: brightness(0.95);
+}
+
+/* Specific card toggle button hover (Loop, Mute, Avatar, Image, Playback cards) */
+.mg-card-toggle {
+  transition: all 0.15s ease !important;
+}
+
+.mg-card-toggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.mg-card-toggle:active:not(:disabled) {
+  transform: scale(0.98) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Color swatch preview button hover */
+.mg-color-swatch-card {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mg-color-swatch-card:hover {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+.mg-color-swatch-card:active {
+  transform: translateY(0) scale(0.97) !important;
+}
+
+/* Formatting toolbar buttons (B, I, Alignment, Easing) */
+.mg-format-btn {
+  transition: all 0.12s ease !important;
+}
+
+.mg-format-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  filter: brightness(1.12);
+}
+
+.mg-format-btn:active:not(:disabled) {
+  transform: scale(0.96) !important;
+}
+
+/* Upload dropzone cards hover */
+.mg-upload-dropzone {
+  transition: all 0.15s ease !important;
+}
+
+.mg-upload-dropzone:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+

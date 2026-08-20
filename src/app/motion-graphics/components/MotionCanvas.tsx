@@ -882,7 +882,9 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
           fontWeight: layer.isBold ? 800 : 400,
           fontStyle: layer.isItalic ? 'italic' : 'normal',
           cursor: isDragging ? 'grabbing' : 'grab',
-          border: isSelected ? '2px dashed rgba(168, 85, 247, 0.85)' : '2px solid transparent',
+          border: isSelected ? '2px dashed #a855f7' : '2px solid transparent',
+          outline: isSelected ? '1px solid #000000' : 'none',
+          boxShadow: isSelected ? '0 0 0 1px #000000' : 'none',
           borderRadius: '4px',
           padding: '8px 16px',
           transition: 'border-color 0.15s ease',
@@ -986,29 +988,29 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
       case 'count-up':
         return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 48} layerDuration={layer.duration} />;
       case 'animated-list':
-        return <AnimatedList key={triggerKey} items={layer.props.items} speed={speed} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} />;
+        return <AnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} />;
       case 'logo-loop':
-        return <LogoLoop key={triggerKey} items={layer.props.items} speed={speed} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} />;
+        return <LogoLoop key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} />;
       case 'ai-loader':
-        return <AILoader key={triggerKey} variant={layer.props.variant ?? 'dots'} speed={speed} color={layer.props.color ?? '#a855f7'} />;
+        return <AILoader key={`${triggerKey}-${layer.props.speed ?? 1}`} variant={layer.props.variant ?? 'dots'} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} />;
       case 'bubble-menu':
         return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} />;
       case 'unlumen-animated-list':
-        return <UnlumenAnimatedList key={triggerKey} items={layer.props.items} count={layer.props.count} speed={speed} />;
+        return <UnlumenAnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} count={layer.props.count} speed={speed * (layer.props.speed ?? 1)} />;
       case 'word-rotate':
-        return <WordRotate key={triggerKey} items={layer.props.items} speed={speed} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} />;
+        return <WordRotate key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} />;
       case 'highlighter':
         return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 32} />;
       case 'animated-beam':
         return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} />;
       case 'orbiting-circles':
-        return <OrbitingCircles key={triggerKey} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} />;
+        return <OrbitingCircles key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} />;
       case 'text-reveal':
         return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} />;
       case 'skeleton-shimmer':
-        return <SkeletonShimmer key={triggerKey} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} baseColor={layer.props.baseColor ?? 'rgba(255,255,255,0.08)'} shimmerColor={layer.props.shimmerColor ?? 'rgba(255,255,255,0.15)'} speed={speed} borderRadius={layer.props.borderRadius ?? 6} />;
+        return <SkeletonShimmer key={`${triggerKey}-${layer.props.color ?? '#ffffff'}-${layer.props.speed ?? 1}`} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} color={layer.props.color ?? '#ffffff'} baseColor={layer.props.baseColor} shimmerColor={layer.props.shimmerColor} speed={speed * (layer.props.speed ?? 1)} borderRadius={layer.props.borderRadius ?? 6} />;
       case 'text-3d-flip':
-        return <Text3DFlip key={triggerKey} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerDuration={layer.props.staggerDuration ?? 0.05} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed} autoPlay={true} isLoop={layer.props.isLoop ?? true} />;
+        return <Text3DFlip key={`${triggerKey}-${layer.props.rotateDirection ?? 'top'}-${layer.props.staggerFrom ?? 'first'}-${layer.props.isLoop ?? true}-${layer.props.speed ?? 1}`} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed * (layer.props.speed ?? 1)} autoPlay={true} isLoop={layer.props.isLoop ?? true} />;
       case 'camera-zoom':
         return <div style={{ width: '150px', height: '100px' }} />;
       case 'media-upload':
@@ -1038,6 +1040,11 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             borderColor={layer.props.borderColor ?? '#a855f7'}
             playbackRate={layer.props.speed ?? 1}
             poster={layer.props.poster}
+            localTime={localTime}
+            layerStartTime={layer.startTime}
+            layerDuration={layer.duration}
+            originalDuration={layer.props.originalDuration}
+            isPlaying={state.isPlaying}
             onUpload={(file) => {
               applyVideoFileToLayer(file, (updates: any) => updateLayer(layer.id, updates), layer.props);
             }}
@@ -1211,7 +1218,9 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
           maxWidth: 'none',
           flexShrink: 0,
           cursor: isDragging ? 'grabbing' : 'grab',
-          border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
+          border: isSelected ? '2px dashed #a855f7' : '2px solid transparent',
+          outline: isSelected ? '1px solid #000000' : 'none',
+          boxShadow: isSelected ? '0 0 0 1px #000000' : 'none',
           borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
           padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
           transition: 'border-color 0.15s ease',

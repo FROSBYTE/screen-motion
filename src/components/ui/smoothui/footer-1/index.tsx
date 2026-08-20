@@ -54,7 +54,10 @@ export function FooterSimple({
     }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "40px" }}>
         <div>
-          <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#ffffff", marginBottom: "12px" }}>{companyName}</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#ffffff", margin: 0 }}>{companyName}</h3>
+          </div>
           <p style={{ lineHeight: 1.6, color: "#cbd5e1", maxWidth: "300px" }}>{description}</p>
         </div>
         {links.product && links.product.length > 0 && (

@@ -11,20 +11,23 @@ export interface WordRotateItem {
 }
 
 export interface WordRotateProps {
-  items?: WordRotateItem[];
+  items?: (WordRotateItem | string)[];
   speed?: number;
   color?: string;
   fontSize?: number;
+  fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
   className?: string;
   isLoop?: boolean;
   layerDuration?: number;
 }
 
 const DEFAULT_ITEMS: WordRotateItem[] = [
-  { text: 'Innovative', isBold: true },
-  { text: 'Creative', isBold: true },
-  { text: 'Powerful', isBold: true },
-  { text: 'Beautiful', isBold: true },
+  { text: 'Innovative' },
+  { text: 'Creative' },
+  { text: 'Powerful' },
+  { text: 'Beautiful' },
 ];
 
 export default function WordRotate({
@@ -32,6 +35,9 @@ export default function WordRotate({
   speed = 1,
   color = '#ffffff',
   fontSize = 32,
+  fontFamily = '"Plus Jakarta Sans", sans-serif',
+  isBold = true,
+  isItalic = false,
   className = '',
   isLoop = true,
   layerDuration,
@@ -56,9 +62,9 @@ export default function WordRotate({
 
   const currentRaw = items[index] || items[0] || 'Word';
   const currentText = typeof currentRaw === 'string' ? currentRaw : currentRaw?.text || 'Word';
-  const isBold = typeof currentRaw === 'object' ? currentRaw.isBold ?? true : true;
-  const isItalic = typeof currentRaw === 'object' ? currentRaw.isItalic ?? false : false;
-  const fontFamily = typeof currentRaw === 'object' ? currentRaw.fontFamily || '"Plus Jakarta Sans", sans-serif' : '"Plus Jakarta Sans", sans-serif';
+  const resolvedIsBold = typeof currentRaw === 'object' && currentRaw.isBold !== undefined ? currentRaw.isBold : isBold;
+  const resolvedIsItalic = typeof currentRaw === 'object' && currentRaw.isItalic !== undefined ? currentRaw.isItalic : isItalic;
+  const resolvedFontFamily = typeof currentRaw === 'object' && currentRaw.fontFamily ? currentRaw.fontFamily : fontFamily;
 
   return (
     <div className={className} style={{ display: 'inline-flex', overflow: 'hidden', position: 'relative', height: `${fontSize * 1.3}px`, verticalAlign: 'bottom' }}>
@@ -68,15 +74,15 @@ export default function WordRotate({
           initial={{ y: '100%', opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '-100%', opacity: 0 }}
-          transition={{ duration: 0.3 / speed, ease: 'easeInOut' }}
+          transition={{ duration: 0.3 / Math.max(0.1, speed), ease: 'easeInOut' }}
           style={{
             display: 'inline-block',
             color,
             whiteSpace: 'nowrap',
             fontSize: `${fontSize}px`,
-            fontWeight: isBold ? 800 : 400,
-            fontStyle: isItalic ? 'italic' : 'normal',
-            fontFamily,
+            fontWeight: resolvedIsBold ? 800 : 400,
+            fontStyle: resolvedIsItalic ? 'italic' : 'normal',
+            fontFamily: resolvedFontFamily,
             lineHeight: 1.3,
           }}
         >
