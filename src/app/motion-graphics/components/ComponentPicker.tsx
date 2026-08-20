@@ -80,7 +80,6 @@ const TEXT_ANIMATION_OPTIONS = [
   { id: 'scale-down-fade', name: 'Scale Down Fade' },
   { id: 'per-character-rise', name: 'Per Char Rise' },
   { id: 'per-word-crossfade', name: 'Per Word Crossfade' },
-  { id: 'dia-text-reveal', name: 'Dia Text Reveal' },
 ];
 
 function TextAnimationPreview({ animationId, isHovered }: { animationId: string; isHovered: boolean }) {
@@ -162,8 +161,6 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
       return <AILoader variant="dots" speed={1} color="#a855f7" />;
     case 'bubble-menu':
       return <BubbleMenu items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} speed={1} menuBg="transparent" radius={36} bubbleSize={20} />;
-    case 'folder':
-      return <Folder color="#5227ff" size={0.6} items={[{ text: 'Doc', bgColor: '#fff', textColor: '#000' }]} speed={1} />;
     case 'unlumen-animated-list':
       return <UnlumenAnimatedList items={[
         { title: 'New Message', description: 'You have received a message', bgColor: '#1e1e2e', titleColor: '#fff', descriptionColor: '#aaa', accentColor: '#a855f7' },
@@ -178,8 +175,6 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
       return <OrbitingCircles items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} radius={45} speed={1} iconSize={24} />;
     case 'text-reveal':
       return <TextReveal text="Reveal" speed={1} color="#ffffff" revealColor="#a855f7" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' />;
-    case 'dia-text-reveal':
-      return <DiaTextReveal text="Dia Reveal" speed={1} fontSize={16} repeat={true} />;
     case 'skeleton-shimmer':
       return <SkeletonShimmer lines={2} showAvatar={false} showImage={false} baseColor="rgba(255,255,255,0.08)" shimmerColor="rgba(255,255,255,0.15)" speed={1} borderRadius={4} />;
     case 'text-3d-flip':
@@ -251,7 +246,7 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#222831', border: '1px solid #393E46',
+          background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
           borderRadius: '16px', padding: '24px',
           width: '80vw', height: '80vh',
           overflow: 'hidden',
@@ -262,17 +257,17 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#EEEEEE', fontFamily: '"Plus Jakarta Sans", sans-serif', margin: 0 }}>
+            <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: '"Plus Jakarta Sans", sans-serif', margin: 0 }}>
               Add Component
             </h2>
-            <div style={{ display: 'flex', gap: '2px', background: '#393E46', borderRadius: '8px', padding: '3px' }}>
+            <div style={{ display: 'flex', gap: '2px', background: 'var(--bg-inset)', borderRadius: '8px', padding: '3px' }}>
               <button
                 onClick={() => setActiveTab('text')}
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  background: activeTab === 'text' ? 'rgba(0,173,181,0.2)' : 'transparent', 
-                  color: activeTab === 'text' ? '#00ADB5' : 'rgba(238,238,238,0.5)',
+                  background: activeTab === 'text' ? 'var(--bg-primary)' : 'transparent', 
+                  color: activeTab === 'text' ? 'var(--accent-primary)' : 'var(--text-muted)',
                 }}
               >
                 Text
@@ -282,8 +277,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  background: activeTab === 'component' ? 'rgba(0,173,181,0.2)' : 'transparent', 
-                  color: activeTab === 'component' ? '#00ADB5' : 'rgba(238,238,238,0.5)',
+                  background: activeTab === 'component' ? 'var(--bg-primary)' : 'transparent', 
+                  color: activeTab === 'component' ? 'var(--accent-primary)' : 'var(--text-muted)',
                 }}
               >
                 Component
@@ -293,15 +288,15 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  background: activeTab === 'devices' ? 'rgba(0,173,181,0.2)' : 'transparent', 
-                  color: activeTab === 'devices' ? '#00ADB5' : 'rgba(238,238,238,0.5)',
+                  background: activeTab === 'devices' ? 'var(--bg-primary)' : 'transparent', 
+                  color: activeTab === 'devices' ? 'var(--accent-primary)' : 'var(--text-muted)',
                 }}
               >
                 Devices
               </button>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#a0aab5', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }}>
             <X size={18} />
           </button>
         </div>
@@ -325,8 +320,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                 onMouseEnter={() => setHoveredItem(animation.id)}
                 onMouseLeave={() => setHoveredItem(null)}
                 style={{
-                  background: '#2b303a',
-                  border: '1px solid #393E46',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '10px',
                   padding: '10px',
                   cursor: 'pointer',
@@ -337,24 +332,19 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                   transition: 'border-color 0.15s, background 0.15s',
                   overflow: 'hidden',
                   position: 'relative',
-                  borderColor: hoveredItem === animation.id ? 'rgba(0,173,181,0.5)' : '#393E46',
-                  backgroundColor: hoveredItem === animation.id ? 'rgba(0,173,181,0.08)' : '#2b303a',
+                  borderColor: hoveredItem === animation.id ? 'var(--accent-primary)' : 'var(--border-color)',
                 }}
               >
-                <div style={{
-                  flex: 1, width: '100%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden', pointerEvents: 'none',
-                  background: '#222831', borderRadius: '8px',
-                  padding: '16px 10px',
-                }}>
-                  <HoverLoopWrapper isHovered={hoveredItem === animation.id}>
-                    <TextAnimationPreview animationId={animation.id} isHovered={hoveredItem === animation.id} />
-                  </HoverLoopWrapper>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: '12px' }}>
+                  <div style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}>
+                    <HoverLoopWrapper isHovered={hoveredItem === animation.id}>
+                      <TextAnimationPreview animationId={animation.id} isHovered={hoveredItem === animation.id} />
+                    </HoverLoopWrapper>
+                  </div>
                 </div>
-                <span style={{ fontSize: '9px', fontWeight: 600, color: '#a0aab5', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
                   {animation.name}
-                </span>
+                </div>
               </button>
             ))
           ) : activeTab === 'devices' ? (
@@ -368,8 +358,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                   onMouseEnter={() => setHoveredItem(preset.id)}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={{
-                    background: '#2b303a',
-                    border: '1px solid #393E46',
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: '10px',
                     padding: '10px',
                     cursor: 'pointer',
@@ -380,15 +370,14 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                     transition: 'border-color 0.15s, background 0.15s',
                     overflow: 'hidden',
                     position: 'relative',
-                    borderColor: hoveredItem === preset.id ? 'rgba(0,173,181,0.5)' : '#393E46',
-                    backgroundColor: hoveredItem === preset.id ? 'rgba(0,173,181,0.08)' : '#2b303a',
+                    borderColor: hoveredItem === preset.id ? 'var(--accent-primary)' : 'var(--border-color)',
                   }}
                 >
                   <div style={{
                     flex: 1, width: '100%',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     overflow: 'hidden', pointerEvents: 'none',
-                    background: '#222831', borderRadius: '8px',
+                    background: 'var(--bg-secondary)', borderRadius: '8px',
                   }}>
                     <video
                       src={preset.video}
@@ -409,7 +398,7 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: '9px', fontWeight: 600, color: '#a0aab5', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
                     {preset.name}
                   </span>
                 </button>
@@ -424,8 +413,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                 onMouseEnter={() => setHoveredItem(template.id)}
                 onMouseLeave={() => setHoveredItem(null)}
                 style={{
-                  background: '#2b303a',
-                  border: '1px solid #393E46',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '10px',
                   padding: '10px',
                   cursor: 'pointer',
@@ -436,22 +425,21 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                   transition: 'border-color 0.15s, background 0.15s',
                   overflow: 'hidden',
                   position: 'relative',
-                  borderColor: hoveredItem === template.id ? 'rgba(0,173,181,0.5)' : '#393E46',
-                  backgroundColor: hoveredItem === template.id ? 'rgba(0,173,181,0.08)' : '#2b303a',
+                  borderColor: hoveredItem === template.id ? 'var(--accent-primary)' : 'var(--border-color)',
                 }}
               >
                 <div style={{
                   flex: 1, width: '100%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   overflow: 'hidden', pointerEvents: 'none',
-                  background: '#222831', borderRadius: '8px',
+                  background: 'var(--bg-secondary)', borderRadius: '8px',
                   padding: '16px 10px',
                 }}>
                   <HoverLoopWrapper isHovered={hoveredItem === template.id}>
                     <MiniPreview templateId={template.id} isHovered={hoveredItem === template.id} />
                   </HoverLoopWrapper>
                 </div>
-                <span style={{ fontSize: '9px', fontWeight: 600, color: '#a0aab5', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
                   {template.name}
                 </span>
               </button>

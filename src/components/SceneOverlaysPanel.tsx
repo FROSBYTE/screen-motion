@@ -6,6 +6,7 @@ import { Play, ChevronDown, Bold, Trash2, RotateCcw, Plus, GripVertical, Copy } 
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import BasicDropdown from './ui/smoothui/basic-dropdown';
 import type { TextOverlay, ImageOverlay } from '@/types';
+import { getDuplicateName } from '@/lib/utils';
 
 const fontItems = [
   { id: '"Plus Jakarta Sans", sans-serif', label: 'Plus Jakarta Sans', fontFamily: '"Plus Jakarta Sans", sans-serif' },
@@ -349,7 +350,7 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                           const duplicatedText: TextOverlay = {
                             ...t,
                             id: newId,
-                            text: t.text + ' (Copy)',
+                            text: getDuplicateName(t.text, texts.map((item) => item.text)),
                             position: [t.position[0] + 0.15, t.position[1] - 0.15, t.position[2]],
                             order: combinedItems.length,
                           };

@@ -16,7 +16,7 @@ const SCENE_COLORS = [
   { bg: '#134e4a', border: '#2dd4bf', text: '#f8fafc' }, // teal
 ];
 
-export default function MotionTimeline() {
+export default function VideoEditorPanel() {
   const { state, dispatch, play, pause, seekTo, updateLayer, removeLayer, resetSelectedComponent, totalDuration, getSceneStartTime, undo, redo, canUndo, canRedo, pushUndo, moveKeyframe } = useMGState();
   const { scenes, currentTime, isPlaying, selectedLayerId, activeSceneId, activeSidebarTab } = state;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
@@ -436,7 +436,18 @@ export default function MotionTimeline() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', margin: '0 24px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
         {/* Scrollable tracks */}
         <div ref={trackAreaRef} onPointerDown={(e) => { if (e.target === e.currentTarget || !(e.target as HTMLElement).closest('[data-layer-clip]')) { dispatch({ selectedLayerId: null, activeSidebarTab: 'components', playbackRange: null }); } }} style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', position: 'relative' }}>
-          <div style={{ position: 'relative', minWidth: `${timelineWidth}px`, minHeight: '100%' }}>
+          <div 
+            style={{ position: 'relative', minWidth: `${timelineWidth}px`, minHeight: '100%' }}
+            onPointerDown={(e) => {
+              if (!(e.target as HTMLElement).closest('[data-layer-clip]')) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const time = Math.max(0, x / pxPerSec);
+                seekTo(time);
+                setIsDraggingPlayhead(true);
+              }
+            }}
+          >
             {/* Scene Strip – locked top row (above ruler) */}
             <div style={{ position: 'sticky', top: 0, zIndex: 32, height: '30px', display: 'flex', alignItems: 'stretch', background: 'var(--bg-inset)' }}>
               {scenes.map((scene, idx) => {
@@ -562,16 +573,7 @@ export default function MotionTimeline() {
                         data-layer-clip
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Single click only selects the component
-                          dispatch({
-                            activeSceneId: sceneId,
-                            selectedLayerId: layer.id,
-                            activeSidebarTab: 'components',
-                          });
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          // Double click moves cursor to start of component and plays component-only loop
+                          // Single click selects, moves cursor to start of component, and plays component-only loop
                           const compStart = layerSceneStart + layer.startTime;
                           const compEnd = compStart + layer.duration;
                           dispatch({

@@ -36,8 +36,9 @@ import {
 import { MotionGraphicsProvider, useMGState } from './store';
 import { AlignmentProvider } from '@/context/AlignmentContext';
 import MotionCanvas from './components/MotionCanvas';
-import MotionTimeline from './components/MotionTimeline';
-import MotionSidebar from './components/MotionSidebar';
+import VideoEditorPanel from './components/VideoEditorPanel';
+import HierarchyPanel from './components/HierarchyPanel';
+import PropertiesPanel from './components/PropertiesPanel';
 import ExportVideoModal from './components/ExportVideoModal';
 import { createProject, listProjects } from '@/lib/storage/indexedDb';
 
@@ -267,27 +268,34 @@ export function MotionGraphicsStudioContent() {
 
         {/* Workspace Body */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0, width: '100%', overflow: 'hidden' }}>
-          {/* Left: Canvas + Timeline stacked */}
+          {/* Left & Center Container (Hierarchy + Canvas + Video Editor) */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
-            {/* Canvas Area */}
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              minHeight: 0,
-              overflow: 'hidden',
-            }}>
-              <MotionCanvas />
+            
+            {/* Top Area: Hierarchy Panel + Canvas */}
+            <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              {/* Hierarchy Panel */}
+              <HierarchyPanel />
+
+              {/* Canvas Area */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                minHeight: 0,
+                overflow: 'hidden',
+              }}>
+                <MotionCanvas />
+              </div>
             </div>
 
-            {/* Timeline */}
-            <MotionTimeline />
+            {/* Bottom Area: Video Editor Panel */}
+            <VideoEditorPanel />
           </div>
 
-          {/* Right Sidebar */}
-          <MotionSidebar />
+          {/* Right Sidebar (Properties Panel) */}
+          <PropertiesPanel />
         </div>
       </div>
 

@@ -3,6 +3,8 @@
  * Zero-dependency, asynchronous, and supports large media files without memory limits.
  */
 
+import { getDuplicateName } from '../utils';
+
 const DB_NAME = 'screen_motion_db';
 const DB_VERSION = 2;
 
@@ -254,10 +256,18 @@ export async function duplicateProject(id: string): Promise<MGProjectData> {
   const original = await getProject(id);
   if (!original) throw new Error(`Project ${id} not found.`);
 
+  let title = `${original.title} (1)`;
+  try {
+    const projects = await listProjects();
+    title = getDuplicateName(original.title, projects.map((p) => p.title));
+  } catch {
+    title = getDuplicateName(original.title, [original.title]);
+  }
+
   const duplicated: MGProjectData = {
     ...JSON.parse(JSON.stringify(original)),
     id: generateProjectId(),
-    title: `${original.title} (Copy)`,
+    title,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

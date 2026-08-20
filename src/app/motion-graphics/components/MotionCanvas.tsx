@@ -27,14 +27,12 @@ import AnimatedList from './templates/AnimatedList';
 import LogoLoop from './templates/LogoLoop';
 import AILoader from './templates/AILoader';
 import BubbleMenu from './templates/BubbleMenu';
-import Folder from './templates/Folder';
 import UnlumenAnimatedList from './templates/UnlumenAnimatedList';
 import WordRotate from './templates/WordRotate';
 import Highlighter from './templates/Highlighter';
 import AnimatedBeam from './templates/AnimatedBeam';
 import OrbitingCircles from './templates/OrbitingCircles';
 import TextReveal from './templates/TextReveal';
-import DiaTextReveal from './templates/DiaTextReveal';
 import SkeletonShimmer from './templates/SkeletonShimmer';
 import Text3DFlip from './templates/Text3DFlip';
 import MediaUploadComponent from './templates/MediaUpload';
@@ -42,7 +40,7 @@ import VideoUploadComponent from './templates/VideoUpload';
 import ImageUploadComponent from './templates/ImageUpload';
 import PhoneDeviceComponent from './templates/PhoneDevice';
 import MaskedHeadingComponent from './templates/MaskedHeading';
-import { applyVideoFileToLayer, applyImageFileToLayer } from './MotionSidebar';
+import { applyVideoFileToLayer, applyImageFileToLayer } from './PropertiesPanel';
 import { useAlignmentGuides } from '@/context/AlignmentContext';
 import AlignmentGuidesOverlay from '@/components/AlignmentGuidesOverlay';
 import type { AlignmentGuide } from '@/types';
@@ -995,8 +993,6 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         return <AILoader key={triggerKey} variant={layer.props.variant ?? 'dots'} speed={speed} color={layer.props.color ?? '#a855f7'} />;
       case 'bubble-menu':
         return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} />;
-      case 'folder':
-        return <Folder key={triggerKey} color={layer.props.color ?? '#5227ff'} size={layer.props.size ?? 1.5} items={layer.props.items} speed={speed} />;
       case 'unlumen-animated-list':
         return <UnlumenAnimatedList key={triggerKey} items={layer.props.items} count={layer.props.count} speed={speed} />;
       case 'word-rotate':
@@ -1009,8 +1005,6 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         return <OrbitingCircles key={triggerKey} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} />;
       case 'text-reveal':
         return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} />;
-      case 'dia-text-reveal':
-        return <DiaTextReveal key={triggerKey} text={layer.props.text ?? 'Dia Text Reveal'} colors={layer.props.colors} textColor={layer.props.textColor ?? '#ffffff'} duration={layer.props.duration ?? 1.5} speed={speed} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} repeat={layer.props.repeat ?? true} repeatDelay={layer.props.repeatDelay ?? 0.5} />;
       case 'skeleton-shimmer':
         return <SkeletonShimmer key={triggerKey} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} baseColor={layer.props.baseColor ?? 'rgba(255,255,255,0.08)'} shimmerColor={layer.props.shimmerColor ?? 'rgba(255,255,255,0.15)'} speed={speed} borderRadius={layer.props.borderRadius ?? 6} />;
       case 'text-3d-flip':
@@ -1045,7 +1039,7 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             playbackRate={layer.props.speed ?? 1}
             poster={layer.props.poster}
             onUpload={(file) => {
-              applyVideoFileToLayer(file, (updates) => updateLayer(layer.id, updates as any), layer.props);
+              applyVideoFileToLayer(file, (updates: any) => updateLayer(layer.id, updates), layer.props);
             }}
           />
         );
@@ -1058,7 +1052,7 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             height={layer.props.height ?? 200}
             borderRadius={layer.props.borderRadius ?? 8}
             onUpload={(file) => {
-              applyImageFileToLayer(file, (updates) => updateLayer(layer.id, updates as any), layer.props);
+              applyImageFileToLayer(file, (updates: any) => updateLayer(layer.id, updates), layer.props);
             }}
           />
         );

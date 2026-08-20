@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect, Re
 import type { ComponentTemplateName } from './components/templates';
 import { TEMPLATES } from '@/types';
 import { saveAsset, getAssets, loadDraft, saveDraft, clearDraft, getProject, saveProject, createProject, listProjects, MGProjectData } from '@/lib/storage/indexedDb';
+import { getDuplicateName } from '@/lib/utils';
 
 export function extractAssetIds(obj: any): string[] {
   const ids = new Set<string>();
@@ -277,10 +278,19 @@ export interface MGState {
   isMuted: boolean;
 }
 
-function createDefaultScene(index: number): MGScene {
+function createDefaultScene(index: number, existingNames?: string[]): MGScene {
+  let name = `Scene ${index}`;
+  if (existingNames && existingNames.length > 0) {
+    const nameSet = new Set(existingNames.map((n) => (n || '').trim().toLowerCase()));
+    let idx = index;
+    while (nameSet.has(`scene ${idx}`.toLowerCase())) {
+      idx++;
+    }
+    name = `Scene ${idx}`;
+  }
   return {
     id: `scene-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: `Scene ${index}`,
+    name,
     bgColor: '#0f0f0f',
     layers: [],
     transition: index === 0 ? 'none' : 'fade',
@@ -645,7 +655,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
     pushUndo();
     markDirty();
     setState((prev) => {
-      const newScene = createDefaultScene(prev.scenes.length + 1);
+      const newScene = createDefaultScene(prev.scenes.length + 1, prev.scenes.map((s) => s.name));
       return {
         ...prev,
         scenes: [...prev.scenes, newScene],
@@ -683,7 +693,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       const duplicate: MGScene = {
         ...original,
         id: newId,
-        name: `${original.name} (Copy)`,
+        name: getDuplicateName(original.name, prev.scenes.map((s) => s.name)),
         layers: original.layers.map((l) => ({ ...l, id: `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` })),
       };
       const index = prev.scenes.findIndex((s) => s.id === id);
