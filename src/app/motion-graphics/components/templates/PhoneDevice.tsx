@@ -13,6 +13,7 @@ export interface PhoneDeviceProps {
   screenImage?: string;
   screenVideo?: string;
   size?: number;
+  deviceSize?: number;
   animationTemplate?: string;
   speed?: number;
   posX?: number;
@@ -107,22 +108,6 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
 
   // Apply device color to body materials (not screen)
   useEffect(() => {
-    if (appliedColor.current === deviceColor) return;
-    appliedColor.current = deviceColor;
-
-    // Store initial colors once
-    if (Object.keys(initialColors.current).length === 0) {
-      cloned.traverse((child: any) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat: any) => {
-          if (mat && mat.color && !initialColors.current[mat.uuid]) {
-            initialColors.current[mat.uuid] = mat.color.clone();
-          }
-        });
-      });
-    }
-
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.name === IPHONE_SCREEN_MESH) return;
@@ -130,15 +115,15 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
+        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'Object_18') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const initial = initialColors.current[mat.uuid];
-        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch') ||
-          mat.name?.toLowerCase().includes('island') || mat.name?.toLowerCase().includes('hole') ||
-          mat.name?.toLowerCase().includes('camera') || mat.name?.toLowerCase().includes('lens') ||
-          mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker') ||
-          mat.name?.toLowerCase().includes('bezel');
+        const name = (mat.name || '').toLowerCase();
+        const isNotchOrLens =
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || name.includes('notch') ||
+          name.includes('island') || name.includes('hole') || name.includes('camera') ||
+          name.includes('lens') || name.includes('sensor') || name.includes('speaker') ||
+          name.includes('bezel');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
@@ -166,7 +151,9 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
               <ImageScreenMaterial url={screenImage} />
             </Suspense>
           ) : (
-            <meshBasicMaterial color="#0f0f1a" toneMapped={false} />
+            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+              <ImageScreenMaterial url="/Drag_And_Drop.png" />
+            </Suspense>
           )}
         </mesh>
       )}
@@ -217,21 +204,6 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
   }, [cloned]);
 
   useEffect(() => {
-    if (appliedColor.current === deviceColor) return;
-    appliedColor.current = deviceColor;
-
-    if (Object.keys(initialColors.current).length === 0) {
-      cloned.traverse((child: any) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat: any) => {
-          if (mat && mat.color && !initialColors.current[mat.uuid]) {
-            initialColors.current[mat.uuid] = mat.color.clone();
-          }
-        });
-      });
-    }
-
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.name === ANDROID_SCREEN_MESH) return;
@@ -239,28 +211,51 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
+        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'S22_Ultra001_2') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const initial = initialColors.current[mat.uuid];
-        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor' ||
-          mat.name === 'Bezel' || mat.name?.toLowerCase().includes('hole') || mat.name?.toLowerCase().includes('notch') ||
-          mat.name?.toLowerCase().includes('lens') || mat.name?.toLowerCase().includes('sensor') || mat.name?.toLowerCase().includes('speaker');
+        const isBodyPart =
+          mat.name === 'Rearcase' ||
+          mat.name === 'Back_Cover_Glass' ||
+          mat.name === 'BackCamDeco' ||
+          mat.name === 'Cam_Body' ||
+          mat.name === 'Rearcase_hole' ||
+          mat.name === 'BackCover_Glass_hole' ||
+          child.name === 'S22_Ultra001' ||
+          child.name === 'S22_Ultra001_16' ||
+          child.name === 'S22_Ultra001_17' ||
+          child.name === 'S22_Ultra001_10';
 
-        if (isNotchOrLens) {
-          mat.color.set('#000000');
-          if (mat.map) mat.map = null;
-        } else {
+        if (isBodyPart) {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
+          mat.needsUpdate = true;
+          return;
         }
+
+        const isHardware =
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' ||
+          mat.name === 'Black_hole' || mat.name === 'Sensor' || mat.name === 'Bezel' ||
+          mat.name === 'Cam_Bezel' || mat.name === 'Cam_Glass' || mat.name === 'Flash_Glass' ||
+          mat.name === 'Usb_1' || mat.name === 'Usb_2' || mat.name === 'Antenna_Plastic' ||
+          mat.name === 'Speaker/Mic';
+
+        if (isHardware) {
+          mat.color.set('#000000');
+          if (mat.map) mat.map = null;
+          mat.needsUpdate = true;
+          return;
+        }
+
+        mat.color.set(deviceColor);
+        if (mat.map) mat.map = null;
         mat.needsUpdate = true;
       });
     });
   }, [deviceColor, cloned]);
 
   return (
-    <group scale={88.58}>
+    <group position={[0, -7.3704, 0]} scale={88.58}>
       <primitive object={cloned} />
       {screenMeshGeometry && (
         <mesh geometry={screenMeshGeometry}>
@@ -273,7 +268,9 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
               <ImageScreenMaterial url={screenImage} />
             </Suspense>
           ) : (
-            <meshBasicMaterial color="#0f0f1a" toneMapped={false} />
+            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+              <ImageScreenMaterial url="/Drag_And_Drop.png" />
+            </Suspense>
           )}
         </mesh>
       )}
@@ -354,9 +351,7 @@ function AnimatedDevice({
         {deviceType === 'iphone' ? (
           <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
         ) : (
-          <Center>
-            <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
-          </Center>
+          <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
         )}
       </group>
     </group>
@@ -369,6 +364,7 @@ export default function PhoneDevice({
   screenImage,
   screenVideo,
   size = 1,
+  deviceSize,
   animationTemplate = 'float',
   speed = 1,
   posX = 0,
@@ -413,7 +409,7 @@ export default function PhoneDevice({
             screenVideo={screenVideo}
             animationTemplate={animationTemplate}
             speed={speed}
-            deviceSize={size === -1 ? 1 : size}
+            deviceSize={deviceSize ?? (size === -1 ? 1 : size) ?? 1}
             posX={posX}
             posY={posY}
             rotX={rotX}

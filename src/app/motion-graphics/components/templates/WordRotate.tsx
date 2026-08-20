@@ -21,6 +21,8 @@ export interface WordRotateProps {
   className?: string;
   isLoop?: boolean;
   layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 const DEFAULT_ITEMS: WordRotateItem[] = [
@@ -41,16 +43,19 @@ export default function WordRotate({
   className = '',
   isLoop = true,
   layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: WordRotateProps) {
-  const [index, setIndex] = useState(0);
+  const [liveIndex, setLiveIndex] = useState(0);
 
   useEffect(() => {
+    if (localTime !== undefined) return;
     const wordCount = Math.max(1, items.length);
     const targetCycleMs = layerDuration ? (layerDuration * 1000 * 0.85) / wordCount : 2000;
     const intervalMs = Math.max(250, targetCycleMs / Math.max(0.5, speed));
 
     const interval = setInterval(() => {
-      setIndex((prev) => {
+      setLiveIndex((prev) => {
         if (!isLoop && prev >= items.length - 1) {
           return prev;
         }
@@ -58,19 +63,69 @@ export default function WordRotate({
       });
     }, intervalMs);
     return () => clearInterval(interval);
-  }, [items.length, speed, layerDuration, isLoop]);
+  }, [items.length, speed, layerDuration, isLoop, localTime]);
 
-  const currentRaw = items[index] || items[0] || 'Word';
+  const wordCount = Math.max(1, items.length);
+  const targetCycleSec = layerDuration ? (layerDuration * 0.85) / wordCount : (2 / Math.max(0.5, speed));
+  const intervalSec = Math.max(0.25, targetCycleSec);
+
+  let activeIndex = liveIndex;
+  let deterministicY: number | null = null;
+  let deterministicOpacity: number | null = null;
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const rawCycle = elapsed / intervalSec;
+    const currentStep = Math.floor(rawCycle);
+    activeIndex = isLoop ? (currentStep % wordCount) : Math.min(currentStep, wordCount - 1);
+
+    const stepProgress = elapsed % intervalSec;
+    const transitionDur = Math.min(0.3 / Math.max(0.1, speed), intervalSec * 0.4);
+    if (stepProgress < transitionDur) {
+      const t = stepProgress / transitionDur;
+      const eased = 1 - Math.pow(1 - t, 3);
+      deterministicY = (1 - eased) * 100;
+      deterministicOpacity = eased;
+    } else {
+      deterministicY = 0;
+      deterministicOpacity = 1;
+    }
+  }
+
+  const currentRaw = items[activeIndex] || items[0] || 'Word';
   const currentText = typeof currentRaw === 'string' ? currentRaw : currentRaw?.text || 'Word';
   const resolvedIsBold = typeof currentRaw === 'object' && currentRaw.isBold !== undefined ? currentRaw.isBold : isBold;
   const resolvedIsItalic = typeof currentRaw === 'object' && currentRaw.isItalic !== undefined ? currentRaw.isItalic : isItalic;
   const resolvedFontFamily = typeof currentRaw === 'object' && currentRaw.fontFamily ? currentRaw.fontFamily : fontFamily;
 
+  if (localTime !== undefined && deterministicY !== null) {
+    return (
+      <div className={className} style={{ display: 'inline-flex', overflow: 'hidden', position: 'relative', height: `${fontSize * 1.3}px`, verticalAlign: 'bottom' }}>
+        <span
+          style={{
+            display: 'inline-block',
+            color,
+            whiteSpace: 'nowrap',
+            fontSize: `${fontSize}px`,
+            fontWeight: resolvedIsBold ? 800 : 400,
+            fontStyle: resolvedIsItalic ? 'italic' : 'normal',
+            fontFamily: resolvedFontFamily,
+            lineHeight: 1.3,
+            transform: `translateY(${deterministicY}%)`,
+            opacity: deterministicOpacity ?? 1,
+          }}
+        >
+          {currentText}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className={className} style={{ display: 'inline-flex', overflow: 'hidden', position: 'relative', height: `${fontSize * 1.3}px`, verticalAlign: 'bottom' }}>
       <AnimatePresence mode="wait">
         <motion.span
-          key={index}
+          key={activeIndex}
           initial={{ y: '100%', opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '-100%', opacity: 0 }}

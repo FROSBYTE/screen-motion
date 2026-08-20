@@ -24,12 +24,38 @@ export interface AnimatedBeamProps {
   width?: number;
   height?: number;
   className?: string;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
-function SingleBeam({ id, pathD, pathColor, pathWidth, pathOpacity, gradientStartColor, gradientStopColor, duration, reverse }: {
+function SingleBeam({ id, pathD, pathColor, pathWidth, pathOpacity, gradientStartColor, gradientStopColor, duration, reverse, localTime, layerStartTime = 0 }: {
   id: string; pathD: string; pathColor: string; pathWidth: number; pathOpacity: number;
   gradientStartColor: string; gradientStopColor: string; duration: number; reverse: boolean;
+  localTime?: number; layerStartTime?: number;
 }) {
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const progress = ((elapsed % duration) / duration);
+    const x1 = reverse ? `${(90 - progress * 100).toFixed(1)}%` : `${(10 + progress * 100).toFixed(1)}%`;
+    const x2 = reverse ? `${(100 - progress * 100).toFixed(1)}%` : `${(0 + progress * 100).toFixed(1)}%`;
+
+    return (
+      <>
+        <path d={pathD} stroke={pathColor} strokeWidth={pathWidth} strokeOpacity={pathOpacity} strokeLinecap="round" fill="none" />
+        <path d={pathD} strokeWidth={pathWidth} stroke={`url(#${id})`} strokeOpacity="1" strokeLinecap="round" fill="none" />
+        <defs>
+          <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x1} x2={x2} y1="0%" y2="0%">
+            <stop stopColor={gradientStartColor} stopOpacity="0" />
+            <stop stopColor={gradientStartColor} />
+            <stop offset="32.5%" stopColor={gradientStopColor} />
+            <stop offset="100%" stopColor={gradientStopColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      </>
+    );
+  }
+
   const gradientCoordinates = reverse
     ? { x1: ['90%', '-10%'], x2: ['100%', '0%'], y1: ['0%', '0%'], y2: ['0%', '0%'] }
     : { x1: ['10%', '110%'], x2: ['0%', '100%'], y1: ['0%', '0%'], y2: ['0%', '0%'] };
@@ -89,6 +115,9 @@ export default function AnimatedBeam({
   width = 400,
   height = 200,
   className = '',
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: AnimatedBeamProps) {
   const baseId = useId();
   const effectiveDuration = duration / speed;
@@ -185,6 +214,8 @@ export default function AnimatedBeam({
             gradientStopColor={gradientStopColor}
             duration={effectiveDuration}
             reverse={beam.reverse}
+            localTime={localTime}
+            layerStartTime={layerStartTime}
           />
         ))}
       </svg>

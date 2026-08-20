@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, FolderInput } from 'lucide-react';
 import { useMGState, getSceneDuration, SceneTransition } from '../store';
 import { COMPONENT_TEMPLATES } from './templates';
 import { Reorder } from 'motion/react';
@@ -11,6 +11,12 @@ const TRANSITION_OPTIONS: { id: SceneTransition; label: string; icon: string }[]
   { id: 'none', label: 'None (Cut)', icon: '⚡' },
   { id: 'clip-wipe', label: 'Clip Wipe', icon: '◧' },
   { id: 'fade', label: 'Fade', icon: '🌫️' },
+  { id: 'slide-left', label: 'Slide Left', icon: '⬅' },
+  { id: 'slide-right', label: 'Slide Right', icon: '➡' },
+  { id: 'slide-up', label: 'Slide Up', icon: '⬆' },
+  { id: 'slide-down', label: 'Slide Down', icon: '⬇' },
+  { id: 'zoom', label: 'Zoom', icon: '🔍' },
+  { id: 'blur', label: 'Blur', icon: '💠' },
   { id: 'iris', label: 'Iris', icon: '⊙' },
   { id: 'iris-click', label: 'Iris Click', icon: '◎' },
   { id: 'loading-line', label: 'Loading Line', icon: '━' },
@@ -18,10 +24,11 @@ const TRANSITION_OPTIONS: { id: SceneTransition; label: string; icon: string }[]
 
 export default function HierarchyPanel() {
   const {
-    state, dispatch, removeScene, updateScene, duplicateScene, setScenes,
-    addLayer, addComponentLayer, removeLayer, updateLayer, duplicateLayer, setLayers, seekTo, getSceneStartTime
+    state, dispatch, addScene, removeScene, updateScene, duplicateScene, setScenes,
+    addLayer, addComponentLayer, removeLayer, updateLayer, duplicateLayer, moveLayerToScene, setLayers, seekTo, getSceneStartTime
   } = useMGState();
   const { scenes, activeSceneId, selectedLayerId } = state;
+  const [movingLayerId, setMovingLayerId] = useState<string | null>(null);
   const activeTab = state.activeSidebarTab || 'scene';
   const setActiveTab = (tab: 'scene' | 'components') => dispatch({ activeSidebarTab: tab });
   const pickerOpen = state.isPickerOpen || false;
@@ -74,7 +81,8 @@ export default function HierarchyPanel() {
       <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
         {/* ===== SCENES TAB ===== */}
         {activeTab === 'scene' && (
-          <Reorder.Group
+          <>
+            <Reorder.Group
             axis="y"
             values={scenes}
             onReorder={setScenes}
@@ -208,7 +216,7 @@ export default function HierarchyPanel() {
                       </button>
                     )}
                   </div>
-                  {scene.transition !== 'none' && (
+                  {scenes.findIndex((s) => s.id === scene.id) > 0 && scene.transition !== 'none' && (
                     <div style={{ marginTop: '4px', paddingLeft: '22px', fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <ChevronRight size={10} />
                       {TRANSITION_OPTIONS.find((t) => t.id === scene.transition)?.label || 'Cut'} ({scene.transitionDuration}s)
@@ -218,6 +226,39 @@ export default function HierarchyPanel() {
               );
             })}
           </Reorder.Group>
+          <button
+            onClick={() => addScene()}
+            className="mg-btn-interactive"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px dashed var(--border-color)',
+              color: 'var(--text-primary)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              marginTop: '4px',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            <Plus size={13} strokeWidth={2.5} />
+            New Scene
+          </button>
+        </>
         )}
 
         {/* ===== COMPONENTS TAB ===== */}
@@ -262,6 +303,7 @@ export default function HierarchyPanel() {
                       gap: '8px',
                       userSelect: 'none',
                       transition: 'all 0.15s ease',
+                      position: 'relative',
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
@@ -313,6 +355,103 @@ export default function HierarchyPanel() {
                         title="Click to rename component"
                       />
                     </div>
+                    {scenes.length > 1 && (
+                      <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMovingLayerId(movingLayerId === layer.id ? null : layer.id);
+                          }}
+                          className="mg-btn-interactive"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: movingLayerId === layer.id ? 'var(--accent-primary)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#ffffff';
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = movingLayerId === layer.id ? 'var(--accent-primary)' : 'var(--text-muted)';
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                          title="Move Component to another Scene"
+                        >
+                          <FolderInput size={12} />
+                        </button>
+                        {movingLayerId === layer.id && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              right: 0,
+                              zIndex: 100,
+                              background: 'var(--bg-secondary, #181824)',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              borderRadius: '6px',
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.7)',
+                              padding: '4px',
+                              minWidth: '130px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px',
+                            }}
+                          >
+                            <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', padding: '2px 6px' }}>
+                              MOVE TO SCENE
+                            </div>
+                            {scenes.map((s) => {
+                              const isCurrent = s.id === activeSceneId;
+                              return (
+                                <button
+                                  key={s.id}
+                                  disabled={isCurrent}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    moveLayerToScene(layer.id, s.id);
+                                    setMovingLayerId(null);
+                                  }}
+                                  style={{
+                                    textAlign: 'left',
+                                    padding: '5px 8px',
+                                    fontSize: '11px',
+                                    fontWeight: 500,
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    background: isCurrent ? 'rgba(255,255,255,0.04)' : 'transparent',
+                                    color: isCurrent ? 'rgba(255,255,255,0.35)' : '#ffffff',
+                                    cursor: isCurrent ? 'default' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    width: '100%',
+                                    boxSizing: 'border-box',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isCurrent) e.currentTarget.style.background = 'transparent';
+                                  }}
+                                >
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {s.name}
+                                  </span>
+                                  {isCurrent && <span style={{ fontSize: '9px', opacity: 0.6 }}>(Current)</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
                       className="mg-btn-interactive"
@@ -361,6 +500,38 @@ export default function HierarchyPanel() {
                 );
               })}
             </Reorder.Group>
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="mg-btn-interactive"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px dashed var(--border-color)',
+                color: 'var(--text-primary)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                marginTop: '4px',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              New Component
+            </button>
           </>
         )}
       </div>

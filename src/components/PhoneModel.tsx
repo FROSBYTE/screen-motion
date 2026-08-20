@@ -105,9 +105,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
             {state.device === 'ios' ? (
               <IPhone16 screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
             ) : (
-              <Center>
-                <AndroidModel screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
-              </Center>
+              <AndroidModel screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
             )}
           </group>
         </React.Suspense>

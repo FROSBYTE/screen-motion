@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode, useMemo } from 'react';
-import type { ComponentTemplateName } from './components/templates';
+import { type ComponentTemplateName, COMPONENT_TEMPLATES } from './components/templates';
 import { TEMPLATES } from '@/types';
 import { saveAsset, getAssets, loadDraft, saveDraft, clearDraft, getProject, saveProject, createProject, listProjects, MGProjectData } from '@/lib/storage/indexedDb';
 import { getDuplicateName } from '@/lib/utils';
@@ -344,6 +344,7 @@ interface MGContextValue {
   removeLayer: (id: string) => void;
   updateLayer: (id: string, updates: Partial<MGLayer>) => void;
   duplicateLayer: (id: string) => void;
+  moveLayerToScene: (layerId: string, targetSceneId: string, targetIndex?: number) => void;
   setLayers: (layers: MGLayer[]) => void;
   resetSelectedComponent: () => void;
   // Playback
@@ -629,8 +630,9 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       if (time >= elapsed && time < elapsed + sceneDur) {
         const localTime = time - elapsed;
         // Calculate transition progress (0 = fully transitioning in, 1 = fully visible)
+        // First scene (i === 0) has no incoming transition
         let transitionProgress = 1;
-        if (scene.transition !== 'none' && scene.transitionDuration > 0) {
+        if (i > 0 && scene.transition !== 'none' && scene.transitionDuration > 0) {
           if (localTime < scene.transitionDuration) {
             transitionProgress = localTime / scene.transitionDuration;
           }
@@ -835,10 +837,16 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       if (!activeScene) return prev;
       const original = activeScene.layers.find((l) => l.id === id);
       if (!original) return prev;
+      
+      const getLayerName = (layer: MGLayer) => layer.name !== undefined ? layer.name : (layer.type === 'text' ? layer.text : (COMPONENT_TEMPLATES.find((t) => t.id === layer.templateId)?.name || layer.templateId));
+      const layerDisplayName = getLayerName(original);
+      const existingNames = activeScene.layers.map(getLayerName);
+
       const newId = `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const duplicate = {
         ...original,
         id: newId,
+        name: getDuplicateName(layerDisplayName, existingNames),
         startTime: original.startTime + original.duration,
       } as MGLayer;
       return {
@@ -847,6 +855,49 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
           s.id === prev.activeSceneId ? { ...s, layers: [...s.layers, duplicate] } : s
         ),
         selectedLayerId: newId,
+      };
+    });
+  }, [pushUndo, markDirty]);
+
+  const moveLayerToScene = useCallback((layerId: string, targetSceneId: string, targetIndex?: number) => {
+    pushUndo();
+    markDirty();
+    setState((prev) => {
+      let layerToMove: MGLayer | null = null;
+      let sourceSceneId: string | null = null;
+
+      for (const scene of prev.scenes) {
+        const found = scene.layers.find((l) => l.id === layerId);
+        if (found) {
+          layerToMove = found;
+          sourceSceneId = scene.id;
+          break;
+        }
+      }
+
+      if (!layerToMove || !sourceSceneId || sourceSceneId === targetSceneId) return prev;
+
+      const newScenes = prev.scenes.map((scene) => {
+        if (scene.id === sourceSceneId) {
+          return { ...scene, layers: scene.layers.filter((l) => l.id !== layerId) };
+        }
+        if (scene.id === targetSceneId) {
+          const newLayers = [...scene.layers];
+          if (typeof targetIndex === 'number' && targetIndex >= 0 && targetIndex <= newLayers.length) {
+            newLayers.splice(targetIndex, 0, layerToMove!);
+          } else {
+            newLayers.push(layerToMove!);
+          }
+          return { ...scene, layers: newLayers };
+        }
+        return scene;
+      });
+
+      return {
+        ...prev,
+        scenes: newScenes,
+        activeSceneId: targetSceneId,
+        selectedLayerId: layerId,
       };
     });
   }, [pushUndo, markDirty]);
@@ -1090,6 +1141,7 @@ export function MotionGraphicsProvider({ children, projectId }: { children: Reac
       removeLayer,
       updateLayer,
       duplicateLayer,
+      moveLayerToScene,
       setLayers,
       resetSelectedComponent,
       play,

@@ -17,6 +17,9 @@ export interface UnlumenAnimatedListProps {
   count?: number; // how many notifications to show (cycles/limits from items)
   speed?: number;
   className?: string;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 const DEFAULT_ITEMS: NotificationItem[] = [
@@ -32,6 +35,9 @@ export default function UnlumenAnimatedList({
   count,
   speed = 1,
   className = '',
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: UnlumenAnimatedListProps) {
   const safeSpeed = Math.max(0.1, speed || 1);
   const effectiveItems = typeof count === 'number' ? items.slice(0, count) : items;
@@ -41,19 +47,70 @@ export default function UnlumenAnimatedList({
   const itemsRef = useRef(effectiveItems);
 
   useEffect(() => {
+    if (localTime !== undefined) return;
     itemsRef.current = effectiveItems;
     setVisibleItems([]);
     setCurrentIndex(0);
-  }, [itemsKey, safeSpeed]);
+  }, [itemsKey, safeSpeed, localTime]);
 
   useEffect(() => {
+    if (localTime !== undefined) return;
     if (currentIndex >= itemsRef.current.length) return;
     const timer = setTimeout(() => {
       setVisibleItems((prev) => [itemsRef.current[currentIndex], ...prev]);
       setCurrentIndex((i) => i + 1);
     }, 800 / safeSpeed);
     return () => clearTimeout(timer);
-  }, [currentIndex, safeSpeed]);
+  }, [currentIndex, safeSpeed, localTime]);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const itemInterval = 0.8 / safeSpeed;
+    const visibleCount = Math.min(effectiveItems.length, Math.floor(elapsed / itemInterval) + 1);
+    const displayedItems = effectiveItems.slice(0, visibleCount).reverse();
+
+    return (
+      <div className={className} style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {displayedItems.map((item, index) => {
+          // The most recent item is index 0 in the reversed list
+          const originalIndex = visibleCount - 1 - index;
+          const itemTime = originalIndex * itemInterval;
+          const itemAge = Math.max(0, elapsed - itemTime);
+          const animDur = 0.3 / safeSpeed;
+          const t = Math.min(1, itemAge / animDur);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const opacity = eased;
+          const y = (1 - eased) * -20;
+
+          return (
+            <div
+              key={index}
+              style={{
+                opacity,
+                transform: `translateY(${y}px)`,
+                padding: '12px 16px',
+                background: item.bgColor || 'rgba(255,255,255,0.05)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              <div style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: item.accentColor || '#6366f1', flexShrink: 0,
+              }} />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
+                <div style={{ fontSize: '11px', color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className={className} style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

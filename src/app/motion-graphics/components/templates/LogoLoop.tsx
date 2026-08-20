@@ -16,6 +16,9 @@ export interface LogoLoopProps {
   textColor?: string;
   isBold?: boolean;
   className?: string;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 const DEFAULT_ITEMS: LogoLoopItem[] = [
@@ -36,6 +39,9 @@ export default function LogoLoop({
   textColor = '#ffffff',
   isBold = true,
   className = '',
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: LogoLoopProps) {
   const baseItems = items && items.length > 0 ? items : DEFAULT_ITEMS;
   
@@ -47,6 +53,16 @@ export default function LogoLoop({
 
   const duration = Math.max(3, (displayItems.length * 3) / Math.max(0.1, speed));
   const animName = direction === 'right' ? 'logoLoopScrollRight' : 'logoLoopScrollLeft';
+
+  const deterministicTranslate = localTime !== undefined
+    ? (() => {
+        const elapsed = Math.max(0, localTime - layerStartTime);
+        const offsetPercent = ((elapsed % duration) / duration) * 100;
+        return direction === 'right'
+          ? `calc(-${100 - offsetPercent}% - ${(1 - offsetPercent / 100) * gap}px)`
+          : `calc(-${offsetPercent}% - ${(offsetPercent / 100) * gap}px)`;
+      })()
+    : null;
 
   const renderItem = (item: LogoLoopItem, key: string | number) => (
     <div
@@ -114,7 +130,8 @@ export default function LogoLoop({
             flexShrink: 0,
             gap: `${gap}px`,
             alignItems: 'center',
-            animation: `${animName} ${duration}s linear infinite`,
+            animation: deterministicTranslate !== null ? 'none' : `${animName} ${duration}s linear infinite`,
+            transform: deterministicTranslate !== null ? `translateX(${deterministicTranslate})` : undefined,
             willChange: 'transform',
           }}
         >
@@ -126,7 +143,8 @@ export default function LogoLoop({
             flexShrink: 0,
             gap: `${gap}px`,
             alignItems: 'center',
-            animation: `${animName} ${duration}s linear infinite`,
+            animation: deterministicTranslate !== null ? 'none' : `${animName} ${duration}s linear infinite`,
+            transform: deterministicTranslate !== null ? `translateX(${deterministicTranslate})` : undefined,
             willChange: 'transform',
           }}
           aria-hidden="true"
