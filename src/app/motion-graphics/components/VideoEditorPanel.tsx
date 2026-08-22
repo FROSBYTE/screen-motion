@@ -20,6 +20,12 @@ export default function VideoEditorPanel() {
   const { state, dispatch, play, pause, seekTo, updateLayer, removeLayer, resetSelectedComponent, totalDuration, getSceneStartTime, undo, redo, canUndo, canRedo, pushUndo, moveKeyframe } = useMGState();
   const { scenes, currentTime, isPlaying, selectedLayerId, activeSceneId, activeSidebarTab } = state;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
+
+  const scenesRef = useRef(scenes);
+  useEffect(() => {
+    scenesRef.current = scenes;
+  }, [scenes]);
+
   const layers = activeScene?.layers || [];
   const hasLayers = layers.length > 0;
   const layersRef = useRef(layers);
@@ -86,7 +92,7 @@ export default function VideoEditorPanel() {
       const dt = (e.clientX - draggingLayer.startX) / pxPerSec;
       const snapThreshold = 8 / pxPerSec;
       // Snap candidates use layers from the dragging layer's scene
-      const dragScene = scenes.find((s) => s.id === draggingLayer.sceneId);
+      const dragScene = scenesRef.current.find((s) => s.id === draggingLayer.sceneId);
       const dragSceneLayers = dragScene?.layers || [];
       const candidates = [
         { time: 0, kind: 'scene-start' as const },
@@ -158,7 +164,7 @@ export default function VideoEditorPanel() {
       window.removeEventListener('pointerup', handleUp);
       setSnapGuide(null);
     };
-  }, [draggingLayer, pxPerSec, updateLayer, scenes]);
+  }, [draggingLayer, pxPerSec, updateLayer]);
 
   useEffect(() => {
     if (!draggingKeyframe) return;
@@ -744,10 +750,10 @@ export default function VideoEditorPanel() {
                 }}
                 style={{
                   position: 'absolute',
-                  top: 0,
+                  top: '30px',
+                  bottom: 0,
                   left: `${currentTime * pxPerSec}px`,
                   width: '24px',
-                  height: '100%',
                   transform: 'translateX(-50%)',
                   zIndex: 40,
                   cursor: 'ew-resize',
@@ -757,10 +763,10 @@ export default function VideoEditorPanel() {
               >
                 <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '2px', height: '100%', background: 'var(--accent-primary)', opacity: 0.85, pointerEvents: 'none' }} />
                 <div style={{
-                  position: 'relative',
+                  position: 'absolute',
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  top: '30px',
+                  top: 0,
                   width: '10px',
                   height: '12px',
                   background: 'var(--accent-primary)',

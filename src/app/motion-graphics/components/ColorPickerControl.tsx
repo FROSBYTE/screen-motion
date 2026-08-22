@@ -1,141 +1,118 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef } from 'react';
+import { Pencil } from 'lucide-react';
 
 interface ColorPickerControlProps {
   label?: string;
   value: string;
   onChange: (color: string) => void;
-  showHex?: boolean;
   style?: React.CSSProperties;
   height?: string | number;
+  title?: string;
 }
 
-function normalizeHex(color: string): string {
+export function normalizeHex(color: string): string {
   if (!color) return '#000000';
   if (/^#[0-9A-Fa-f]{6}$/.test(color)) return color;
   if (/^#[0-9A-Fa-f]{3}$/.test(color)) {
     return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
   }
-  return '#000000';
+  return color.startsWith('#') ? color : '#000000';
+}
+
+function getContrastColor(hex: string): string {
+  const cleanHex = normalizeHex(hex).replace('#', '');
+  const r = parseInt(cleanHex.substring(0, 2), 16) || 0;
+  const g = parseInt(cleanHex.substring(2, 4), 16) || 0;
+  const b = parseInt(cleanHex.substring(4, 6), 16) || 0;
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 140 ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.88)';
 }
 
 export default function ColorPickerControl({
   label,
   value,
   onChange,
-  showHex = true,
   style,
-  height = '32px',
+  height = '36px',
+  title,
 }: ColorPickerControlProps) {
   const colorInputRef = useRef<HTMLInputElement>(null);
-  const colorVal = value || '#000000';
-  const [hexInput, setHexInput] = useState(colorVal);
-
-  useEffect(() => {
-    setHexInput(colorVal);
-  }, [colorVal]);
-
-  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value;
-    setHexInput(newVal);
-    // Validate hex format (#123456 or #fff or 123456)
-    if (/^#([0-9A-F]{3}){1,2}$/i.test(newVal)) {
-      if (newVal.toLowerCase() !== colorVal.toLowerCase()) {
-        onChange(newVal);
-      }
-    } else if (/^[0-9A-F]{6}$/i.test(newVal)) {
-      const formatted = `#${newVal}`;
-      if (formatted.toLowerCase() !== colorVal.toLowerCase()) {
-        onChange(formatted);
-      }
-    }
-  };
-
-  const handleHexBlur = () => {
-    if (!/^#([0-9A-F]{3}){1,2}$/i.test(hexInput) && !/^[0-9A-F]{6}$/i.test(hexInput)) {
-      setHexInput(colorVal);
-    }
-  };
+  const colorVal = normalizeHex(value || '#000000');
+  const iconColor = getContrastColor(colorVal);
 
   return (
-    <div style={{ flex: 1, ...style }}>
+    <div style={{ flex: 1, minWidth: 0, ...style }}>
       {label && (
-        <label style={{ fontSize: '13px', color: '#ffffff', marginBottom: '5px', display: 'block', fontWeight: 600 }}>
+        <label style={{
+          fontSize: '13px',
+          color: '#ffffff',
+          marginBottom: '5px',
+          display: 'block',
+          fontWeight: 600,
+          fontFamily: '"Plus Jakarta Sans", sans-serif',
+        }}>
           {label}
         </label>
       )}
       <div
-        className="mg-btn-interactive"
+        onClick={() => colorInputRef.current?.click()}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          padding: '4px 6px',
-          background: 'var(--bg-primary)',
-          border: '1px solid var(--border-color)',
+          justifyContent: 'flex-end',
+          padding: '0 10px',
+          backgroundColor: colorVal,
+          border: '1px solid rgba(255, 255, 255, 0.18)',
           borderRadius: '8px',
           height,
-          transition: 'all 0.15s ease',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
+          cursor: 'pointer',
           position: 'relative',
+          userSelect: 'none',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.28)')}
-        onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-color)')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.45)';
+          e.currentTarget.style.boxShadow = '0 0 0 1px rgba(255,255,255,0.2), 0 2px 6px rgba(0,0,0,0.3)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.18)';
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.25)';
+        }}
+        title={title || `Color: ${colorVal} (Click to change)`}
       >
-        {/* Clickable Swatch Dot */}
-        <div
-          onClick={() => colorInputRef.current?.click()}
-          className="mg-color-swatch-card"
-          style={{
-            width: '18px',
-            height: '18px',
-            borderRadius: '4px',
-            backgroundColor: colorVal,
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
-            flexShrink: 0,
-            cursor: 'pointer',
-          }}
-          title="Click to open color picker"
-        />
+        {/* Right-aligned Pencil Edit Icon */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: iconColor,
+          pointerEvents: 'none',
+          filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))',
+        }}>
+          <Pencil size={13} strokeWidth={2.2} />
+        </div>
 
-        {/* Editable Hex Input Field */}
-        {showHex ? (
-          <input
-            type="text"
-            value={hexInput}
-            onChange={handleHexChange}
-            onBlur={handleHexBlur}
-            style={{
-              flex: 1,
-              width: '100%',
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-primary)',
-              fontSize: '11px',
-              fontFamily: 'monospace',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              outline: 'none',
-              padding: 0,
-            }}
-            placeholder="#000000"
-            title="Type custom hex value"
-          />
-        ) : null}
-
-        {/* Hidden Native Picker */}
+        {/* Hidden Native Color Picker */}
         <input
           ref={colorInputRef}
           type="color"
-          value={normalizeHex(colorVal)}
+          value={colorVal}
           onChange={(e) => {
             if (e.target.value.toLowerCase() !== colorVal.toLowerCase()) {
               onChange(e.target.value);
-              setHexInput(e.target.value);
             }
           }}
-          style={{ opacity: 0, width: 0, height: 0, position: 'absolute', pointerEvents: 'none' }}
+          style={{
+            opacity: 0,
+            width: 0,
+            height: 0,
+            position: 'absolute',
+            pointerEvents: 'none',
+          }}
         />
       </div>
     </div>

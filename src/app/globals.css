@@ -1860,3 +1860,17 @@ button:not(:disabled):active,
   background: rgba(255, 255, 255, 0.03) !important;
 }
 
+/* Disable button press (scale/shrink) effect for all UI components inside Properties Panel */
+.properties-panel button:active,
+.properties-panel [role="button"]:active,
+.properties-panel .mg-btn-interactive:active,
+.properties-panel .mg-card-toggle:active,
+.properties-panel .mg-color-swatch-card:active,
+.properties-panel .mg-format-btn:active,
+.properties-panel input:active,
+.properties-panel select:active {
+  transform: none !important;
+  filter: none !important;
+}
+
+

@@ -208,6 +208,8 @@ export default function BasicDropdown({
               top: position.isAbove ? 'auto' : `${position.top}px`,
               bottom: position.isAbove ? `${window.innerHeight - position.top}px` : 'auto',
               width: `${position.width}px`,
+              minWidth: `${position.width}px`,
+              maxWidth: `${position.width}px`,
               transformOrigin: position.isAbove ? 'bottom' : 'top',
               pointerEvents: 'auto',
               backgroundColor: 'rgba(10, 10, 10, 0.98)',
@@ -238,6 +240,7 @@ export default function BasicDropdown({
                 overflowX: 'hidden',
                 width: '100%',
                 boxSizing: 'border-box',
+                scrollbarGutter: 'stable',
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(255, 255, 255, 0.25) transparent',
               }}

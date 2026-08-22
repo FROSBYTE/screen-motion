@@ -1628,17 +1628,8 @@ export default function MotionCanvas() {
   const prevScene = useMemo(() => {
     if (!currentInfo) return null;
     const idx = scenes.findIndex((s) => s.id === currentInfo.scene.id);
-    if (idx < 0) return null;
-    if (currentInfo.transitionProgress < 1) {
-      if (idx > 0) return scenes[idx - 1];
-      return {
-        id: '__initial_bg__',
-        name: 'Initial',
-        bgColor: '#000000',
-        layers: [],
-        transition: 'none',
-        transitionDuration: 0,
-      } as MGScene;
+    if (idx > 0 && currentInfo.transitionProgress < 1) {
+      return scenes[idx - 1];
     }
     return null;
   }, [currentInfo, scenes]);
