@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import BasicDropdown, { DropdownItem } from '@/components/ui/smoothui/basic-dropdown';
 
 interface CustomDropdownProps {
   value: number;
@@ -17,61 +18,69 @@ export default function CustomDropdown({ value, onChange, options, style }: Cust
 
   if (isCustom || !isInOptions) {
     return (
-      <input
-        type="number"
-        value={customValue}
-        onChange={(e) => {
-          setCustomValue(e.target.value);
-          const num = parseFloat(e.target.value);
-          if (!isNaN(num) && num >= 0) onChange(num);
-        }}
-        onBlur={() => {
-          const num = parseFloat(customValue);
-          if (!isNaN(num) && options.some((o) => o.value === num)) setIsCustom(false);
-        }}
-        step="0.1"
-        min="0"
-        style={{
-          padding: '8px',
-          background: 'var(--bg-primary)',
-          border: '1px solid var(--accent-primary)',
-          borderRadius: '6px',
-          color: 'var(--text-primary)',
-          fontSize: '12px',
-          outline: 'none',
-          ...style,
-        }}
-      />
+      <div style={{ position: 'relative', width: '82px', minWidth: '82px', flexShrink: 0, ...style }}>
+        <input
+          type="number"
+          value={customValue}
+          onChange={(e) => {
+            setCustomValue(e.target.value);
+            const num = parseFloat(e.target.value);
+            if (!isNaN(num) && num >= 0) onChange(num);
+          }}
+          onBlur={() => {
+            const num = parseFloat(customValue);
+            if (!isNaN(num) && options.some((o) => o.value === num)) setIsCustom(false);
+          }}
+          step="0.1"
+          min="0"
+          autoFocus
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            padding: '7px 8px',
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--accent-primary, #ffffff)',
+            borderRadius: '6px',
+            color: '#ffffff',
+            fontSize: '12px',
+            outline: 'none',
+          }}
+        />
+      </div>
     );
   }
 
+  const dropdownItems: DropdownItem[] = [
+    ...options.map((opt) => ({
+      id: String(opt.value),
+      label: opt.label,
+    })),
+    {
+      id: 'custom',
+      label: 'Custom...',
+    },
+  ];
+
   return (
-    <select
-      value={value}
-      onChange={(e) => {
-        if (e.target.value === 'custom') {
-          setIsCustom(true);
-          setCustomValue(String(value));
-        } else {
-          onChange(Number(e.target.value));
-        }
-      }}
-      style={{
-        padding: '8px',
-        background: 'var(--bg-primary)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '6px',
-        color: 'var(--text-primary)',
-        fontSize: '12px',
-        outline: 'none',
-        cursor: 'pointer',
-        ...style,
-      }}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{opt.label}</option>
-      ))}
-      <option value="custom" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Custom...</option>
-    </select>
+    <div style={{ width: '82px', minWidth: '82px', flexShrink: 0, ...style }}>
+      <BasicDropdown
+        compact
+        items={dropdownItems}
+        value={String(value)}
+        onChange={(selectedId) => {
+          if (selectedId === 'custom') {
+            setIsCustom(true);
+            setCustomValue(String(value));
+          } else {
+            onChange(Number(selectedId));
+          }
+        }}
+        buttonStyle={{
+          padding: '7px 8px',
+          fontSize: '12px',
+          width: '100%',
+        }}
+      />
+    </div>
   );
 }

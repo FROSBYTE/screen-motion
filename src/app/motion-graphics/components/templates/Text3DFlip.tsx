@@ -18,14 +18,18 @@ export interface Text3DFlipProps {
   rotateDirection?: RotateDirection;
   speed?: number;
   autoPlay?: boolean;
+  isLoop?: boolean;
   className?: string;
+  layerDuration?: number;
+  localTime?: number;
+  layerStartTime?: number;
 }
 
 const ROTATION_MAP: Record<RotateDirection, string> = {
-  top: 'rotateX(90deg)',
-  right: 'rotateY(90deg)',
-  bottom: 'rotateX(-90deg)',
-  left: 'rotateY(-90deg)',
+  top: 'rotateX(180deg)',
+  right: 'rotateY(180deg)',
+  bottom: 'rotateX(-180deg)',
+  left: 'rotateY(-180deg)',
 };
 
 export default function Text3DFlip({
@@ -35,12 +39,15 @@ export default function Text3DFlip({
   flipColor = '#a855f7',
   fontSize = 36,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
-  staggerDuration = 0.05,
   staggerFrom = 'first',
   rotateDirection = 'top',
   speed = 1,
   autoPlay = true,
+  isLoop = true,
   className = '',
+  layerDuration,
+  localTime,
+  layerStartTime = 0,
 }: Text3DFlipProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,31 +67,78 @@ export default function Text3DFlip({
   }, [words]);
 
   const totalChars = allChars.length;
+  const safeSpeed = Math.max(0.1, speed);
+  const fixedStagger = 0.035 / safeSpeed;
 
   const getDelay = useCallback((index: number) => {
-    const effectiveStagger = staggerDuration / speed;
     switch (staggerFrom) {
-      case 'first': return index * effectiveStagger;
-      case 'last': return (totalChars - 1 - index) * effectiveStagger;
-      case 'center': return Math.abs(Math.floor(totalChars / 2) - index) * effectiveStagger;
-      case 'random': return Math.random() * totalChars * effectiveStagger;
-      default: return index * effectiveStagger;
+      case 'first': return index * fixedStagger;
+      case 'last': return (totalChars - 1 - index) * fixedStagger;
+      case 'center': return Math.abs(Math.floor(totalChars / 2) - index) * fixedStagger;
+      case 'random': return (index % 5) * 0.04 / safeSpeed;
+      default: return index * fixedStagger;
     }
-  }, [staggerDuration, staggerFrom, totalChars, speed]);
+  }, [fixedStagger, staggerFrom, totalChars, safeSpeed]);
+
+  const maxDelay = (totalChars > 0 ? totalChars - 1 : 0) * fixedStagger;
+  const flipDuration = maxDelay + 0.6 / safeSpeed;
+  const holdDuration = 1.4 / safeSpeed;
 
   // Auto-play animation cycle
   useEffect(() => {
-    if (!autoPlay) return;
-    const triggerFlip = () => {
+    if (!autoPlay || localTime !== undefined) return;
+    let isActive = true;
+
+    const runCycle = () => {
+      if (!isActive) return;
       setIsFlipped(true);
+
+      if (!isLoop) return;
+
       timeoutRef.current = setTimeout(() => {
+        if (!isActive) return;
         setIsFlipped(false);
-        timeoutRef.current = setTimeout(triggerFlip, 2000 / speed);
-      }, 1000 / speed);
+
+        timeoutRef.current = setTimeout(() => {
+          if (!isActive) return;
+          runCycle();
+        }, (flipDuration + holdDuration) * 1000);
+      }, (flipDuration + holdDuration) * 1000);
     };
-    timeoutRef.current = setTimeout(triggerFlip, 500 / speed);
-    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-  }, [autoPlay, speed]);
+
+    timeoutRef.current = setTimeout(runCycle, 400 / safeSpeed);
+
+    return () => {
+      isActive = false;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [autoPlay, safeSpeed, isLoop, flipDuration, holdDuration, localTime]);
+
+  const cycleHalf = flipDuration + holdDuration;
+  const cycleTotal = cycleHalf * 2;
+  let deterministicRotationAngles: Record<number, number> | null = null;
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const timeInCycle = isLoop ? (elapsed % cycleTotal) : Math.min(elapsed, cycleHalf);
+    const inFirstHalf = timeInCycle < cycleHalf;
+    const halfElapsed = inFirstHalf ? timeInCycle : timeInCycle - cycleHalf;
+
+    deterministicRotationAngles = {};
+    for (let i = 0; i < totalChars; i++) {
+      const delay = getDelay(i);
+      const singleFlipDur = 0.6 / safeSpeed;
+      const charTime = Math.max(0, halfElapsed - delay);
+      const t = Math.min(1, Math.max(0, charTime / singleFlipDur));
+      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+      if (inFirstHalf) {
+        deterministicRotationAngles[i] = eased * 180;
+      } else {
+        deterministicRotationAngles[i] = (1 - eased) * 180;
+      }
+    }
+  }
 
   const springTransition = {
     type: 'spring' as const,
@@ -117,9 +171,49 @@ export default function Text3DFlip({
               (c) => c.wordIdx === wordIdx && c.charIdx === charIdx
             );
             const delay = getDelay(globalIdx);
-            // Get the flipped character
             const flippedWord = flippedWords[wordIdx] || '';
             const flippedChar = Array.from(flippedWord)[charIdx] || char;
+
+            const charAngle = deterministicRotationAngles
+              ? deterministicRotationAngles[globalIdx] ?? 0
+              : (isFlipped ? 180 : 0);
+
+            const rotationTransform =
+              rotateDirection === 'top' || rotateDirection === 'bottom'
+                ? `rotateX(${rotateDirection === 'bottom' ? -charAngle : charAngle}deg)`
+                : `rotateY(${rotateDirection === 'left' ? -charAngle : charAngle}deg)`;
+
+            if (deterministicRotationAngles) {
+              return (
+                <span
+                  key={`${wordIdx}-${charIdx}`}
+                  style={{
+                    display: 'inline-block',
+                    transformStyle: 'preserve-3d',
+                    position: 'relative',
+                    color,
+                    whiteSpace: 'pre',
+                    transform: rotationTransform,
+                  }}
+                >
+                  <span style={{ backfaceVisibility: 'hidden', display: 'inline-block' }}>
+                    {char}
+                  </span>
+                  <span style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    color: flipColor,
+                    backfaceVisibility: 'hidden',
+                    transform: rotateDirection === 'top' || rotateDirection === 'bottom'
+                      ? 'rotateX(180deg)' : 'rotateY(180deg)',
+                    display: 'inline-block',
+                  }}>
+                    {flippedChar}
+                  </span>
+                </span>
+              );
+            }
 
             return (
               <motion.span

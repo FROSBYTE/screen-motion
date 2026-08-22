@@ -3,26 +3,26 @@
 @source "../";
 
 @theme {
-  --color-background: #222831;
-  --color-foreground: #EEEEEE;
-  --color-card: #393E46;
-  --color-card-foreground: #EEEEEE;
-  --color-popover: #393E46;
-  --color-popover-foreground: #EEEEEE;
-  --color-primary: #00ADB5;
-  --color-primary-foreground: #222831;
-  --color-secondary: #393E46;
-  --color-secondary-foreground: #EEEEEE;
-  --color-muted: #393E46;
-  --color-muted-foreground: #a0aab5;
-  --color-accent: #00ADB5;
-  --color-accent-foreground: #222831;
+  --color-background: #000000;
+  --color-foreground: #FFFFFF;
+  --color-card: #0d0d0d;
+  --color-card-foreground: #FFFFFF;
+  --color-popover: #0a0a0a;
+  --color-popover-foreground: #FFFFFF;
+  --color-primary: #FFFFFF;
+  --color-primary-foreground: #000000;
+  --color-secondary: #141414;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #171717;
+  --color-muted-foreground: #A1A1AA;
+  --color-accent: #FFFFFF;
+  --color-accent-foreground: #000000;
   --color-destructive: #ef4444;
-  --color-border: #393E46;
-  --color-input: #393E46;
-  --color-ring: #00ADB5;
-  --color-brand: #00ADB5;
-  --color-brand-secondary: #008b92;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-input: #141414;
+  --color-ring: #FFFFFF;
+  --color-brand: #FFFFFF;
+  --color-brand-secondary: #E4E4E7;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -38,23 +38,23 @@ html {
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* --- Color Schema: #222831, #393E46, #00ADB5, #EEEEEE --- */
-  --theme-bg-base: #222831;          /* Primary Deep Charcoal Backdrop */
-  --theme-bg-panel: #222831;         /* Panel background */
-  --theme-bg-inset: #2b303a;         /* Input controls & dropdown background */
-  --theme-bg-card: #393E46;          /* Medium Charcoal Card Container */
-  --theme-bg-card-hover: rgba(0, 173, 181, 0.15);
+  /* --- Color Schema: Pitch Black & White Monochrome (#000000 & #FFFFFF) --- */
+  --theme-bg-base: #000000;          /* True Pitch Black (OLED) Backdrop */
+  --theme-bg-panel: #0a0a0a;         /* Deep dark surface elevation */
+  --theme-bg-inset: #141414;         /* Recessed controls & inputs */
+  --theme-bg-card: #0d0d0d;          /* Card container background */
+  --theme-bg-card-hover: rgba(255, 255, 255, 0.08);
 
-  --theme-text-light: #EEEEEE;        /* Clean Primary Text */
-  --theme-text-muted: #a0aab5;        /* Secondary Muted Text */
-  --theme-text-dark: #707b88;         /* Sub-text & icons */
-  --theme-text-accent: #00ADB5;      /* Vibrant Teal Text Accent */
+  --theme-text-light: #FFFFFF;        /* Pure White Primary Text */
+  --theme-text-muted: #A1A1AA;        /* Light Gray Secondary Text */
+  --theme-text-dark: #71717A;         /* Neutral Muted Text & Icons */
+  --theme-text-accent: #FFFFFF;       /* Pure White Text Accent */
 
-  --theme-accent-primary: #00ADB5;    /* Vibrant Teal Primary Brand Accent */
-  --theme-accent-hover: #00c4ce;      /* Teal Hover State */
-  --theme-accent-secondary: #008b92;  /* Deep Teal Secondary Accent */
-  --theme-border: #393E46;            /* Border Line */
-  --theme-border-hover: rgba(0, 173, 181, 0.5);
+  --theme-accent-primary: #FFFFFF;    /* Pure White Primary Brand Accent */
+  --theme-accent-hover: #E4E4E7;      /* Soft Off-White Hover */
+  --theme-accent-secondary: #27272A;  /* Subtle Gray Secondary Accent */
+  --theme-border: rgba(255, 255, 255, 0.12); /* Clean Hairline Border */
+  --theme-border-hover: rgba(255, 255, 255, 0.35);
 
   /* --- UI CSS Variables (Components consume these directly) --- */
   --bg-primary: var(--theme-bg-base);
@@ -72,12 +72,12 @@ html {
   --accent-primary: var(--theme-accent-primary);
   --accent-primary-hover: var(--theme-accent-hover);
   --accent-secondary: var(--theme-accent-secondary);
-  --accent-gradient: var(--theme-accent-primary);
+  --accent-gradient: #FFFFFF;
   --accent-glow: none;
 
-  --success: var(--theme-accent-primary);
-  --warning: var(--theme-accent-secondary);
-  --error: #f87171;
+  --success: #FFFFFF;
+  --warning: #A1A1AA;
+  --error: #ef4444;
 
   --border-color: var(--theme-border);
   --border-color-hover: var(--theme-border-hover);
@@ -165,6 +165,22 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== SmoothUI Theme Candy ===== */
+:root[data-theme="candy"], .theme-candy {
+  --color-accent: oklch(0.72 0.2 352.53);
+  --color-accent-foreground: #ffffff;
+  --theme-accent-primary: oklch(0.72 0.2 352.53);
+  --theme-accent-secondary: oklch(0.66 0.21 354.31);
+  --theme-accent-hover: oklch(0.78 0.18 352.53);
+  --theme-text-accent: oklch(0.72 0.2 352.53);
+  --accent-primary: oklch(0.72 0.2 352.53);
+  --accent-primary-hover: oklch(0.78 0.18 352.53);
+  --accent-secondary: oklch(0.66 0.21 354.31);
+  --candy-pink: #ec4899;
+  --candy-rose: #f43f5e;
+  --candy-glow: rgba(236, 72, 153, 0.35);
 }
 
 /* ===== Scrollbar ===== */
@@ -539,39 +555,63 @@ input[type="range"] {
   appearance: none;
   width: 100%;
   height: 6px;
-  border-radius: var(--radius-full);
-  background: #050507;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #FFFFFF var(--range-fill, 0%), #000000 var(--range-fill, 0%));
+  border: 1px solid rgba(255, 255, 255, 0.22);
   outline: none;
   cursor: pointer;
-  box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.8),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.03);
+  accent-color: #FFFFFF;
+  transition: border-color 0.15s ease;
+}
+
+input[type="range"]:hover {
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 20px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-  border: 1px solid var(--border-color);
-  box-shadow:
-    1px 1px 0px rgba(255, 255, 255, 0.3) inset,
-    -1px -1px 1px rgba(0, 0, 0, 0.3) inset,
-    0 2px 4px rgba(0, 0, 0, 0.6);
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 2px 5px rgba(0, 0, 0, 0.8);
   cursor: grab;
-  transition: transform 100ms ease, background 100ms ease;
+  transition: transform 0.1s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  background: linear-gradient(180deg, var(--text-primary) 0%, var(--text-primary) 100%);
-  transform: scale(1.05);
+  transform: scale(1.2);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
   cursor: grabbing;
-  background: linear-gradient(180deg, var(--text-secondary) 0%, var(--text-muted) 100%);
-  transform: scale(0.98);
+  transform: scale(1.05);
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 6px;
+  background: #FFFFFF;
+  border-radius: 9999px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 2px 5px rgba(0, 0, 0, 0.8);
+  cursor: grab;
 }
 
 /* ===== Delete Button Hover Style ===== */
@@ -1737,3 +1777,100 @@ input[type="range"]::-webkit-slider-thumb:active {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
+
+/* ===== Motion Graphics & Global Interactive Buttons Hover System ===== */
+
+/* Base transition and subtle hover elevation for all interactive buttons */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+.mg-btn-interactive {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s ease,
+              border-color 0.15s ease,
+              box-shadow 0.15s ease,
+              color 0.15s ease,
+              filter 0.15s ease,
+              opacity 0.15s ease !important;
+}
+
+button:not(:disabled):hover,
+[role="button"]:not([aria-disabled="true"]):hover,
+.mg-btn-interactive:hover {
+  filter: brightness(1.08);
+}
+
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+.mg-btn-interactive:active {
+  transform: scale(0.97) !important;
+  filter: brightness(0.95);
+}
+
+/* Specific card toggle button hover (Loop, Mute, Avatar, Image, Playback cards) */
+.mg-card-toggle {
+  transition: all 0.15s ease !important;
+}
+
+.mg-card-toggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.mg-card-toggle:active:not(:disabled) {
+  transform: scale(0.98) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Color swatch preview button hover */
+.mg-color-swatch-card {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mg-color-swatch-card:hover {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+.mg-color-swatch-card:active {
+  transform: translateY(0) scale(0.97) !important;
+}
+
+/* Formatting toolbar buttons (B, I, Alignment, Easing) */
+.mg-format-btn {
+  transition: all 0.12s ease !important;
+}
+
+.mg-format-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  filter: brightness(1.12);
+}
+
+.mg-format-btn:active:not(:disabled) {
+  transform: scale(0.96) !important;
+}
+
+/* Upload dropzone cards hover */
+.mg-upload-dropzone {
+  transition: all 0.15s ease !important;
+}
+
+.mg-upload-dropzone:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Disable button press (scale/shrink) effect for all UI components inside Properties Panel */
+.properties-panel button:active,
+.properties-panel [role="button"]:active,
+.properties-panel .mg-btn-interactive:active,
+.properties-panel .mg-card-toggle:active,
+.properties-panel .mg-color-swatch-card:active,
+.properties-panel .mg-format-btn:active,
+.properties-panel input:active,
+.properties-panel select:active {
+  transform: none !important;
+  filter: none !important;
+}
+
+

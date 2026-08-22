@@ -3,19 +3,30 @@
 import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useMGState, MGTextLayer, MGComponentLayer, MGLayer, MGScene, SceneTransition, getSceneDuration } from '../store';
+import { useMGState, MGTextLayer, MGComponentLayer, MGLayer, MGScene, SceneTransition, getSceneDuration, interpolateProperty } from '../store';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
 import KineticCenterBuild from '@/components/smoothui/kinetic-center-build';
 import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
 import MaskRevealUp from '@/components/smoothui/mask-reveal-up';
 import RevealText from '@/components/smoothui/reveal-text';
 import ShortSlideDown from '@/components/smoothui/short-slide-down';
+import BlurOutUp from '@/components/smoothui/blur-out-up';
+import DepthParallaxWords from '@/components/smoothui/depth-parallax-words';
+import FadeThrough from '@/components/smoothui/fade-through';
+import FocusBlurResolve from '@/components/smoothui/focus-blur-resolve';
+import SoftBlurIn from '@/components/smoothui/soft-blur-in';
+import SpringScaleIn from '@/components/smoothui/spring-scale-in';
+import StaggerFromCenter from '@/components/smoothui/stagger-from-center';
+import MicroScaleFade from '@/components/smoothui/micro-scale-fade';
+import ScaleDownFade from '@/components/smoothui/scale-down-fade';
+import PerCharacterRise from '@/components/smoothui/per-character-rise';
+import PerWordCrossfade from '@/components/smoothui/per-word-crossfade';
+import DiaTextRevealUI from '@/components/ui/dia-text-reveal';
 import CountUp from './templates/CountUp';
 import AnimatedList from './templates/AnimatedList';
 import LogoLoop from './templates/LogoLoop';
 import AILoader from './templates/AILoader';
 import BubbleMenu from './templates/BubbleMenu';
-import Folder from './templates/Folder';
 import UnlumenAnimatedList from './templates/UnlumenAnimatedList';
 import WordRotate from './templates/WordRotate';
 import Highlighter from './templates/Highlighter';
@@ -29,7 +40,7 @@ import VideoUploadComponent from './templates/VideoUpload';
 import ImageUploadComponent from './templates/ImageUpload';
 import PhoneDeviceComponent from './templates/PhoneDevice';
 import MaskedHeadingComponent from './templates/MaskedHeading';
-import { applyVideoFileToLayer, applyImageFileToLayer } from './MotionSidebar';
+import { applyVideoFileToLayer, applyImageFileToLayer } from './PropertiesPanel';
 import { useAlignmentGuides } from '@/context/AlignmentContext';
 import AlignmentGuidesOverlay from '@/components/AlignmentGuidesOverlay';
 import type { AlignmentGuide } from '@/types';
@@ -42,7 +53,7 @@ import * as THREE from 'three';
 const IPHONE_SCREEN_MESH = 'Object_18';
 const ANDROID_SCREEN_MESH = 'S22_Ultra001_2';
 
-function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screenImage?: string }) {
+function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene, materials } = useGLTF('/models/iphone16.gltf') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
@@ -79,21 +90,6 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
   }, [cloned]);
 
   useEffect(() => {
-    if (appliedColor.current === deviceColor) return;
-    appliedColor.current = deviceColor;
-
-    if (Object.keys(initialColors.current).length === 0) {
-      cloned.traverse((child: any) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat: any) => {
-          if (mat && mat.color && !initialColors.current[mat.uuid]) {
-            initialColors.current[mat.uuid] = mat.color.clone();
-          }
-        });
-      });
-    }
-
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.name === IPHONE_SCREEN_MESH) return;
@@ -101,14 +97,19 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
+        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'Object_18') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const initial = initialColors.current[mat.uuid];
-        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || mat.name?.toLowerCase().includes('notch');
+        const name = (mat.name || '').toLowerCase();
+        const isNotchOrLens =
+          mat.name === 'Lens_Glass' || mat.name === 'Flash' || name.includes('notch') ||
+          name.includes('island') || name.includes('hole') || name.includes('camera') ||
+          name.includes('lens') || name.includes('sensor') || name.includes('speaker') ||
+          name.includes('bezel');
 
         if (isNotchOrLens) {
           mat.color.set('#000000');
+          if (mat.map) mat.map = null;
         } else {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
@@ -122,24 +123,39 @@ function IPhoneModel({ deviceColor, screenImage }: { deviceColor: string; screen
     const screenMesh = cloned.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
 
-    if (screenImage) {
+    if (screenVideo) {
+      const video = document.createElement('video');
+      video.src = screenVideo;
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(() => {});
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.flipY = true;
+      screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
+    } else {
+      const imgUrl = screenImage || '/Drag_And_Drop.png';
       const loader = new THREE.TextureLoader();
-      loader.load(screenImage, (texture) => {
+      loader.load(imgUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.flipY = false;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture });
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.flipY = true;
+        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
       });
     }
-  }, [screenImage, cloned]);
+  }, [screenImage, screenVideo, cloned]);
 
   return <primitive object={cloned} />;
 }
 
-function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: string; screenImage?: string }) {
+function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene } = useGLTF('/models/S22Ultra.glb') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
-  const initialColors = useRef<Record<string, THREE.Color>>({});
-  const appliedColor = useRef('');
 
   const uvFixed = useRef(false);
 
@@ -171,21 +187,6 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
   }, [cloned]);
 
   useEffect(() => {
-    if (appliedColor.current === deviceColor) return;
-    appliedColor.current = deviceColor;
-
-    if (Object.keys(initialColors.current).length === 0) {
-      cloned.traverse((child: any) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat: any) => {
-          if (mat && mat.color && !initialColors.current[mat.uuid]) {
-            initialColors.current[mat.uuid] = mat.color.clone();
-          }
-        });
-      });
-    }
-
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.name === ANDROID_SCREEN_MESH) return;
@@ -193,18 +194,44 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat: any) => {
         if (!mat || !mat.color) return;
+        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'S22_Ultra001_2') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const initial = initialColors.current[mat.uuid];
-        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' || mat.name === 'Black_hole' || mat.name === 'Sensor';
+        const isBodyPart =
+          mat.name === 'Rearcase' ||
+          mat.name === 'Back_Cover_Glass' ||
+          mat.name === 'BackCamDeco' ||
+          mat.name === 'Cam_Body' ||
+          mat.name === 'Rearcase_hole' ||
+          mat.name === 'BackCover_Glass_hole' ||
+          child.name === 'S22_Ultra001' ||
+          child.name === 'S22_Ultra001_16' ||
+          child.name === 'S22_Ultra001_17' ||
+          child.name === 'S22_Ultra001_10';
 
-        if (isNotchOrLens) {
-          mat.color.set('#000000');
-        } else {
+        if (isBodyPart) {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
+          mat.needsUpdate = true;
+          return;
         }
+
+        const isHardware =
+          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' ||
+          mat.name === 'Black_hole' || mat.name === 'Sensor' || mat.name === 'Bezel' ||
+          mat.name === 'Cam_Bezel' || mat.name === 'Cam_Glass' || mat.name === 'Flash_Glass' ||
+          mat.name === 'Usb_1' || mat.name === 'Usb_2' || mat.name === 'Antenna_Plastic' ||
+          mat.name === 'Speaker/Mic';
+
+        if (isHardware) {
+          mat.color.set('#000000');
+          if (mat.map) mat.map = null;
+          mat.needsUpdate = true;
+          return;
+        }
+
+        mat.color.set(deviceColor);
+        if (mat.map) mat.map = null;
         mat.needsUpdate = true;
       });
     });
@@ -214,27 +241,45 @@ function AndroidModelComponent({ deviceColor, screenImage }: { deviceColor: stri
     const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
     if (!screenMesh) return;
 
-    if (screenImage) {
+    if (screenVideo) {
+      const video = document.createElement('video');
+      video.src = screenVideo;
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(() => {});
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.flipY = true;
+      screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
+    } else {
+      const imgUrl = screenImage || '/Drag_And_Drop.png';
       const loader = new THREE.TextureLoader();
-      loader.load(screenImage, (texture) => {
+      loader.load(imgUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.flipY = true;
         screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
       });
-    } else {
-      screenMesh.material = new THREE.MeshBasicMaterial({ color: '#0f0f1a', toneMapped: false });
     }
-  }, [screenImage, cloned]);
+  }, [screenImage, screenVideo, cloned]);
 
-  return <primitive object={cloned} scale={88.58} />;
+  return (
+    <group position={[0, -7.3704, 0]} scale={88.58}>
+      <primitive object={cloned} />
+    </group>
+  );
 }
 
 function AnimatedDeviceInline({
   deviceType,
   deviceColor,
   screenImage,
+  screenVideo,
   animationTemplate,
   speed = 1,
   deviceSize = 1,
@@ -247,6 +292,7 @@ function AnimatedDeviceInline({
   deviceType: string;
   deviceColor: string;
   screenImage?: string;
+  screenVideo?: string;
   animationTemplate: string;
   speed: number;
   deviceSize: number;
@@ -357,13 +403,11 @@ function AnimatedDeviceInline({
           rotation-x={(rotX * Math.PI) / 180}
           rotation-y={(rotY * Math.PI) / 180}
         >
-          <Center>
-            {deviceType === 'iphone' ? (
-              <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} />
-            ) : (
-              <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} />
-            )}
-          </Center>
+          {deviceType === 'iphone' ? (
+            <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
+          ) : (
+            <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
+          )}
         </group>
       </group>
     </group>
@@ -411,6 +455,104 @@ const EXIT_TARGET: Record<ExitAnimType, any> = {
   'blur-out': { opacity: 0, filter: 'blur(12px)' },
 };
 
+function easeCubicOut(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeCubicInOut(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function computeEnterExitStyle(
+  enterAnimation: EnterAnimType,
+  enterDuration: number,
+  exitAnimation: ExitAnimType,
+  exitDuration: number,
+  localTime?: number,
+  layerStartTime?: number,
+  layerDuration?: number
+): React.CSSProperties | null {
+  if (localTime === undefined || layerStartTime === undefined || layerDuration === undefined) {
+    return null;
+  }
+
+  const relTime = localTime - layerStartTime;
+  const layerEnd = layerStartTime + layerDuration;
+  const timeUntilEnd = layerEnd - localTime;
+
+  let opacity = 1;
+  let translateY = 0;
+  let translateX = 0;
+  let scale = 1;
+  let blur = 0;
+
+  // Enter Phase
+  if (enterAnimation !== 'none' && relTime < enterDuration && enterDuration > 0) {
+    const t = easeCubicOut(Math.max(0, Math.min(1, relTime / enterDuration)));
+    if (enterAnimation === 'fade-in') {
+      opacity = t;
+    } else if (enterAnimation === 'slide-up') {
+      opacity = t;
+      translateY = (1 - t) * 40;
+    } else if (enterAnimation === 'slide-down') {
+      opacity = t;
+      translateY = (1 - t) * -40;
+    } else if (enterAnimation === 'slide-left') {
+      opacity = t;
+      translateX = (1 - t) * 40;
+    } else if (enterAnimation === 'slide-right') {
+      opacity = t;
+      translateX = (1 - t) * -40;
+    } else if (enterAnimation === 'scale-up') {
+      opacity = t;
+      scale = 0.6 + t * 0.4;
+    } else if (enterAnimation === 'blur-in') {
+      opacity = t;
+      blur = (1 - t) * 12;
+    }
+  }
+
+  // Exit Phase
+  if (exitAnimation !== 'none' && timeUntilEnd <= exitDuration && exitDuration > 0) {
+    const t = easeCubicInOut(Math.max(0, Math.min(1, (exitDuration - timeUntilEnd) / exitDuration)));
+    if (exitAnimation === 'fade-out') {
+      opacity = Math.min(opacity, 1 - t);
+    } else if (exitAnimation === 'slide-up') {
+      opacity = Math.min(opacity, 1 - t);
+      translateY = -t * 40;
+    } else if (exitAnimation === 'slide-down') {
+      opacity = Math.min(opacity, 1 - t);
+      translateY = t * 40;
+    } else if (exitAnimation === 'slide-left') {
+      opacity = Math.min(opacity, 1 - t);
+      translateX = -t * 40;
+    } else if (exitAnimation === 'slide-right') {
+      opacity = Math.min(opacity, 1 - t);
+      translateX = t * 40;
+    } else if (exitAnimation === 'scale-down') {
+      opacity = Math.min(opacity, 1 - t);
+      scale = 1 - t * 0.4;
+    } else if (exitAnimation === 'blur-out') {
+      opacity = Math.min(opacity, 1 - t);
+      blur = Math.max(blur, t * 12);
+    }
+  }
+
+  const transformParts: string[] = [];
+  if (translateX !== 0 || translateY !== 0) {
+    transformParts.push(`translate(${translateX}px, ${translateY}px)`);
+  }
+  if (scale !== 1) {
+    transformParts.push(`scale(${scale})`);
+  }
+
+  return {
+    opacity,
+    transform: transformParts.length > 0 ? transformParts.join(' ') : undefined,
+    filter: blur > 0 ? `blur(${blur.toFixed(1)}px)` : undefined,
+  };
+}
+
 function EnterAnimationWrapper({
   enterAnimation,
   enterDuration,
@@ -418,6 +560,9 @@ function EnterAnimationWrapper({
   exitDuration,
   triggerKey,
   isExiting,
+  localTime,
+  layerStartTime,
+  layerDuration,
   children,
   style,
 }: {
@@ -427,10 +572,31 @@ function EnterAnimationWrapper({
   exitDuration: number;
   triggerKey: number;
   isExiting: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
   children: React.ReactNode;
   style?: React.CSSProperties;
 }) {
   if (enterAnimation === 'none' && exitAnimation === 'none') return <div style={style}>{children}</div>;
+
+  const deterministicStyle = computeEnterExitStyle(
+    enterAnimation,
+    enterDuration,
+    exitAnimation,
+    exitDuration,
+    localTime,
+    layerStartTime,
+    layerDuration
+  );
+
+  if (deterministicStyle) {
+    return (
+      <div style={{ ...style, ...deterministicStyle }}>
+        {children}
+      </div>
+    );
+  }
 
   const animateTarget = isExiting && exitAnimation !== 'none'
     ? EXIT_TARGET[exitAnimation]
@@ -458,6 +624,19 @@ const animationMap: Record<string, React.FC<any>> = {
   'mask-reveal-up': MaskRevealUp,
   'reveal-text': RevealText,
   'short-slide-down': ShortSlideDownWrapper,
+  'blur-out-up': BlurOutUp,
+  'soft-blur-in': SoftBlurIn,
+  'spring-scale-in': SpringScaleIn,
+  'stagger-from-center': StaggerFromCenter,
+  'depth-parallax-words': DepthParallaxWords,
+  'fade-through': FadeThrough,
+  'focus-blur-resolve': FocusBlurResolve,
+  'micro-scale-fade': MicroScaleFade,
+  'scale-down-fade': ScaleDownFade,
+  'per-character-rise': PerCharacterRise,
+  'per-word-crossfade': PerWordCrossfade,
+  'text-reveal': (props: any) => <TextReveal text={props.children} speed={props.speed || 1} color={props.color || '#ffffff'} revealColor="#a855f7" fontSize={props.fontSize} fontFamily={props.fontFamily} />,
+  'dia-text-reveal': (props: any) => <DiaTextRevealUI text={props.children} duration={1.5 / (props.speed || 1)} repeat={true} />,
 };
 
 type CanvasAxis = 'x' | 'y';
@@ -536,6 +715,24 @@ export function getOutgoingTransitionStyle(transition: SceneTransition, progress
     case 'fade':
       return { opacity: 1 - eased };
 
+    case 'slide-left':
+      return { transform: `translateX(-${eased * 100}%)` };
+
+    case 'slide-right':
+      return { transform: `translateX(${eased * 100}%)` };
+
+    case 'slide-up':
+      return { transform: `translateY(-${eased * 100}%)` };
+
+    case 'slide-down':
+      return { transform: `translateY(${eased * 100}%)` };
+
+    case 'zoom':
+      return { transform: `scale(${1 + eased * 0.5})`, opacity: 1 - eased };
+
+    case 'blur':
+      return { filter: `blur(${eased * 24}px)`, opacity: 1 - eased };
+
     case 'clip-wipe':
       // Wipe from left to right: previous scene clips away from left
       return { clipPath: `inset(0 0 0 ${eased * 100}%)` };
@@ -561,7 +758,6 @@ export function getOutgoingTransitionStyle(transition: SceneTransition, progress
 
     case 'loading-line': {
       // Black screen phase then reveal
-      const linePhase = Math.min(progress / 0.7, 1);
       const revealPhase = Math.max((progress - 0.7) / 0.3, 0);
       const revealEased = 1 - Math.pow(1 - revealPhase, 2);
       // During line phase, show fully opaque (black will be overlaid)
@@ -615,13 +811,57 @@ function LoadingLineOverlay({ progress }: { progress: number }) {
   );
 }
 
-function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[] }) {
-  const { state, dispatch, updateLayer } = useMGState();
+function SelectionCornerHandles({
+  onScaleStart,
+}: {
+  onScaleStart: (e: React.PointerEvent, corner: 'tl' | 'tr' | 'bl' | 'br') => void;
+}) {
+  const corners: { id: 'tl' | 'tr' | 'bl' | 'br'; style: React.CSSProperties; cursor: string }[] = [
+    { id: 'tl', style: { top: '-4px', left: '-4px' }, cursor: 'nwse-resize' },
+    { id: 'tr', style: { top: '-4px', right: '-4px' }, cursor: 'nesw-resize' },
+    { id: 'bl', style: { bottom: '-4px', left: '-4px' }, cursor: 'nesw-resize' },
+    { id: 'br', style: { bottom: '-4px', right: '-4px' }, cursor: 'nwse-resize' },
+  ];
+
+  return (
+    <>
+      {corners.map((c) => (
+        <div
+          key={c.id}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onScaleStart(e, c.id);
+          }}
+          style={{
+            position: 'absolute',
+            width: '7px',
+            height: '7px',
+            borderRadius: '50%',
+            background: '#ffffff',
+            border: '1.5px solid #000000',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            cursor: c.cursor,
+            zIndex: 50,
+            touchAction: 'none',
+            ...c.style,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+// Module-level drag state — survives React re-renders/re-mounts
+const _canvasDragState = { isDragging: false, draggedLayerId: null as string | null };
+
+function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
+  const { state, dispatch, updateLayer, seekTo, play, getSceneStartTime } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef<{ mouseX: number; mouseY: number; posX: number; posY: number } | null>(null);
   const hasMovedRef = useRef(false);
+  const lastDragTimeRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneLayersRef = useRef(sceneLayers);
   sceneLayersRef.current = sceneLayers;
@@ -640,6 +880,16 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
   if (!isVisible && !isDragging) return null;
 
   const AnimComp = animationMap[layer.animationType];
+  const basePacingSpeed = layer.pacingPreset === 'snappy' ? 1.8 : layer.pacingPreset === 'cinematic' ? 0.75 : 1.0;
+  const durationSpeedBoost = (layer.duration && layer.duration < 2.5)
+    ? Math.max(1, 2.5 / Math.max(0.3, layer.duration))
+    : 1;
+  const wordCount = (layer.text || '').split(/\s+/).filter(Boolean).length || 1;
+  const wordLengthBoost = wordCount > 4 ? 1 + (wordCount - 4) * 0.15 : 1;
+  const effectiveSpeed = basePacingSpeed * durationSpeedBoost * wordLengthBoost;
+
+  const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / effectiveSpeed, (layer.duration || 1) * 0.4);
+  const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / effectiveSpeed, (layer.duration || 1) * 0.4);
 
   return (
     <div
@@ -647,13 +897,32 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
       data-motion-layer-id={layer.id}
       onClick={(e) => {
         e.stopPropagation();
-        if (!hasMovedRef.current) {
+        // Only select if this layer was NOT just dragged
+        if (_canvasDragState.draggedLayerId !== layer.id) {
           dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
         }
+        // Reset after click is handled
+        if (_canvasDragState.draggedLayerId === layer.id) {
+          _canvasDragState.draggedLayerId = null;
+        }
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        const sStart = getSceneStartTime(sceneId);
+        const compStart = sStart + layer.startTime;
+        const compEnd = compStart + layer.duration;
+        dispatch({
+          selectedLayerId: layer.id,
+          activeSceneId: sceneId,
+          activeSidebarTab: 'components',
+          playbackRange: { start: compStart, end: compEnd },
+        });
+        seekTo(compStart);
+        play();
       }}
       onPointerDown={(e) => {
+        if (!e.isPrimary || e.button !== 0) return;
         e.stopPropagation();
-        hasMovedRef.current = false;
 
         const targetEl = e.currentTarget as HTMLElement;
         if (targetEl && 'setPointerCapture' in targetEl) {
@@ -668,13 +937,18 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
         const startMouseY = e.clientY;
         const startPosX = layer.position.x;
         const startPosY = layer.position.y;
+        let moved = false;
         setIsDragging(true);
 
         const handleMove = (moveEvent: PointerEvent) => {
           const dist = Math.hypot(moveEvent.clientX - startMouseX, moveEvent.clientY - startMouseY);
-          if (dist > 4) {
-            hasMovedRef.current = true;
+          if (dist > 3 && !moved) {
+            moved = true;
+            _canvasDragState.isDragging = true;
+            _canvasDragState.draggedLayerId = layer.id;
           }
+
+          if (!moved) return;
 
           const parent = containerRef.current?.parentElement;
           if (!parent) return;
@@ -706,54 +980,121 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }
           }
           setIsDragging(false);
           setActiveGuides([]);
+          _canvasDragState.isDragging = false;
+          // Note: draggedLayerId is NOT cleared here — it's cleared in onClick
+          // so the click event that fires after pointerup can check it
         };
 
         window.addEventListener('pointermove', handleMove);
         window.addEventListener('pointerup', handleUp);
       }}
-      style={{
-        position: 'absolute',
-        left: `${layer.position.x}%`,
-        top: `${layer.position.y}%`,
-        transform: 'translate(-50%, -50%)',
-        width: 'max-content',
-        maxWidth: 'none',
-        flexShrink: 0,
-        color: layer.color,
-        fontSize: `${layer.fontSize}px`,
-        fontFamily: layer.fontFamily,
-        fontWeight: layer.isBold ? 800 : 400,
-        fontStyle: layer.isItalic ? 'italic' : 'normal',
-        cursor: isDragging ? 'grabbing' : 'grab',
-        border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
-        borderRadius: '4px',
-        padding: '8px 16px',
-        transition: 'border-color 0.15s ease',
-        whiteSpace: 'pre',
-        textAlign: 'center',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
+      style={(() => {
+        const hasKf = layer.keyframes && layer.keyframes.length > 0;
+        const relTime = Math.max(0, Math.min(layer.duration, localTime - layer.startTime));
+        const kfPosX = hasKf ? interpolateProperty(layer.keyframes, 'posX', relTime, layer.position.x) : layer.position.x;
+        const kfPosY = hasKf ? interpolateProperty(layer.keyframes, 'posY', relTime, layer.position.y) : layer.position.y;
+        const kfScale = hasKf ? interpolateProperty(layer.keyframes, 'scale', relTime, 1) : 1;
+        const kfRotation = hasKf ? interpolateProperty(layer.keyframes, 'rotation', relTime, 0) : 0;
+        const kfOpacity = hasKf ? interpolateProperty(layer.keyframes, 'opacity', relTime, 1) : 1;
+        return {
+          position: 'absolute' as const,
+          left: `${kfPosX}%`,
+          top: `${kfPosY}%`,
+          transform: `translate(-50%, -50%) scale(${kfScale}) rotate(${kfRotation}deg)`,
+          opacity: kfOpacity,
+          width: 'max-content',
+          maxWidth: 'none',
+          flexShrink: 0,
+          color: layer.color,
+          fontSize: `${layer.fontSize}px`,
+          fontFamily: layer.fontFamily,
+          letterSpacing: layer.letterSpacing !== undefined ? `${layer.letterSpacing}px` : undefined,
+          fontWeight: layer.isBold ? 800 : 400,
+          fontStyle: layer.isItalic ? 'italic' : 'normal',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          border: isSelected ? '2px dashed #a855f7' : '2px solid transparent',
+          outline: isSelected ? '1px solid #000000' : 'none',
+          boxShadow: isSelected ? '0 0 0 1px #000000' : 'none',
+          borderRadius: '4px',
+          padding: '8px 16px',
+          transition: 'border-color 0.15s ease',
+          whiteSpace: 'pre-wrap' as const,
+          textAlign: 'center' as const,
+          userSelect: 'none' as const,
+          touchAction: 'none' as const,
+        };
+      })()}
     >
-      <EnterAnimationWrapper enterAnimation={layer.enterAnimation || 'none'} enterDuration={layer.enterDuration ?? 0.4} exitAnimation={layer.exitAnimation || 'none'} exitDuration={layer.exitDuration ?? 0.3} triggerKey={triggerKey} isExiting={isExiting}>
+      <EnterAnimationWrapper
+        enterAnimation={layer.enterAnimation || 'none'}
+        enterDuration={effectiveEnterDur}
+        exitAnimation={layer.exitAnimation || 'none'}
+        exitDuration={effectiveExitDur}
+        triggerKey={triggerKey}
+        isExiting={isExiting}
+        localTime={localTime}
+        layerStartTime={layer.startTime}
+        layerDuration={layer.duration}
+      >
         {layer.animationType === 'none' || !AnimComp ? (
           <span>{layer.text}</span>
         ) : (
-          <AnimComp key={triggerKey} speed={layer.animationSpeed}>
+          <AnimComp key={triggerKey} speed={effectiveSpeed}>
             {layer.text}
           </AnimComp>
         )}
       </EnterAnimationWrapper>
+      {isSelected && (
+        <SelectionCornerHandles
+          onScaleStart={(e, _corner) => {
+            const handleEl = e.currentTarget as HTMLElement;
+            if (handleEl && 'setPointerCapture' in handleEl) {
+              try { handleEl.setPointerCapture(e.pointerId); } catch {}
+            }
+
+            const startMouseX = e.clientX;
+            const startMouseY = e.clientY;
+            const initialFontSize = layer.fontSize || 32;
+
+            const parentEl = containerRef.current;
+            if (!parentEl) return;
+            const rect = parentEl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const initialDist = Math.hypot(startMouseX - centerX, startMouseY - centerY);
+
+            const handleMove = (moveEvent: PointerEvent) => {
+              const currentDist = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
+              const ratio = currentDist / Math.max(10, initialDist);
+              const newFontSize = Math.round(Math.max(12, Math.min(200, initialFontSize * ratio)));
+              updateLayer(layer.id, { fontSize: newFontSize } as any);
+            };
+
+            const handleUp = (upEvent: PointerEvent) => {
+              window.removeEventListener('pointermove', handleMove);
+              window.removeEventListener('pointerup', handleUp);
+              if (handleEl && 'releasePointerCapture' in handleEl) {
+                try { handleEl.releasePointerCapture(upEvent.pointerId); } catch {}
+              }
+            };
+
+            window.addEventListener('pointermove', handleMove);
+            window.addEventListener('pointerup', handleUp);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers }: { layer: MGComponentLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[] }) {
-  const { state, dispatch, updateLayer } = useMGState();
+function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGComponentLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
+  const { state, dispatch, updateLayer, seekTo, play, getSceneStartTime } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef<{ mouseX: number; mouseY: number; posX: number; posY: number } | null>(null);
+  const hasMovedRef = useRef(false);
+  const lastDragTimeRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneLayersRef = useRef(sceneLayers);
   sceneLayersRef.current = sceneLayers;
@@ -772,38 +1113,44 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
   if (!isVisible && !isDragging) return null;
   if (layer.templateId === 'phone-device') return null;
 
-  const speed = layer.props.speed ?? 1;
+  const componentPacing = layer.pacingPreset || 'balanced';
+  const basePacingSpeed = componentPacing === 'snappy' ? 1.8 : componentPacing === 'cinematic' ? 0.75 : 1.0;
+  const durationSpeedBoost = (layer.duration && layer.duration < 2.5)
+    ? Math.max(1, 2.5 / Math.max(0.3, layer.duration))
+    : 1;
+  const speed = basePacingSpeed * durationSpeedBoost;
+
+  const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
+  const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
 
   const renderComponent = () => {
     switch (layer.templateId) {
       case 'count-up':
-        return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 48} />;
+        return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 48} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'animated-list':
-        return <AnimatedList key={triggerKey} items={layer.props.items} speed={speed} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} />;
+        return <AnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'logo-loop':
-        return <LogoLoop key={triggerKey} items={layer.props.items} speed={speed} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} />;
+        return <LogoLoop key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'ai-loader':
-        return <AILoader key={triggerKey} variant={layer.props.variant ?? 'dots'} speed={speed} color={layer.props.color ?? '#a855f7'} />;
+        return <AILoader key={`${triggerKey}-${layer.props.speed ?? 1}`} variant={layer.props.variant ?? 'dots'} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'bubble-menu':
-        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg={layer.props.menuBg ?? '#ffffff'} radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} />;
-      case 'folder':
-        return <Folder key={triggerKey} color={layer.props.color ?? '#5227ff'} size={layer.props.size ?? 1.5} items={layer.props.items} speed={speed} />;
+        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'unlumen-animated-list':
-        return <UnlumenAnimatedList key={triggerKey} items={layer.props.items} count={layer.props.count} speed={speed} />;
+        return <UnlumenAnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} count={layer.props.count} speed={speed * (layer.props.speed ?? 1)} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'word-rotate':
-        return <WordRotate key={triggerKey} items={layer.props.items} speed={speed} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} />;
+        return <WordRotate key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'highlighter':
-        return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 32} />;
+        return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 32} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'animated-beam':
-        return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} />;
+        return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'orbiting-circles':
-        return <OrbitingCircles key={triggerKey} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed} iconSize={layer.props.iconSize ?? 36} orbitColor={layer.props.orbitColor ?? 'rgba(255,255,255,0.1)'} />;
+        return <OrbitingCircles key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'text-reveal':
-        return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} />;
+        return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'skeleton-shimmer':
-        return <SkeletonShimmer key={triggerKey} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} baseColor={layer.props.baseColor ?? 'rgba(255,255,255,0.08)'} shimmerColor={layer.props.shimmerColor ?? 'rgba(255,255,255,0.15)'} speed={speed} borderRadius={layer.props.borderRadius ?? 6} />;
+        return <SkeletonShimmer key={`${triggerKey}-${layer.props.color ?? '#ffffff'}-${layer.props.speed ?? 1}`} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} color={layer.props.color ?? '#ffffff'} baseColor={layer.props.baseColor} shimmerColor={layer.props.shimmerColor} speed={speed * (layer.props.speed ?? 1)} borderRadius={layer.props.borderRadius ?? 6} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'text-3d-flip':
-        return <Text3DFlip key={triggerKey} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerDuration={layer.props.staggerDuration ?? 0.05} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed} autoPlay={true} />;
+        return <Text3DFlip key={`${triggerKey}-${layer.props.rotateDirection ?? 'top'}-${layer.props.staggerFrom ?? 'first'}-${layer.props.isLoop ?? true}-${layer.props.speed ?? 1}`} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed * (layer.props.speed ?? 1)} autoPlay={true} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'camera-zoom':
         return <div style={{ width: '150px', height: '100px' }} />;
       case 'media-upload':
@@ -833,8 +1180,13 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             borderColor={layer.props.borderColor ?? '#a855f7'}
             playbackRate={layer.props.speed ?? 1}
             poster={layer.props.poster}
+            localTime={localTime}
+            layerStartTime={layer.startTime}
+            layerDuration={layer.duration}
+            originalDuration={layer.props.originalDuration}
+            isPlaying={state.isPlaying}
             onUpload={(file) => {
-              applyVideoFileToLayer(file, (updates) => updateLayer(layer.id, updates as any), layer.props);
+              applyVideoFileToLayer(file, (updates: any) => updateLayer(layer.id, updates), layer.props);
             }}
           />
         );
@@ -847,12 +1199,12 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             height={layer.props.height ?? 200}
             borderRadius={layer.props.borderRadius ?? 8}
             onUpload={(file) => {
-              applyImageFileToLayer(file, (updates) => updateLayer(layer.id, updates as any), layer.props);
+              applyImageFileToLayer(file, (updates: any) => updateLayer(layer.id, updates), layer.props);
             }}
           />
         );
       case 'phone-device':
-        return null; // rendered separately in SceneRenderer 3D Canvas
+        return null;
       case 'masked-heading':
         return (
           <MaskedHeadingComponent
@@ -869,13 +1221,16 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             grayscale={layer.props.grayscale ?? false}
             reveal={layer.props.reveal ?? 'rise'}
             trigger="mount"
-            duration={layer.props.duration ?? 1.1}
-            stagger={layer.props.stagger ?? 0.09}
+            duration={(layer.props.duration ?? 1.1) / speed}
+            stagger={(layer.props.stagger ?? 0.09) / speed}
             align={layer.props.align ?? 'center'}
             weight={layer.props.weight ?? 700}
             tracking={layer.props.tracking ?? -0.03}
             lineHeight={layer.props.lineHeight ?? 1.06}
             textScale={layer.props.textScale ?? 0.115}
+            layerDuration={layer.duration}
+            localTime={localTime}
+            layerStartTime={layer.startTime}
           />
         );
       default:
@@ -889,11 +1244,32 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
       data-motion-layer-id={layer.id}
       onClick={(e) => {
         e.stopPropagation();
-        dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        // Only select if this layer was NOT just dragged
+        if (_canvasDragState.draggedLayerId !== layer.id) {
+          dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
+        }
+        // Reset after click is handled
+        if (_canvasDragState.draggedLayerId === layer.id) {
+          _canvasDragState.draggedLayerId = null;
+        }
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        const sStart = getSceneStartTime(sceneId);
+        const compStart = sStart + layer.startTime;
+        const compEnd = compStart + layer.duration;
+        dispatch({
+          selectedLayerId: layer.id,
+          activeSceneId: sceneId,
+          activeSidebarTab: 'components',
+          playbackRange: { start: compStart, end: compEnd },
+        });
+        seekTo(compStart);
+        play();
       }}
       onPointerDown={(e) => {
+        if (!e.isPrimary || e.button !== 0) return;
         e.stopPropagation();
-        dispatch({ selectedLayerId: layer.id, activeSceneId: sceneId, activeSidebarTab: 'components' });
 
         const targetEl = e.currentTarget as HTMLElement;
         if (targetEl && 'setPointerCapture' in targetEl) {
@@ -908,9 +1284,19 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         const startMouseY = e.clientY;
         const startPosX = layer.position.x;
         const startPosY = layer.position.y;
+        let moved = false;
         setIsDragging(true);
 
         const handleMove = (moveEvent: PointerEvent) => {
+          const dist = Math.hypot(moveEvent.clientX - startMouseX, moveEvent.clientY - startMouseY);
+          if (dist > 3 && !moved) {
+            moved = true;
+            _canvasDragState.isDragging = true;
+            _canvasDragState.draggedLayerId = layer.id;
+          }
+
+          if (!moved) return;
+
           const parent = containerRef.current?.parentElement;
           if (!parent) return;
           const rect = parent.getBoundingClientRect();
@@ -951,31 +1337,99 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
           }
           setIsDragging(false);
           setActiveGuides([]);
+          _canvasDragState.isDragging = false;
         };
 
         window.addEventListener('pointermove', handleMove);
         window.addEventListener('pointerup', handleUp);
       }}
-      style={{
-        position: 'absolute',
-        left: `${layer.position.x}%`,
-        top: `${layer.position.y}%`,
-        transform: `translate(-50%, -50%) scale(${layer.scale})`,
-        width: 'max-content',
-        maxWidth: 'none',
-        flexShrink: 0,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        border: isSelected ? '2px dashed rgba(168, 85, 247, 0.7)' : '2px solid transparent',
-        borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
-        padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
-        transition: 'border-color 0.15s ease',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
+      style={(() => {
+        const hasKf = layer.keyframes && layer.keyframes.length > 0;
+        const relTime = Math.max(0, Math.min(layer.duration, localTime - layer.startTime));
+        const kfPosX = hasKf ? interpolateProperty(layer.keyframes, 'posX', relTime, layer.position.x) : layer.position.x;
+        const kfPosY = hasKf ? interpolateProperty(layer.keyframes, 'posY', relTime, layer.position.y) : layer.position.y;
+        const kfScale = hasKf ? interpolateProperty(layer.keyframes, 'scale', relTime, layer.scale ?? 1) : (layer.scale ?? 1);
+        const kfRotation = hasKf ? interpolateProperty(layer.keyframes, 'rotation', relTime, 0) : 0;
+        const kfOpacity = hasKf ? interpolateProperty(layer.keyframes, 'opacity', relTime, 1) : 1;
+        return {
+          position: 'absolute' as const,
+          left: `${kfPosX}%`,
+          top: `${kfPosY}%`,
+          transform: `translate(-50%, -50%) scale(${kfScale}) rotate(${kfRotation}deg)`,
+          opacity: kfOpacity,
+          width: 'max-content',
+          maxWidth: 'none',
+          flexShrink: 0,
+          cursor: isDragging ? 'grabbing' : 'grab',
+          border: isSelected ? '2px dashed #a855f7' : '2px solid transparent',
+          outline: isSelected ? '1px solid #000000' : 'none',
+          boxShadow: isSelected ? '0 0 0 1px #000000' : 'none',
+          borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
+          padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
+          transition: 'border-color 0.15s ease',
+          userSelect: 'none' as const,
+          touchAction: 'none' as const,
+        };
+      })()}
     >
-      <EnterAnimationWrapper enterAnimation={layer.enterAnimation || 'none'} enterDuration={layer.enterDuration ?? 0.4} exitAnimation={layer.exitAnimation || 'none'} exitDuration={layer.exitDuration ?? 0.3} triggerKey={triggerKey} isExiting={isExiting}>
+      <EnterAnimationWrapper
+        enterAnimation={layer.enterAnimation || 'none'}
+        enterDuration={effectiveEnterDur}
+        exitAnimation={layer.exitAnimation || 'none'}
+        exitDuration={effectiveExitDur}
+        triggerKey={triggerKey}
+        isExiting={isExiting}
+        localTime={localTime}
+        layerStartTime={layer.startTime}
+        layerDuration={layer.duration}
+      >
         {renderComponent()}
       </EnterAnimationWrapper>
+      {isSelected && (
+        <SelectionCornerHandles
+          onScaleStart={(e, _corner) => {
+            const handleEl = e.currentTarget as HTMLElement;
+            if (handleEl && 'setPointerCapture' in handleEl) {
+              try { handleEl.setPointerCapture(e.pointerId); } catch {}
+            }
+
+            const startMouseX = e.clientX;
+            const startMouseY = e.clientY;
+            const initialScale = layer.templateId === 'phone-device'
+              ? (layer.props.deviceSize ?? layer.scale ?? 1)
+              : (layer.scale ?? 1);
+
+            const parentEl = containerRef.current;
+            if (!parentEl) return;
+            const rect = parentEl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const initialDist = Math.hypot(startMouseX - centerX, startMouseY - centerY);
+
+            const handleMove = (moveEvent: PointerEvent) => {
+              const currentDist = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
+              const ratio = currentDist / Math.max(10, initialDist);
+              const newScale = Number((Math.max(0.2, Math.min(5.0, initialScale * ratio))).toFixed(2));
+              if (layer.templateId === 'phone-device') {
+                updateLayer(layer.id, { scale: newScale, props: { ...layer.props, deviceSize: newScale } } as any);
+              } else {
+                updateLayer(layer.id, { scale: newScale } as any);
+              }
+            };
+
+            const handleUp = (upEvent: PointerEvent) => {
+              window.removeEventListener('pointermove', handleMove);
+              window.removeEventListener('pointerup', handleUp);
+              if (handleEl && 'releasePointerCapture' in handleEl) {
+                try { handleEl.releasePointerCapture(upEvent.pointerId); } catch {}
+              }
+            };
+
+            window.addEventListener('pointermove', handleMove);
+            window.addEventListener('pointerup', handleUp);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1017,7 +1471,10 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
 
   return (
     <div
-      onClick={() => dispatch({ selectedLayerId: null })}
+      onClick={() => {
+        if (_canvasDragState.draggedLayerId) { _canvasDragState.draggedLayerId = null; return; }
+        dispatch({ selectedLayerId: null });
+      }}
       style={{
         position: 'absolute',
         inset: 0,
@@ -1034,8 +1491,9 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
         // Layer visibility is strictly within this scene's local time
         const layerEnd = Math.min(layer.startTime + layer.duration, getSceneDuration(scene));
         const isVisible = localTime >= layer.startTime && localTime < layerEnd;
-        // Determine if layer is in its exit window
-        const exitDur = ('exitDuration' in layer ? layer.exitDuration : 0.3) || 0.3;
+        // Determine if layer is in its exit window (capped at max 40% of layer duration)
+        const rawExitDur = ('exitDuration' in layer ? layer.exitDuration : 1.0) || 1.0;
+        const exitDur = Math.min(rawExitDur, layer.duration * 0.4);
         const isExiting = isVisible && (layerEnd - localTime) <= exitDur;
 
         if (layer.type === 'component') {
@@ -1047,6 +1505,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
               isExiting={isExiting}
               sceneId={scene.id}
               sceneLayers={scene.layers}
+              localTime={localTime}
             />
           );
         }
@@ -1059,6 +1518,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
             isExiting={isExiting}
             sceneId={scene.id}
             sceneLayers={scene.layers}
+            localTime={localTime}
           />
         );
       })}
@@ -1068,8 +1528,15 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
         if (layer.type !== 'component' || layer.templateId !== 'phone-device') return null;
         const layerEnd = Math.min(layer.startTime + layer.duration, getSceneDuration(scene));
         const isVisible = localTime >= layer.startTime && localTime < layerEnd;
-        const exitDur = layer.exitDuration ?? 0.3;
-        const isExiting = isVisible && (layerEnd - localTime) <= exitDur;
+        const pacing = layer.pacingPreset || 'balanced';
+        const basePacingSpeed = pacing === 'snappy' ? 1.8 : pacing === 'cinematic' ? 0.75 : 1.0;
+        const durationSpeedBoost = (layer.duration && layer.duration < 2.5)
+          ? Math.max(1, 2.5 / Math.max(0.3, layer.duration))
+          : 1;
+        const speed = basePacingSpeed * durationSpeedBoost;
+        const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
+        const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
+        const isExiting = isVisible && (layerEnd - localTime) <= effectiveExitDur;
 
         if (!isVisible) return null;
 
@@ -1086,11 +1553,14 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
           >
             <EnterAnimationWrapper
               enterAnimation={layer.enterAnimation || 'none'}
-              enterDuration={layer.enterDuration ?? 0.4}
+              enterDuration={effectiveEnterDur}
               exitAnimation={layer.exitAnimation || 'none'}
-              exitDuration={layer.exitDuration ?? 0.3}
+              exitDuration={effectiveExitDur}
               triggerKey={1}
               isExiting={isExiting}
+              localTime={localTime}
+              layerStartTime={layer.startTime}
+              layerDuration={layer.duration}
               style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 'inherit' }}
             >
               <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
@@ -1108,9 +1578,10 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
                       deviceType={layer.props.deviceType ?? 'iphone'}
                       deviceColor={layer.props.deviceColor ?? '#1a1a1a'}
                       screenImage={layer.props.screenImage}
+                      screenVideo={layer.props.screenVideo}
                       animationTemplate={layer.props.animationTemplate ?? 'float'}
-                      speed={layer.props.speed ?? 1}
-                      deviceSize={layer.props.deviceSize ?? layer.scale ?? 1}
+                      speed={(layer.pacingPreset === 'snappy' ? 1.8 : layer.pacingPreset === 'cinematic' ? 0.75 : 1.0) * ((layer.duration && layer.duration < 2.5) ? Math.max(1, 2.5 / Math.max(0.3, layer.duration)) : 1)}
+                      deviceSize={layer.props.deviceSize ?? layer.props.size ?? layer.scale ?? 1}
                       posX={layer.props.posX ?? 0}
                       posY={layer.props.posY ?? 0}
                       rotX={layer.props.rotX ?? 0}
@@ -1153,12 +1624,11 @@ export default function MotionCanvas() {
     ? { scene: activeScene, localTime: 0, transitionProgress: 1 }
     : getSceneAtTime(currentTime);
 
-  // Find previous scene for exit animation
+  // Find previous scene for exit animation (or dark fallback for initial scene)
   const prevScene = useMemo(() => {
     if (!currentInfo) return null;
     const idx = scenes.findIndex((s) => s.id === currentInfo.scene.id);
-    if (idx <= 0) return null;
-    if (currentInfo.transitionProgress < 1) {
+    if (idx > 0 && currentInfo.transitionProgress < 1) {
       return scenes[idx - 1];
     }
     return null;
@@ -1173,7 +1643,10 @@ export default function MotionCanvas() {
   return (
     <div
       data-motion-canvas-wrapper="true"
-      onClick={() => dispatch({ selectedLayerId: null, activeSidebarTab: 'scene' })}
+      onClick={() => {
+        if (_canvasDragState.draggedLayerId) { _canvasDragState.draggedLayerId = null; return; }
+        dispatch({ selectedLayerId: null, activeSidebarTab: 'scene' });
+      }}
       style={{
         width: 'auto',
         height: '85%',

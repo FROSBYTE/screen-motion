@@ -141,31 +141,30 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
         // Skip display screen material
         if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen') return;
 
-        // Skip dark lenses, sensors, black hole
-        if (
-          mat.name === 'Cam_lens' ||
-          mat.name === 'Sensor' ||
-          mat.name === 'Black_hole' ||
-          mat.name === 'Zoom_Cam' ||
-          mat.name === 'Cam_Glass' ||
-          mat.name === 'Flash_Glass'
-        ) {
+        // Skip emissive elements
+        if ('emissive' in mat && (mat as any).emissive && ((mat as any).emissive.r > 0.2 || (mat as any).emissive.g > 0.2)) {
           return;
         }
 
-        // Skip flash and emissive elements
-        if (
-          mat.name === 'Flash' ||
-          ('emissive' in mat && (mat as any).emissive && ((mat as any).emissive.r > 0.2 || (mat as any).emissive.g > 0.2))
-        ) {
-          return;
-        }
+        const isBodyOrBack =
+          mat.name === 'Rearcase' ||
+          mat.name === 'Back_Cover_Glass' ||
+          mat.name === 'BackCamDeco' ||
+          mat.name === 'Cam_Body';
 
-        color.set(state.deviceColor);
-
-        if ((mat as any).map) {
-          (mat as any).map = null;
+        if (isBodyOrBack) {
+          color.set(state.deviceColor);
+          if ((mat as any).map) {
+            (mat as any).map = null;
+          }
+        } else {
+          // Notch (Black_hole), side buttons, bezel, camera lenses, USB, speaker are always black #000000
+          color.set('#000000');
+          if ((mat as any).map) {
+            (mat as any).map = null;
+          }
         }
+        (mat as any).needsUpdate = true;
       }
     });
     return materials.Rearcase;
@@ -204,7 +203,7 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
   }, [nodes.S22_Ultra001_2]);
 
   return (
-    <group {...props} dispose={null} scale={88.58}>
+    <group {...props} dispose={null} position={[0, -7.3704, 0]} scale={88.58}>
       <mesh geometry={nodes.S22_Ultra001.geometry} material={bodyMaterial} />
       <mesh geometry={nodes.S22_Ultra001_1.geometry} material={materials.Bezel} />
       

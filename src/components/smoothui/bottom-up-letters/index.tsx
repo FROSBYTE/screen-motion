@@ -45,27 +45,32 @@ export default function BottomUpLetters({
 
   return (
     <span aria-label={children} className={className} ref={ref}>
-      {characters.map((char, index) => (
-        <motion.span
-          animate={play ? { opacity: 1, y: 0 } : undefined}
-          aria-hidden="true"
-          initial={isMountedRef.current ? false : (shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 46 })}
-          // biome-ignore lint/suspicious/noArrayIndexKey: characters have no stable id
-          key={index}
-          style={{ display: "inline-block", whiteSpace: "pre" }}
-          transition={
-            shouldReduceMotion
-              ? { duration: 0 }
-              : {
-                  duration: DURATION_S / effectiveSpeed,
-                  delay: delay / MS + (index * effectiveStagger) / MS,
-                  ease: effectiveEase,
-                }
-          }
-        >
-          {char === " " ? " " : char}
-        </motion.span>
-      ))}
+      {characters.map((char, index) => {
+        if (char === "\n") {
+          return <span key={index} style={{ display: "block", width: "100%", height: 0 }} />;
+        }
+        return (
+          <motion.span
+            animate={play ? { opacity: 1, y: 0 } : undefined}
+            aria-hidden="true"
+            initial={isMountedRef.current ? false : (shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 46 })}
+            // biome-ignore lint/suspicious/noArrayIndexKey: characters have no stable id
+            key={index}
+            style={{ display: "inline-block", whiteSpace: "pre" }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : {
+                    duration: DURATION_S / effectiveSpeed,
+                    delay: delay / MS + (index * effectiveStagger) / MS,
+                    ease: effectiveEase,
+                  }
+            }
+          >
+            {char === " " ? " " : char}
+          </motion.span>
+        );
+      })}
     </span>
   );
 }

@@ -21,6 +21,8 @@ import SkeletonShimmer from './templates/SkeletonShimmer';
 import Text3DFlip from './templates/Text3DFlip';
 import PhoneDevice from './templates/PhoneDevice';
 import VideoUpload from './templates/VideoUpload';
+import DiaTextReveal from './templates/DiaTextReveal';
+import DiaTextRevealUI from '@/components/ui/dia-text-reveal';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
 import KineticCenterBuild from '@/components/smoothui/kinetic-center-build';
 import LineByLineSlide from '@/components/smoothui/line-by-line-slide';
@@ -31,6 +33,13 @@ import BlurOutUp from '@/components/smoothui/blur-out-up';
 import DepthParallaxWords from '@/components/smoothui/depth-parallax-words';
 import FadeThrough from '@/components/smoothui/fade-through';
 import FocusBlurResolve from '@/components/smoothui/focus-blur-resolve';
+import SoftBlurIn from '@/components/smoothui/soft-blur-in';
+import SpringScaleIn from '@/components/smoothui/spring-scale-in';
+import StaggerFromCenter from '@/components/smoothui/stagger-from-center';
+import MicroScaleFade from '@/components/smoothui/micro-scale-fade';
+import ScaleDownFade from '@/components/smoothui/scale-down-fade';
+import PerCharacterRise from '@/components/smoothui/per-character-rise';
+import PerWordCrossfade from '@/components/smoothui/per-word-crossfade';
 
 const PHONE_ANIMATION_PRESETS = [
   { id: 'anim-orbit', name: 'Orbit', video: '/animation-card-videos/orbit-template.webm' },
@@ -58,11 +67,19 @@ const TEXT_ANIMATION_OPTIONS = [
   { id: 'line-by-line-slide', name: 'Line By Line Slide' },
   { id: 'mask-reveal-up', name: 'Mask Reveal Up' },
   { id: 'reveal-text', name: 'Reveal Text' },
+  { id: 'text-reveal', name: 'Text Reveal' },
   { id: 'short-slide-down', name: 'Short Slide Down' },
   { id: 'blur-out-up', name: 'Blur Out Up' },
-  { id: 'depth-parallax-words', name: 'Depth Parallax Words' },
+  { id: 'soft-blur-in', name: 'Soft Blur In' },
+  { id: 'spring-scale-in', name: 'Spring Scale In' },
+  { id: 'stagger-from-center', name: 'Stagger Center' },
+  { id: 'depth-parallax-words', name: 'Depth Parallax' },
   { id: 'fade-through', name: 'Fade Through' },
   { id: 'focus-blur-resolve', name: 'Focus Blur Resolve' },
+  { id: 'micro-scale-fade', name: 'Micro Scale Fade' },
+  { id: 'scale-down-fade', name: 'Scale Down Fade' },
+  { id: 'per-character-rise', name: 'Per Char Rise' },
+  { id: 'per-word-crossfade', name: 'Per Word Crossfade' },
 ];
 
 function TextAnimationPreview({ animationId, isHovered }: { animationId: string; isHovered: boolean }) {
@@ -77,16 +94,34 @@ function TextAnimationPreview({ animationId, isHovered }: { animationId: string;
       return <MaskRevealUp className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</MaskRevealUp>;
     case 'reveal-text':
       return <RevealText className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</RevealText>;
+    case 'text-reveal':
+      return <TextReveal text="Reveal Text" speed={1} color="#ffffff" revealColor="#a855f7" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' />;
     case 'short-slide-down':
       return <ShortSlideDown phrases={['Sample Text', 'Animation']} className="text-white text-lg font-semibold" />;
     case 'blur-out-up':
       return <BlurOutUp className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</BlurOutUp>;
+    case 'soft-blur-in':
+      return <SoftBlurIn className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</SoftBlurIn>;
+    case 'spring-scale-in':
+      return <SpringScaleIn className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</SpringScaleIn>;
+    case 'stagger-from-center':
+      return <StaggerFromCenter className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</StaggerFromCenter>;
     case 'depth-parallax-words':
       return <DepthParallaxWords className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</DepthParallaxWords>;
     case 'fade-through':
       return <FadeThrough className="text-white text-lg font-semibold">Sample Text</FadeThrough>;
     case 'focus-blur-resolve':
       return <FocusBlurResolve className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</FocusBlurResolve>;
+    case 'micro-scale-fade':
+      return <MicroScaleFade className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</MicroScaleFade>;
+    case 'scale-down-fade':
+      return <ScaleDownFade className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</ScaleDownFade>;
+    case 'per-character-rise':
+      return <PerCharacterRise className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</PerCharacterRise>;
+    case 'per-word-crossfade':
+      return <PerWordCrossfade className="text-white text-lg font-semibold" triggerOnView={false}>Sample Text</PerWordCrossfade>;
+    case 'dia-text-reveal':
+      return <DiaTextRevealUI text="Sample Text" duration={1.5} repeat={true} className="text-white text-lg font-semibold" />;
     default:
       return null;
   }
@@ -125,9 +160,7 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
     case 'ai-loader':
       return <AILoader variant="dots" speed={1} color="#a855f7" />;
     case 'bubble-menu':
-      return <BubbleMenu items={[{ label: 'A', color: '#3b82f6' }, { label: 'B', color: '#8b5cf6' }]} speed={1} menuBg="transparent" radius={36} bubbleSize={20} />;
-    case 'folder':
-      return <Folder color="#5227ff" size={0.6} items={[{ text: 'Doc', bgColor: '#fff', textColor: '#000' }]} speed={1} />;
+      return <BubbleMenu items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} speed={1} menuBg="transparent" radius={36} bubbleSize={20} />;
     case 'unlumen-animated-list':
       return <UnlumenAnimatedList items={[
         { title: 'New Message', description: 'You have received a message', bgColor: '#1e1e2e', titleColor: '#fff', descriptionColor: '#aaa', accentColor: '#a855f7' },
@@ -139,7 +172,7 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
     case 'highlighter':
       return <Highlighter text="Highlight me" highlightWords="Highlight" action="highlight" color="#ffd1dc" textColor="#ffffff" highlightTextColor="" strokeWidth={2} animationDuration={600} speed={1} fontSize={14} />;
     case 'orbiting-circles':
-      return <OrbitingCircles items={[{ emoji: '📁' }, { emoji: '📅' }, { emoji: '🖼️' }]} radius={45} speed={1} iconSize={24} orbitColor="rgba(255,255,255,0.15)" />;
+      return <OrbitingCircles items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} radius={45} speed={1} iconSize={24} />;
     case 'text-reveal':
       return <TextReveal text="Reveal" speed={1} color="#ffffff" revealColor="#a855f7" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' />;
     case 'skeleton-shimmer':
@@ -213,7 +246,7 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#222831', border: '1px solid #393E46',
+          background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
           borderRadius: '16px', padding: '24px',
           width: '80vw', height: '80vh',
           overflow: 'hidden',
@@ -224,46 +257,74 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#EEEEEE', fontFamily: '"Plus Jakarta Sans", sans-serif', margin: 0 }}>
+            <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: '"Plus Jakarta Sans", sans-serif', margin: 0 }}>
               Add Component
             </h2>
-            <div style={{ display: 'flex', gap: '2px', background: '#393E46', borderRadius: '8px', padding: '3px' }}>
+            <div style={{ display: 'flex', gap: '2px', background: 'var(--bg-inset)', borderRadius: '8px', padding: '3px' }}>
               <button
                 onClick={() => setActiveTab('text')}
+                className="mg-btn-interactive"
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  background: activeTab === 'text' ? 'rgba(0,173,181,0.2)' : 'transparent', 
-                  color: activeTab === 'text' ? '#00ADB5' : 'rgba(238,238,238,0.5)',
+                  background: activeTab === 'text' ? 'var(--bg-primary)' : 'transparent', 
+                  color: activeTab === 'text' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Text
               </button>
               <button
                 onClick={() => setActiveTab('component')}
+                className="mg-btn-interactive"
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  background: activeTab === 'component' ? 'rgba(0,173,181,0.2)' : 'transparent', 
-                  color: activeTab === 'component' ? '#00ADB5' : 'rgba(238,238,238,0.5)',
+                  background: activeTab === 'component' ? 'var(--bg-primary)' : 'transparent', 
+                  color: activeTab === 'component' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Component
               </button>
               <button
                 onClick={() => setActiveTab('devices')}
+                className="mg-btn-interactive"
                 style={{
                   padding: '6px 16px', fontSize: '11px', fontWeight: 600, borderRadius: '6px',
                   border: 'none', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  background: activeTab === 'devices' ? 'rgba(0,173,181,0.2)' : 'transparent', 
-                  color: activeTab === 'devices' ? '#00ADB5' : 'rgba(238,238,238,0.5)',
+                  background: activeTab === 'devices' ? 'var(--bg-primary)' : 'transparent', 
+                  color: activeTab === 'devices' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Devices
               </button>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#a0aab5', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+          <button
+            onClick={onClose}
+            className="mg-btn-interactive"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
             <X size={18} />
           </button>
         </div>
@@ -287,8 +348,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                 onMouseEnter={() => setHoveredItem(animation.id)}
                 onMouseLeave={() => setHoveredItem(null)}
                 style={{
-                  background: '#2b303a',
-                  border: '1px solid #393E46',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '10px',
                   padding: '10px',
                   cursor: 'pointer',
@@ -299,24 +360,19 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                   transition: 'border-color 0.15s, background 0.15s',
                   overflow: 'hidden',
                   position: 'relative',
-                  borderColor: hoveredItem === animation.id ? 'rgba(0,173,181,0.5)' : '#393E46',
-                  backgroundColor: hoveredItem === animation.id ? 'rgba(0,173,181,0.08)' : '#2b303a',
+                  borderColor: hoveredItem === animation.id ? 'var(--accent-primary)' : 'var(--border-color)',
                 }}
               >
-                <div style={{
-                  flex: 1, width: '100%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden', pointerEvents: 'none',
-                  background: '#222831', borderRadius: '8px',
-                  padding: '16px 10px',
-                }}>
-                  <HoverLoopWrapper isHovered={hoveredItem === animation.id}>
-                    <TextAnimationPreview animationId={animation.id} isHovered={hoveredItem === animation.id} />
-                  </HoverLoopWrapper>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: '12px' }}>
+                  <div style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}>
+                    <HoverLoopWrapper isHovered={hoveredItem === animation.id}>
+                      <TextAnimationPreview animationId={animation.id} isHovered={hoveredItem === animation.id} />
+                    </HoverLoopWrapper>
+                  </div>
                 </div>
-                <span style={{ fontSize: '9px', fontWeight: 600, color: '#a0aab5', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
                   {animation.name}
-                </span>
+                </div>
               </button>
             ))
           ) : activeTab === 'devices' ? (
@@ -330,8 +386,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                   onMouseEnter={() => setHoveredItem(preset.id)}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={{
-                    background: '#2b303a',
-                    border: '1px solid #393E46',
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: '10px',
                     padding: '10px',
                     cursor: 'pointer',
@@ -342,15 +398,14 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                     transition: 'border-color 0.15s, background 0.15s',
                     overflow: 'hidden',
                     position: 'relative',
-                    borderColor: hoveredItem === preset.id ? 'rgba(0,173,181,0.5)' : '#393E46',
-                    backgroundColor: hoveredItem === preset.id ? 'rgba(0,173,181,0.08)' : '#2b303a',
+                    borderColor: hoveredItem === preset.id ? 'var(--accent-primary)' : 'var(--border-color)',
                   }}
                 >
                   <div style={{
                     flex: 1, width: '100%',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     overflow: 'hidden', pointerEvents: 'none',
-                    background: '#222831', borderRadius: '8px',
+                    background: 'var(--bg-secondary)', borderRadius: '8px',
                   }}>
                     <video
                       src={preset.video}
@@ -371,7 +426,7 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: '9px', fontWeight: 600, color: '#a0aab5', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
                     {preset.name}
                   </span>
                 </button>
@@ -386,8 +441,8 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                 onMouseEnter={() => setHoveredItem(template.id)}
                 onMouseLeave={() => setHoveredItem(null)}
                 style={{
-                  background: '#2b303a',
-                  border: '1px solid #393E46',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '10px',
                   padding: '10px',
                   cursor: 'pointer',
@@ -398,22 +453,21 @@ export default function ComponentPicker({ open, onClose, onSelect, onAddText }: 
                   transition: 'border-color 0.15s, background 0.15s',
                   overflow: 'hidden',
                   position: 'relative',
-                  borderColor: hoveredItem === template.id ? 'rgba(0,173,181,0.5)' : '#393E46',
-                  backgroundColor: hoveredItem === template.id ? 'rgba(0,173,181,0.08)' : '#2b303a',
+                  borderColor: hoveredItem === template.id ? 'var(--accent-primary)' : 'var(--border-color)',
                 }}
               >
                 <div style={{
                   flex: 1, width: '100%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   overflow: 'hidden', pointerEvents: 'none',
-                  background: '#222831', borderRadius: '8px',
+                  background: 'var(--bg-secondary)', borderRadius: '8px',
                   padding: '16px 10px',
                 }}>
                   <HoverLoopWrapper isHovered={hoveredItem === template.id}>
                     <MiniPreview templateId={template.id} isHovered={hoveredItem === template.id} />
                   </HoverLoopWrapper>
                 </div>
-                <span style={{ fontSize: '9px', fontWeight: 600, color: '#a0aab5', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans", sans-serif', marginTop: '4px' }}>
                   {template.name}
                 </span>
               </button>

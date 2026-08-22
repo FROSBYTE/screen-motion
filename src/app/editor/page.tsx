@@ -79,9 +79,22 @@ function AppContent() {
           className="home-nav-btn"
           title="Return to Home"
           aria-label="Home"
-          style={{ position: 'static' }}
+          style={{
+            position: 'static',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 12px',
+            borderRadius: '10px',
+            background: 'rgba(20, 20, 20, 0.85)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            textDecoration: 'none',
+            color: '#ffffff',
+          }}
         >
-          <HomeIcon size={18} strokeWidth={2} />
+          <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '13px', fontWeight: 700 }}>screenmotion</span>
         </Link>
       </div>
 

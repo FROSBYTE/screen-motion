@@ -3,7 +3,6 @@ export { default as AnimatedList } from './AnimatedList';
 export { default as LogoLoop } from './LogoLoop';
 export { default as AILoader } from './AILoader';
 export { default as BubbleMenu } from './BubbleMenu';
-export { default as Folder } from './Folder';
 export { default as UnlumenAnimatedList } from './UnlumenAnimatedList';
 export { default as WordRotate } from './WordRotate';
 export { default as Highlighter } from './Highlighter';
@@ -24,7 +23,6 @@ export type ComponentTemplateName =
   | 'logo-loop'
   | 'ai-loader'
   | 'bubble-menu'
-  | 'folder'
   | 'unlumen-animated-list'
   | 'word-rotate'
   | 'highlighter'
@@ -106,13 +104,6 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     source: 'reactbits',
   },
   {
-    id: 'folder',
-    name: 'Folder',
-    description: 'Animated folder with paper items reveal',
-    category: 'component',
-    source: 'reactbits',
-  },
-  {
     id: 'unlumen-animated-list',
     name: 'Notification List',
     description: 'Stacking notification cards with spring animation',
@@ -139,13 +130,6 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     description: 'Items orbiting in a circular path',
     category: 'component',
     source: 'reactbits',
-  },
-  {
-    id: 'text-reveal',
-    name: 'Text Reveal',
-    description: 'Words revealed by a sweeping color block',
-    category: 'text',
-    source: 'smoothui',
   },
   {
     id: 'skeleton-shimmer',

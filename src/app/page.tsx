@@ -201,8 +201,8 @@ export default function LandingPage() {
         minHeight: "100vh",
         position: "relative",
         overflowX: "hidden",
-        backgroundColor: "#0e0e14",
-        color: "#f8fafc",
+        backgroundColor: "#000000",
+        color: "#ffffff",
         fontFamily: "'Inter', sans-serif"
       }}
     >
@@ -749,22 +749,22 @@ export default function LandingPage() {
                 style={{
                   padding: "24px 28px",
                   borderRadius: "20px",
-                  backgroundColor: "#181824",
-                  border: "1px solid #2a2a3c",
-                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                  backgroundColor: "#0a0a0a",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.6)",
                   transition: "all 0.25s ease"
                 }}
               >
                 <h3 className="font-headline use-case-title" style={{
                   fontWeight: 700,
-                  color: "#f8fafc",
+                  color: "#ffffff",
                   margin: "0 0 8px 0"
                 }}>
                   {uc.title}
                 </h3>
                 <p className="font-body" style={{
                   fontSize: "14px",
-                  color: "#94a3b8",
+                  color: "#a1a1aa",
                   margin: 0,
                   lineHeight: 1.55
                 }}>
@@ -801,7 +801,7 @@ export default function LandingPage() {
             <h2 className="font-headline" style={{
               fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
               fontWeight: 800,
-              color: "#f8fafc",
+              color: "#ffffff",
               margin: "0 0 12px 0",
               letterSpacing: "-0.03em"
             }}>
@@ -809,7 +809,7 @@ export default function LandingPage() {
             </h2>
             <p className="font-body" style={{
               fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-              color: "#94a3b8",
+              color: "#a1a1aa",
               margin: 0
             }}>
               Everything you need to know about ScreenMotion and 3D device mockups
@@ -830,9 +830,9 @@ export default function LandingPage() {
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                   style={{
                     borderRadius: "16px",
-                    backgroundColor: isHighlighted ? "rgba(250, 204, 21, 0.08)" : "#181824",
-                    border: isHighlighted ? "1px solid rgba(250, 204, 21, 0.3)" : "1px solid #2a2a3c",
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.4)",
+                    backgroundColor: isHighlighted ? "#111111" : "#0a0a0a",
+                    border: isHighlighted ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.1)",
+                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.6)",
                     overflow: "hidden",
                     transition: "all 0.25s ease"
                   }}
@@ -855,7 +855,7 @@ export default function LandingPage() {
                     <span style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
                       <span className="font-headline faq-question-text" style={{
                         fontWeight: 700,
-                        color: isHighlighted ? "#facc15" : "#f8fafc"
+                        color: "#ffffff"
                       }}>
                         {faq.question}
                       </span>
@@ -863,8 +863,8 @@ export default function LandingPage() {
                         <span style={{
                           fontSize: "10px",
                           fontWeight: 800,
-                          color: "#0f172a",
-                          background: "linear-gradient(135deg, #facc15, #eab308)",
+                          color: "#000000",
+                          backgroundColor: "#ffffff",
                           padding: "3px 8px",
                           borderRadius: "6px",
                           letterSpacing: "0.05em",
@@ -879,7 +879,7 @@ export default function LandingPage() {
                       className="material-symbols-outlined"
                       style={{
                         fontSize: "22px",
-                        color: isHighlighted ? "#facc15" : "#94a3b8",
+                        color: "#a1a1aa",
                         transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                         transition: "transform 0.3s ease"
                       }}
@@ -903,7 +903,7 @@ export default function LandingPage() {
                             padding: "0 24px 20px 24px",
                             fontSize: "14.5px",
                             lineHeight: 1.6,
-                            color: isHighlighted ? "#cbd5e1" : "#94a3b8"
+                            color: "#a1a1aa"
                           }}
                         >
                           {faq.answer}

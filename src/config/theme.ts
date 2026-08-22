@@ -1,9 +1,7 @@
 /**
  * Video Editor & Motion Graphics Theme Palette Configuration
  * 
- * Centralized color tokens for seamless theme switching across the application.
- * Components consume CSS variables (--bg-primary, --text-primary, --accent-primary, etc.)
- * which are dynamically mapped to these theme definitions.
+ * Centralized color tokens for Pitch Black & White (#000000 & #FFFFFF) Monochrome design system.
  */
 
 export interface ThemePalette {
@@ -29,98 +27,44 @@ export interface ThemePalette {
 }
 
 /**
- * Industry-Standard Pro Video Editor Dark Theme
- * Modeled after DaVinci Resolve, Adobe Premiere Pro, and modern Motion Design tools.
+ * Pitch Black & Pure White Monochrome Theme (Default)
  */
-export const PRO_VIDEO_EDITOR_DARK: ThemePalette = {
-  id: 'pro-dark',
-  name: 'Pro Video Editor Dark (Default)',
+export const PITCH_BLACK_MONO: ThemePalette = {
+  id: 'pitch-black',
+  name: 'Pitch Black & White (Default)',
   type: 'dark',
   colors: {
-    bgBase: '#0e0e14',          // Deep void backdrop for accurate visual contrast
-    bgPanel: '#181824',         // Sleek slate panel background
-    bgInset: '#222232',         // Input controls & dropdown background
-    bgCard: '#1c1c2b',          // Card container background
-    bgCardHover: 'rgba(250, 204, 21, 0.12)', // Subtle yellow glow hover
-    textPrimary: '#f8fafc',      // High-contrast off-white primary text
-    textSecondary: '#94a3b8',    // Slate gray secondary text
-    textMuted: '#64748b',       // Muted sub-text & icons
-    textAccent: '#facc15',      // Studio Warm Yellow text accent
-    accentPrimary: '#facc15',    // Studio Warm Yellow primary brand accent
-    accentHover: '#fde047',      // Bright yellow hover state
-    accentSecondary: '#eab308',  // Golden Yellow secondary accent
-    border: 'rgba(255, 255, 255, 0.1)', // Clean dark border line
-    borderHover: 'rgba(250, 204, 21, 0.4)', // Glowing border on hover
+    bgBase: '#000000',          // True Pitch Black OLED
+    bgPanel: '#0a0a0a',         // Deep dark surface
+    bgInset: '#141414',         // Recessed control background
+    bgCard: '#0d0d0d',          // Card container background
+    bgCardHover: 'rgba(255, 255, 255, 0.08)',
+    textPrimary: '#FFFFFF',      // High-contrast pure white
+    textSecondary: '#A1A1AA',    // Slate/Zinc light gray
+    textMuted: '#71717A',       // Neutral muted text
+    textAccent: '#FFFFFF',      // White accent
+    accentPrimary: '#FFFFFF',    // Pure White primary CTA
+    accentHover: '#E4E4E7',      // Soft off-white hover
+    accentSecondary: '#27272A',  // Subtle gray secondary accent
+    border: 'rgba(255, 255, 255, 0.12)', // Clean hairline border
+    borderHover: 'rgba(255, 255, 255, 0.35)', // Crisp glow on hover
   },
 };
 
-/**
- * Studio Warm Light Theme
- */
-export const STUDIO_LIGHT: ThemePalette = {
-  id: 'studio-light',
-  name: 'Studio Light (Cream & Slate)',
-  type: 'light',
-  colors: {
-    bgBase: '#fcf9ea',
-    bgPanel: '#ffffff',
-    bgInset: '#badfdb',
-    bgCard: '#ffffff',
-    bgCardHover: 'rgba(186, 223, 219, 0.2)',
-    textPrimary: '#111827',
-    textSecondary: '#4b5563',
-    textMuted: '#9ca3af',
-    textAccent: '#111827',
-    accentPrimary: '#ffa4a4',
-    accentHover: '#ffbdbd',
-    accentSecondary: '#badfdb',
-    border: 'rgba(0, 0, 0, 0.08)',
-    borderHover: 'rgba(0, 0, 0, 0.15)',
-  },
-};
+export const PRO_VIDEO_EDITOR_DARK = PITCH_BLACK_MONO;
 
-/**
- * OLED Midnight Black Theme
- */
-export const OLED_MIDNIGHT: ThemePalette = {
-  id: 'oled-midnight',
-  name: 'OLED Midnight Black',
-  type: 'dark',
-  colors: {
-    bgBase: '#050508',
-    bgPanel: '#0f0f17',
-    bgInset: '#171724',
-    bgCard: '#12121c',
-    bgCardHover: 'rgba(6, 182, 212, 0.12)',
-    textPrimary: '#f1f5f9',
-    textSecondary: '#94a3b8',
-    textMuted: '#475569',
-    textAccent: '#06b6d4',
-    accentPrimary: '#06b6d4',     // Cyan Glow accent
-    accentHover: '#22d3ee',
-    accentSecondary: '#3b82f6',
-    border: 'rgba(255, 255, 255, 0.08)',
-    borderHover: 'rgba(6, 182, 212, 0.4)',
-  },
-};
-
-export const AVAILABLE_THEMES = [PRO_VIDEO_EDITOR_DARK, STUDIO_LIGHT, OLED_MIDNIGHT];
+export const AVAILABLE_THEMES = [PITCH_BLACK_MONO];
 
 /**
  * Helper function to inject theme CSS variables onto document root
  */
-export function applyTheme(theme: ThemePalette) {
+export function applyTheme(theme: ThemePalette = PITCH_BLACK_MONO) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
 
   root.setAttribute('data-theme', theme.id);
-  if (theme.type === 'dark') {
-    root.classList.add('dark');
-    root.classList.remove('light');
-  } else {
-    root.classList.add('light');
-    root.classList.remove('dark');
-  }
+  root.classList.add('dark');
+  root.classList.remove('light');
 
   root.style.setProperty('--theme-bg-base', theme.colors.bgBase);
   root.style.setProperty('--theme-bg-panel', theme.colors.bgPanel);

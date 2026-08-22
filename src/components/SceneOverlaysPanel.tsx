@@ -6,6 +6,7 @@ import { Play, ChevronDown, Bold, Trash2, RotateCcw, Plus, GripVertical, Copy } 
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import BasicDropdown from './ui/smoothui/basic-dropdown';
 import type { TextOverlay, ImageOverlay } from '@/types';
+import { getDuplicateName } from '@/lib/utils';
 
 const fontItems = [
   { id: '"Plus Jakarta Sans", sans-serif', label: 'Plus Jakarta Sans', fontFamily: '"Plus Jakarta Sans", sans-serif' },
@@ -28,6 +29,19 @@ const animationItems = [
   { id: 'mask-reveal-up', label: 'Mask Reveal Up' },
   { id: 'reveal-text', label: 'Reveal Text' },
   { id: 'short-slide-down', label: 'Short Slide Down' },
+  { id: 'blur-out-up', label: 'Blur Out Up' },
+  { id: 'soft-blur-in', label: 'Soft Blur In' },
+  { id: 'spring-scale-in', label: 'Spring Scale In' },
+  { id: 'stagger-from-center', label: 'Stagger Center' },
+  { id: 'depth-parallax-words', label: 'Depth Parallax' },
+  { id: 'fade-through', label: 'Fade Through' },
+  { id: 'focus-blur-resolve', label: 'Focus Blur Resolve' },
+  { id: 'micro-scale-fade', label: 'Micro Scale Fade' },
+  { id: 'scale-down-fade', label: 'Scale Down Fade' },
+  { id: 'per-character-rise', label: 'Per Char Rise' },
+  { id: 'per-word-crossfade', label: 'Per Word Crossfade' },
+  { id: 'text-reveal', label: 'Text Reveal' },
+  { id: 'dia-text-reveal', label: 'Dia Text Reveal' },
 ];
 
 const imageAnimationItems = [
@@ -336,7 +350,7 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                           const duplicatedText: TextOverlay = {
                             ...t,
                             id: newId,
-                            text: t.text + ' (Copy)',
+                            text: getDuplicateName(t.text, texts.map((item) => item.text)),
                             position: [t.position[0] + 0.15, t.position[1] - 0.15, t.position[2]],
                             order: combinedItems.length,
                           };

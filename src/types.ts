@@ -26,7 +26,20 @@ export type TextAnimationType =
   | 'line-by-line-slide'
   | 'mask-reveal-up'
   | 'reveal-text'
-  | 'short-slide-down';
+  | 'short-slide-down'
+  | 'blur-out-up'
+  | 'soft-blur-in'
+  | 'spring-scale-in'
+  | 'stagger-from-center'
+  | 'depth-parallax-words'
+  | 'fade-through'
+  | 'focus-blur-resolve'
+  | 'micro-scale-fade'
+  | 'scale-down-fade'
+  | 'per-character-rise'
+  | 'per-word-crossfade'
+  | 'text-reveal'
+  | 'dia-text-reveal';
 
 export interface TextOverlay {
   id: string;

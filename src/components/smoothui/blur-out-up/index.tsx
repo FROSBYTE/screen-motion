@@ -36,46 +36,53 @@ export default function BlurOutUp({
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
-  const words = children.split(" ");
+  const lines = children.split("\n");
 
   return (
-    <span aria-label={children} className={className} ref={ref}>
-      {words.map((word, index) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: words have no stable id
-        <span key={index}>
-          <motion.span
-            animate={
-              play ? { opacity: 1, y: 0, filter: "blur(0px)" } : undefined
-            }
-            aria-hidden="true"
-            initial={
-              shouldReduceMotion
-                ? { opacity: 1 }
-                : { opacity: 0, y: 10, filter: "blur(6px)" }
-            }
-            style={{ display: "inline-block", whiteSpace: "pre" }}
-            transition={
-              shouldReduceMotion
-                ? { duration: 0 }
-                : {
-                    duration: DURATION_S / speed,
-                    delay: delay / MS + (index * (stagger / speed)) / MS,
-                    ease: EASE,
+    <span aria-label={children} className={className} ref={ref} style={{ display: "block" }}>
+      {lines.map((line, lineIdx) => {
+        const words = line.split(" ");
+        return (
+          <span key={lineIdx} style={{ display: "block" }}>
+            {words.map((word, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: words have no stable id
+              <span key={index} style={{ display: "inline-block" }}>
+                <motion.span
+                  animate={
+                    play ? { opacity: 1, y: 0, filter: "blur(0px)" } : undefined
                   }
-            }
-          >
-            {word}
-          </motion.span>
-          {index < words.length - 1 && (
-            <span
-              aria-hidden="true"
-              style={{ display: "inline-block", whiteSpace: "pre" }}
-            >
-              {" "}
-            </span>
-          )}
-        </span>
-      ))}
+                  aria-hidden="true"
+                  initial={
+                    shouldReduceMotion
+                      ? { opacity: 1 }
+                      : { opacity: 0, y: 10, filter: "blur(6px)" }
+                  }
+                  style={{ display: "inline-block", whiteSpace: "pre" }}
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0 }
+                      : {
+                          duration: DURATION_S / speed,
+                          delay: delay / MS + (index * (stagger / speed)) / MS,
+                          ease: EASE,
+                        }
+                  }
+                >
+                  {word}
+                </motion.span>
+                {index < words.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    style={{ display: "inline-block", whiteSpace: "pre" }}
+                  >
+                    {" "}
+                  </span>
+                )}
+              </span>
+            ))}
+          </span>
+        );
+      })}
     </span>
   );
 }

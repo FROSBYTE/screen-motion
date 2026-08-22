@@ -237,10 +237,10 @@ function OverlayImage({
         {/* 4 Corner Selection Points */}
         {showSelectionUI && (
           <>
-            <div style={{ position: 'absolute', top: -5, left: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', top: -5, right: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -5, left: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -5, right: -5, width: 8, height: 8, background: '#a855f7', border: '1.5px solid #ffffff', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: -5, left: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: -5, right: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -5, left: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -5, right: -5, width: 8, height: 8, background: '#ffffff', border: '1.5px solid #000000', borderRadius: '50%', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
           </>
         )}
 

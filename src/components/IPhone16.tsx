@@ -186,17 +186,32 @@ export function Model({ screenshotUrl, screenRef, texture, mediaType, onVideoRes
     Object.entries(materials).forEach(([name, mat]) => {
       if ('color' in mat && mat.color) {
         const color = (mat as any).color as THREE.Color;
+        const initial = initialColors.current[name];
         
-        // Skip camera lens and flash
-        if (name === 'Lens_Glass' || name === 'Flash') return;
+        // Skip emissive elements
         if ('emissive' in mat && (mat as any).emissive && ((mat as any).emissive.r > 0.2 || (mat as any).emissive.g > 0.2)) {
           return;
         }
 
-        // Change all other materials (frame, back glass, buttons) to the selected device color
-        color.set(state.deviceColor);
-        if ((mat as any).map) {
-          (mat as any).map = null;
+        // Notch, dynamic island, camera lens, flash, sensors, speaker must ALWAYS be black #000000
+        const isNotchOrLens = (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
+          name === 'Lens_Glass' || name === 'Flash' || name?.toLowerCase().includes('notch') ||
+          name?.toLowerCase().includes('island') || name?.toLowerCase().includes('hole') ||
+          name?.toLowerCase().includes('camera') || name?.toLowerCase().includes('lens') ||
+          name?.toLowerCase().includes('sensor') || name?.toLowerCase().includes('speaker') ||
+          name?.toLowerCase().includes('bezel');
+
+        if (isNotchOrLens) {
+          color.set('#000000');
+          if ((mat as any).map) {
+            (mat as any).map = null;
+          }
+        } else {
+          // Change body materials (frame, back glass, buttons) to selected device color
+          color.set(state.deviceColor);
+          if ((mat as any).map) {
+            (mat as any).map = null;
+          }
         }
         (mat as any).needsUpdate = true;
       }

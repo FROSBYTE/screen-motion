@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Copy } from 'lucide-react';
 
 interface ListItemEditorProps<T> {
   items: T[];
@@ -29,6 +29,19 @@ export default function ListItemEditor<T>({
     } else {
       next[index] = patch as T;
     }
+    onChange(next);
+  };
+
+  const handleDuplicate = (index: number) => {
+    const next = [...items];
+    const current = next[index];
+    let clone: T;
+    if (typeof current === 'object' && current !== null) {
+      clone = Array.isArray(current) ? ([...current] as unknown as T) : ({ ...current });
+    } else {
+      clone = current;
+    }
+    next.splice(index + 1, 0, clone);
     onChange(next);
   };
 
@@ -63,9 +76,47 @@ export default function ListItemEditor<T>({
             {renderItem(item, idx, (patch) => handleUpdate(idx, patch))}
           </div>
           <button
+            onClick={() => handleDuplicate(idx)}
+            className="mg-btn-interactive"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+            title="Duplicate item"
+          >
+            <Copy size={13} />
+          </button>
+          <button
             className="delete-btn-hover"
             onClick={() => handleRemove(idx)}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', flexShrink: 0 }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
             title="Remove item"
           >
             <Trash2 size={13} />
@@ -74,13 +125,14 @@ export default function ListItemEditor<T>({
       ))}
       <button
         onClick={handleAdd}
+        className="mg-btn-interactive"
         style={{
           width: '100%',
           padding: '8px',
-          background: 'rgba(168, 85, 247, 0.12)',
-          border: '1px dashed rgba(168, 85, 247, 0.5)',
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px dashed rgba(255, 255, 255, 0.25)',
           borderRadius: '6px',
-          color: '#a855f7',
+          color: '#ffffff',
           fontSize: '11px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -88,6 +140,14 @@ export default function ListItemEditor<T>({
           alignItems: 'center',
           justifyContent: 'center',
           gap: '4px',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.45)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
         }}
       >
         <Plus size={12} /> {addLabel}
