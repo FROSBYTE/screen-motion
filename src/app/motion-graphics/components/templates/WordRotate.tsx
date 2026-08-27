@@ -36,7 +36,7 @@ export default function WordRotate({
   items = DEFAULT_ITEMS,
   speed = 1,
   color = '#ffffff',
-  fontSize = 32,
+  fontSize = 48,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   isBold = true,
   isItalic = false,
@@ -66,7 +66,7 @@ export default function WordRotate({
   }, [items.length, speed, layerDuration, isLoop, localTime]);
 
   const wordCount = Math.max(1, items.length);
-  const targetCycleSec = layerDuration ? (layerDuration * 0.85) / wordCount : (2 / Math.max(0.5, speed));
+  const targetCycleSec = (layerDuration ? (layerDuration * 0.85) / wordCount : 2) / Math.max(0.5, speed);
   const intervalSec = Math.max(0.25, targetCycleSec);
 
   let activeIndex = liveIndex;
@@ -94,9 +94,9 @@ export default function WordRotate({
 
   const currentRaw = items[activeIndex] || items[0] || 'Word';
   const currentText = typeof currentRaw === 'string' ? currentRaw : currentRaw?.text || 'Word';
-  const resolvedIsBold = typeof currentRaw === 'object' && currentRaw.isBold !== undefined ? currentRaw.isBold : isBold;
-  const resolvedIsItalic = typeof currentRaw === 'object' && currentRaw.isItalic !== undefined ? currentRaw.isItalic : isItalic;
-  const resolvedFontFamily = typeof currentRaw === 'object' && currentRaw.fontFamily ? currentRaw.fontFamily : fontFamily;
+  const resolvedIsBold = isBold;
+  const resolvedIsItalic = isItalic;
+  const resolvedFontFamily = fontFamily;
 
   if (localTime !== undefined && deterministicY !== null) {
     return (

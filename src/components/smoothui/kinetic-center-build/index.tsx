@@ -10,6 +10,9 @@ export interface KineticCenterBuildProps {
   phrases?: string[];
   children?: string;
   speed?: number;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const BUILD_EASE: [number, number, number, number] = [0.2, 0.8, 0.2, 1];
@@ -22,6 +25,8 @@ export default function KineticCenterBuild({
   className = "",
   interval = 2500,
   speed = 1,
+  localTime,
+  layerStartTime = 0,
 }: KineticCenterBuildProps) {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [wordCount, setWordCount] = useState(1);
@@ -35,7 +40,7 @@ export default function KineticCenterBuild({
   const activeEase = speed < 1 ? SMOOTH_EASE : BUILD_EASE;
 
   useEffect(() => {
-    if (shouldReduceMotion) return;
+    if (localTime !== undefined || shouldReduceMotion) return;
 
     setWordCount(1);
     setExiting(false);
@@ -69,7 +74,46 @@ export default function KineticCenterBuild({
         clearTimeout(t);
       }
     };
-  }, [phraseIndex, phrases.length, interval, effectiveSpeed, shouldReduceMotion, words.length]);
+  }, [phraseIndex, phrases.length, interval, effectiveSpeed, shouldReduceMotion, words.length, localTime]);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const wordDelay = Math.min(430 / effectiveSpeed, 250) / 1000;
+    const totalWords = words.length;
+    const activeCount = Math.min(totalWords, Math.floor(elapsed / wordDelay) + 1);
+    const shown = words.slice(0, activeCount);
+
+    return (
+      <span
+        aria-live="polite"
+        className={`flex flex-wrap items-center justify-center ${className}`}
+        style={{ gap: 10 }}
+      >
+        {shown.map((word, i) => {
+          const wStart = i * wordDelay;
+          const wElapsed = Math.max(0, elapsed - wStart);
+          const wDur = (i === 0 ? 0.34 : 0.43) / effectiveSpeed;
+          const p = Math.min(1, Math.max(0, wElapsed / wDur));
+          const eased = 1 - Math.pow(1 - p, 3);
+          const opacity = eased;
+          const x = (1 - eased) * 44;
+
+          return (
+            <span
+              key={`${phraseIndex}-${i}`}
+              style={{
+                display: "inline-block",
+                opacity,
+                transform: `translateX(${x.toFixed(2)}px)`,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   const visibleWords = shouldReduceMotion ? words : words.slice(0, wordCount);
   const restingAnimate = shouldReduceMotion

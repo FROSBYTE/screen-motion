@@ -14,6 +14,9 @@ export interface PerCharacterRiseProps {
   speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const DURATION_S = 0.7;
@@ -33,18 +36,56 @@ export default function PerCharacterRise({
   stagger = 24,
   speed = 1,
   triggerOnView = false,
+  localTime,
+  layerStartTime = 0,
 }: PerCharacterRiseProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
-  const characters = Array.from(children);
+  const characters = Array.from(children || "");
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = DURATION_S / Math.max(0.1, speed);
+    const staggerS = (stagger / Math.max(0.1, speed)) / MS;
+    const baseDelayS = delay / MS;
+
+    return (
+      <span aria-label={children} className={className} ref={ref}>
+        {characters.map((char, index) => {
+          if (char === "\n") return <br key={index} />;
+          const charStart = baseDelayS + index * staggerS;
+          const charElapsed = Math.max(0, elapsed - charStart);
+          const progress = Math.min(1, Math.max(0, charElapsed / animDur));
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const opacity = eased;
+          const y = (1 - eased) * 32;
+
+          return (
+            <span
+              aria-hidden="true"
+              key={index}
+              style={{
+                display: "inline-block",
+                whiteSpace: "pre",
+                opacity,
+                transform: `translateY(${y.toFixed(2)}px)`,
+              }}
+            >
+              {char === " " ? "\u00A0" : char}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   return (
     <span aria-label={children} className={className} ref={ref}>
       {characters.map((char, index) => {
         if (char === "\n") {
-          return <span key={index} style={{ display: "block", width: "100%", height: 0 }} />;
+          return <br key={index} />;
         }
         return (
           <motion.span

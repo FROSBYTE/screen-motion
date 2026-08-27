@@ -1,28 +1,32 @@
-@import "../../node_modules/tw-animate-css/dist/tw-animate.css";
+
 @import "tailwindcss";
 @source "../";
 
 @theme {
-  --color-background: #000000;
-  --color-foreground: #FFFFFF;
-  --color-card: #0d0d0d;
-  --color-card-foreground: #FFFFFF;
-  --color-popover: #0a0a0a;
-  --color-popover-foreground: #FFFFFF;
-  --color-primary: #FFFFFF;
-  --color-primary-foreground: #000000;
-  --color-secondary: #141414;
-  --color-secondary-foreground: #FFFFFF;
-  --color-muted: #171717;
-  --color-muted-foreground: #A1A1AA;
-  --color-accent: #FFFFFF;
-  --color-accent-foreground: #000000;
-  --color-destructive: #ef4444;
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-input: #141414;
-  --color-ring: #FFFFFF;
-  --color-brand: #FFFFFF;
-  --color-brand-secondary: #E4E4E7;
+  --color-background: #FAFAF7;
+  --color-foreground: #0F172A;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #0F172A;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #0F172A;
+  --color-primary: #FF9137;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #FFCC4D;
+  --color-secondary-foreground: #0F172A;
+  --color-muted: #F4F5EE;
+  --color-muted-foreground: #64748B;
+  --color-accent: #70FFD2;
+  --color-accent-foreground: #0F172A;
+  --color-destructive: #EF4444;
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-input: #F4F5EE;
+  --color-ring: #FF9137;
+  --color-brand: #FF9137;
+  --color-brand-secondary: #FFCC4D;
+  --color-mint: #70FFD2;
+  --color-butter: #FFFC8C;
+  --color-gold: #FFCC4D;
+  --color-tangerine: #FF9137;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -38,23 +42,42 @@ html {
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* --- Color Schema: Pitch Black & White Monochrome (#000000 & #FFFFFF) --- */
-  --theme-bg-base: #000000;          /* True Pitch Black (OLED) Backdrop */
-  --theme-bg-panel: #0a0a0a;         /* Deep dark surface elevation */
-  --theme-bg-inset: #141414;         /* Recessed controls & inputs */
-  --theme-bg-card: #0d0d0d;          /* Card container background */
-  --theme-bg-card-hover: rgba(255, 255, 255, 0.08);
+  /* --- ColorHunt 4-Color Palette: 70ffd2fffc8cffcc4dff9137 --- */
+  --palette-mint: #70FFD2;       /* Vibrant Seafoam / Mint */
+  --palette-butter: #FFFC8C;     /* Pastel Lemon / Soft Butter */
+  --palette-gold: #FFCC4D;       /* Golden Marigold / Sunglow */
+  --palette-tangerine: #FF9137;  /* Electric Punchy Tangerine */
 
-  --theme-text-light: #FFFFFF;        /* Pure White Primary Text */
-  --theme-text-muted: #A1A1AA;        /* Light Gray Secondary Text */
-  --theme-text-dark: #71717A;         /* Neutral Muted Text & Icons */
-  --theme-text-accent: #FFFFFF;       /* Pure White Text Accent */
+  /* --- 1. Light Chromatic Studio Surfaces --- */
+  --theme-bg-base: #FAFAF7;          /* Soft optical cream canvas */
+  --theme-bg-panel: #FFFFFF;         /* Sidebars, timeline drawer, headers */
+  --theme-bg-card: #FFFFFF;          /* Control groups & elevated cards */
+  --theme-bg-card-hover: #FFFDE6;    /* Soft butter tint on hover */
+  --theme-bg-inset: #F4F5EE;         /* Recessed inputs, wells, badges */
 
-  --theme-accent-primary: #FFFFFF;    /* Pure White Primary Brand Accent */
-  --theme-accent-hover: #E4E4E7;      /* Soft Off-White Hover */
-  --theme-accent-secondary: #27272A;  /* Subtle Gray Secondary Accent */
-  --theme-border: rgba(255, 255, 255, 0.12); /* Clean Hairline Border */
-  --theme-border-hover: rgba(255, 255, 255, 0.35);
+  /* --- 2. Deep Ink & Editorial Typography --- */
+  --theme-text-light: #0F172A;       /* Primary text: deep architectural slate ink */
+  --theme-text-muted: #475569;       /* Secondary text: balanced neutral slate */
+  --theme-text-dark: #64748B;        /* Muted / Monospace metadata & tags */
+  --theme-text-accent: #FF9137;      /* High-emphasis tangerine accent */
+
+  /* --- 3. Palette Accents & Primary Action --- */
+  --theme-accent-primary: #FF9137;   /* Primary Action Surface (Electric Tangerine) */
+  --theme-accent-hover: #E6791E;     /* Deep Tangerine Hover */
+  --theme-accent-secondary: #FFCC4D; /* Golden Marigold Surface */
+  --theme-accent-amber: #FFCC4D;     /* Warm Gold / Keyframe */
+  --theme-accent-cyan: #70FFD2;      /* Precision Mint Seafoam */
+  --theme-accent-orange: #FF9137;    /* Kinetic Tangerine */
+  --theme-accent-mint: #70FFD2;      /* Vibrant Mint */
+  --theme-accent-butter: #FFFC8C;    /* Pastel Butter */
+  --theme-accent-gold: #FFCC4D;      /* Golden Sunglow */
+  --theme-accent-tangerine: #FF9137; /* Electric Tangerine */
+
+  /* --- 4. Architectural Light Hairlines & Multi-Layer Elevation --- */
+  --theme-border: rgba(15, 23, 42, 0.08);        /* Architectural hairline */
+  --theme-border-subtle: rgba(15, 23, 42, 0.04); /* Micro-divider */
+  --theme-border-hover: rgba(255, 145, 55, 0.4); /* Interactive tangerine border */
+  --theme-border-active: #FF9137;                /* Active/Focused border */
 
   /* --- UI CSS Variables (Components consume these directly) --- */
   --bg-primary: var(--theme-bg-base);
@@ -72,16 +95,24 @@ html {
   --accent-primary: var(--theme-accent-primary);
   --accent-primary-hover: var(--theme-accent-hover);
   --accent-secondary: var(--theme-accent-secondary);
-  --accent-gradient: #FFFFFF;
-  --accent-glow: none;
+  --accent-amber: var(--theme-accent-gold);
+  --accent-cyan: var(--theme-accent-mint);
+  --accent-orange: var(--theme-accent-tangerine);
+  --accent-mint: var(--palette-mint);
+  --accent-butter: var(--palette-butter);
+  --accent-gold: var(--palette-gold);
+  --accent-tangerine: var(--palette-tangerine);
+  --accent-gradient: linear-gradient(90deg, #70FFD2 0%, #FFFC8C 35%, #FFCC4D 70%, #FF9137 100%);
+  --accent-glow: 0 0 20px rgba(255, 145, 55, 0.35);
 
-  --success: #FFFFFF;
-  --warning: #A1A1AA;
-  --error: #ef4444;
+  --success: #10B981;
+  --warning: #FFCC4D;
+  --error: #EF4444;
 
   --border-color: var(--theme-border);
+  --border-color-subtle: var(--theme-border-subtle);
   --border-color-hover: var(--theme-border-hover);
-  --border-accent: var(--theme-accent-primary);
+  --border-accent: var(--palette-tangerine);
 
   /* Spacing */
   --space-xs: 4px;
@@ -99,11 +130,11 @@ html {
   --radius-xl: 12px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
+  /* Multi-Layer Diffuse Ambient Shadows */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 24px 64px -8px rgba(15, 23, 42, 0.10), 0 8px 24px -4px rgba(15, 23, 42, 0.04);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -111,40 +142,26 @@ html {
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Typography */
-  --font-sans: 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --font-sans: var(--font-inter-tight), 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', 'Fira Code', monospace;
+  --background: #F8F9FA;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #0F172A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F3F7;
+  --secondary-foreground: #0F172A;
+  --muted: #EEF0F5;
+  --muted-foreground: #64748B;
+  --accent: #2563EB;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: rgba(15, 23, 42, 0.08);
+  --input: #EEF0F5;
+  --ring: #2563EB;
 }
 
 * {
@@ -167,25 +184,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== SmoothUI Theme Candy ===== */
-:root[data-theme="candy"], .theme-candy {
-  --color-accent: oklch(0.72 0.2 352.53);
-  --color-accent-foreground: #ffffff;
-  --theme-accent-primary: oklch(0.72 0.2 352.53);
-  --theme-accent-secondary: oklch(0.66 0.21 354.31);
-  --theme-accent-hover: oklch(0.78 0.18 352.53);
-  --theme-text-accent: oklch(0.72 0.2 352.53);
-  --accent-primary: oklch(0.72 0.2 352.53);
-  --accent-primary-hover: oklch(0.78 0.18 352.53);
-  --accent-secondary: oklch(0.66 0.21 354.31);
-  --candy-pink: #ec4899;
-  --candy-rose: #f43f5e;
-  --candy-glow: rgba(236, 72, 153, 0.35);
-}
-
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
   height: 5px;
 }
 
@@ -194,12 +195,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.15);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(15, 23, 42, 0.3);
 }
 
 /* ===== App Layout ===== */
@@ -1159,8 +1160,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .animation-preview-card.active {
-  border: 2px solid #000000;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border: 2px solid #FF9137;
+  box-shadow: 0 8px 24px rgba(255, 145, 55, 0.25);
 }
 
 .animation-card-checkmark {
@@ -1170,14 +1171,14 @@ input[type="range"]::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #000000;
+  background: #FF9137;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(255, 145, 55, 0.4);
   z-index: 5;
 }
 
@@ -1311,8 +1312,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .animation-preview-card.active {
-  border: 2px solid #000000;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border: 2px solid #FF9137;
+  box-shadow: 0 8px 24px rgba(255, 145, 55, 0.25);
 }
 
 .animation-card-checkmark {
@@ -1322,14 +1323,14 @@ input[type="range"]::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #000000;
+  background: #FF9137;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(255, 145, 55, 0.4);
   z-index: 5;
 }
 
@@ -1873,4 +1874,87 @@ button:not(:disabled):active,
   filter: none !important;
 }
 
+/* CSS keyframe styles for animation cards (all 15 templates looping infinitely) */
+@keyframes card-anim-orbit {
+  0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
+  50% { transform: rotateY(45deg) rotateX(15deg); }
+}
+@keyframes card-anim-hero-reveal {
+  0%, 100% { transform: scale(0.85) rotate(-5deg); }
+  50% { transform: scale(1.15) rotate(0deg); }
+}
+@keyframes card-anim-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+@keyframes card-anim-flip {
+  0%, 100% { transform: rotateY(0deg); }
+  50% { transform: rotateY(180deg); }
+}
+@keyframes card-anim-rise {
+  0%, 100% { transform: translateY(10px) scale(0.9); }
+  50% { transform: translateY(-4px) scale(1.05); }
+}
+@keyframes card-anim-tilt-shift {
+  0%, 100% { transform: rotateX(20deg) rotateY(-15deg); }
+  50% { transform: rotateX(-10deg) rotateY(15deg); }
+}
+@keyframes card-anim-bounce-drop {
+  0% { transform: translateY(-30px); }
+  50%, 100% { transform: translateY(0px); }
+}
+@keyframes card-anim-slide-in {
+  0%, 100% { transform: translateX(-12px); }
+  50% { transform: translateX(0px); }
+}
+@keyframes card-anim-spiral {
+  0%, 100% { transform: rotate(0deg) scale(0.85); }
+  50% { transform: rotate(180deg) scale(1.1); }
+}
+@keyframes card-anim-cinematic-pan {
+  0% { transform: translateX(-15px) rotateY(-15deg); }
+  50%, 100% { transform: translateX(0px) rotateY(0deg); }
+}
+@keyframes card-anim-slow-pan {
+  0%, 100% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+}
 
+@keyframes card-anim-horizontal-slide {
+  0%, 100% { transform: translateX(12px); }
+  50% { transform: translateX(-4px); }
+}
+@keyframes card-anim-infinity-loop {
+  0%, 100% { transform: rotate(0deg) translateY(0px) scale(0.9); }
+  25% { transform: rotate(10deg) translateY(-6px) scale(1.05); }
+  50% { transform: rotate(0deg) translateY(4px) scale(0.95); }
+  75% { transform: rotate(-10deg) translateY(-6px) scale(1.05); }
+}
+@keyframes card-anim-dynamic-showcase {
+  0%, 100% { transform: rotate(-8px) scale(0.85); }
+  50% { transform: rotate(12px) scale(1.1); }
+}
+@keyframes card-anim-3d-spin-flip {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(180deg) scale(1.08); }
+  100% { transform: rotateY(360deg); }
+}
+@keyframes card-anim-perspective-float {
+  0%, 100% { transform: rotateX(25deg) rotateY(-25deg) translateY(0px); }
+  50% { transform: rotateX(15deg) rotateY(-15deg) translateY(-8px); }
+}
+@keyframes card-anim-zoom-pulse {
+  0%, 100% { transform: scale(0.85); }
+  50% { transform: scale(1.2); }
+}
+
+/* Ensure R3F canvas inside motion graphics editor always fills 100% of the 1920x1080 canvas */
+.motion-device-canvas,
+.motion-device-canvas > div,
+.motion-device-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+}

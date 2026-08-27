@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, Play, RotateCcw, Pipette, Check, Pencil } from 'lucide-react';
-import { useMGState, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration, MGPacingPreset, MGAnimatableProperty, MGEasingType, hasKeyframesForProperty, getKeyframeAtTime, interpolateProperty } from '../store';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Copy, Type, Layers, Film, ChevronRight, Box, GripVertical, Play, RotateCcw, Pipette, Check, Pencil, Upload } from 'lucide-react';
+import { useMGDoc, MGTextAnimationType, SceneTransition, MGTextLayer, MGComponentLayer, MGLayer, getSceneDuration, MGPacingPreset, MGAnimatableProperty, MGEasingType, hasKeyframesForProperty, getKeyframeAtTime, interpolateProperty } from '../store';
 import { COMPONENT_TEMPLATES } from './templates';
 import { Reorder } from 'motion/react';
 import ListItemEditor from './ListItemEditor';
-import CustomDropdown from './CustomDropdown';
-import BasicDropdown from '@/components/ui/smoothui/basic-dropdown';
+import CustomDropdown from '@/components/shared/controls/CustomDropdown';
+import BasicDropdown from '@/components/smoothui/basic-dropdown';
 import ComponentPicker from './ComponentPicker';
-import ColorPickerControl from './ColorPickerControl';
+import ColorPickerControl from '@/components/shared/controls/ColorPickerControl';
 import { TEMPLATES } from '@/types';
 import { saveAsset } from '@/lib/storage/indexedDb';
 
@@ -22,7 +22,7 @@ function normalizeHex(color: string): string {
   return '#000000';
 }
 
-const MAX_FILE_SIZE_BYTES = 40 * 1024 * 1024; // 40MB limit
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB limit
 
 export function applyVideoFileToLayer(
   file: File,
@@ -30,7 +30,7 @@ export function applyVideoFileToLayer(
   currentProps: any
 ) {
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 40MB limit. Please upload a video smaller than 40MB.`);
+    alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload a video smaller than 50MB.`);
     return;
   }
   const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -67,7 +67,7 @@ export function applyImageFileToLayer(
   currentProps: any
 ) {
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 40MB limit. Please upload an image smaller than 40MB.`);
+    alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload an image smaller than 50MB.`);
     return;
   }
   const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -98,6 +98,109 @@ export function applyImageFileToLayer(
   };
   img.src = url;
 }
+
+function FastDeviceSlider({
+  label,
+  value,
+  min,
+  max,
+  step = 0.05,
+  unit = '',
+  formatDecimals = 2,
+  onChange,
+  onReset,
+  showReset = true,
+  resetValue = 0,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  unit?: string;
+  formatDecimals?: number;
+  onChange: (val: number) => void;
+  onReset?: () => void;
+  showReset?: boolean;
+  resetValue?: number;
+}) {
+  const [localVal, setLocalVal] = useState(value);
+  const isDraggingRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setLocalVal(value);
+    }
+  }, [value]);
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setLocalVal(val);
+    isDraggingRef.current = true;
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      onChange(val);
+    });
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    onChange(localVal);
+  };
+
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <label style={H2_STYLE}>{label}</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>
+            {formatDecimals === 0 ? Math.round(localVal) : localVal.toFixed(formatDecimals)}{unit}
+          </span>
+          {showReset && onReset && (
+            <button
+              type="button"
+              onClick={() => {
+                setLocalVal(resetValue);
+                onReset();
+              }}
+              title={`Reset ${label} to ${resetValue}${unit}`}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary, #6b7280)',
+                cursor: 'pointer',
+                padding: '2px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: localVal !== resetValue ? 1 : 0.35,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <RotateCcw size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={localVal}
+        onChange={handleSliderChange}
+        onPointerUp={handlePointerUp}
+        onPointerDown={() => { isDraggingRef.current = true; }}
+        style={{ width: '100%' }}
+      />
+    </div>
+  );
+}
+
 const DEFAULT_LOGO_LOOP_ITEMS: { type: string; value: string; valueAssetId?: string }[] = [
   { type: 'text', value: 'React' },
   { type: 'text', value: 'Next.js' },
@@ -127,11 +230,11 @@ const DEFAULT_NOTIFICATION_ITEMS: { title: string; description: string; bgColor:
   { title: 'Task completed', description: 'Design review finished', bgColor: 'rgba(255,255,255,0.05)', titleColor: '#ffffff', descriptionColor: 'rgba(255,255,255,0.5)', accentColor: '#6366f1' },
 ];
 
-const DEFAULT_WORD_ROTATE_ITEMS: { text: string; isBold: boolean; isItalic: boolean; fontFamily: string }[] = [
-  { text: 'Innovative', isBold: true, isItalic: false, fontFamily: '"Plus Jakarta Sans", sans-serif' },
-  { text: 'Creative', isBold: true, isItalic: false, fontFamily: '"Plus Jakarta Sans", sans-serif' },
-  { text: 'Powerful', isBold: true, isItalic: false, fontFamily: '"Plus Jakarta Sans", sans-serif' },
-  { text: 'Beautiful', isBold: true, isItalic: false, fontFamily: '"Plus Jakarta Sans", sans-serif' },
+const DEFAULT_WORD_ROTATE_ITEMS: { text: string }[] = [
+  { text: 'Innovative' },
+  { text: 'Creative' },
+  { text: 'Powerful' },
+  { text: 'Beautiful' },
 ];
 
 const ANIMATION_OPTIONS: { id: MGTextAnimationType; label: string }[] = [
@@ -317,32 +420,48 @@ const TIMING_OPTIONS = [
   { value: 15, label: '15s' }, { value: 20, label: '20s' },
 ];
 
-const selectStyle = { width: '100%', padding: '8px', background: '#1c1c26', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#ffffff', fontSize: '12px', marginBottom: '10px', outline: 'none' };
+const selectStyle = { width: '100%', padding: '8px', background: 'var(--bg-input, #EEF0F5)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary, #0F172A)', fontSize: '12px', marginBottom: '10px', outline: 'none' };
 
 const H1_STYLE: React.CSSProperties = {
-  fontSize: '15px',
-  fontWeight: 800,
-  color: '#ffffff',
-  marginBottom: '12px',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '14px',
+  fontWeight: 700,
+  color: 'var(--text-primary, #0F172A)',
+  marginBottom: '14px',
   textTransform: 'uppercase',
-  letterSpacing: '0.03em',
+  letterSpacing: '0.06em',
 };
 
 const H2_STYLE: React.CSSProperties = {
-  fontSize: '13px',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '11px',
   fontWeight: 600,
-  color: '#ffffff',
-  marginBottom: '5px',
+  color: 'var(--text-secondary, #475569)',
+  marginBottom: '6px',
   display: 'block',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const H3_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '11px',
+  fontWeight: 600,
+  color: 'var(--text-secondary, #475569)',
+  marginBottom: '6px',
+  display: 'block',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
 };
 
 const SECTION_HEADING_STYLE: React.CSSProperties = {
-  fontSize: '13px',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '12px',
   fontWeight: 700,
-  color: '#ffffff',
-  marginBottom: '8px',
+  color: 'var(--text-primary, #0F172A)',
+  marginBottom: '10px',
   textTransform: 'uppercase',
-  letterSpacing: '0.02em',
+  letterSpacing: '0.05em',
 };
 
 function PacingPresetControl({
@@ -375,12 +494,12 @@ function PacingPresetControl({
               style={{
                 flex: 1,
                 padding: '6px 4px',
-                background: isActive ? '#FFFFFF' : 'transparent',
-                color: isActive ? '#000000' : 'var(--text-primary)',
+                background: isActive ? '#FF9137' : 'transparent',
+                color: isActive ? '#FFFFFF' : 'var(--text-primary)',
                 border: 'none',
                 borderRadius: '4px',
                 fontSize: '11px',
-                fontWeight: isActive ? 700 : 400,
+                fontWeight: isActive ? 700 : 500,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 textAlign: 'center',
@@ -395,12 +514,12 @@ function PacingPresetControl({
   );
 }
 
-export default function PropertiesPanel() {
+export default React.memo(function PropertiesPanel() {
   const {
     state, dispatch, addScene, removeScene, updateScene, duplicateScene, setScenes,
     addLayer, addComponentLayer, removeLayer, updateLayer, duplicateLayer, moveLayerToScene, setLayers, seekTo, getSceneStartTime, play,
-    addOrUpdateKeyframe, removeKeyframe, clearKeyframes, moveKeyframe,
-  } = useMGState();
+    addOrUpdateKeyframe, removeKeyframe, clearKeyframes, moveKeyframe, resetSelectedComponent,
+  } = useMGDoc();
   const { scenes, activeSceneId, selectedLayerId } = state;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
   const layers = activeScene?.layers || [];
@@ -415,11 +534,12 @@ export default function PropertiesPanel() {
     <div
       className="properties-panel"
       style={{
-        width: '368px',
-        minWidth: '368px',
+        width: 'clamp(300px, 20vw, 368px)',
+        minWidth: '300px',
         height: '100%',
-        background: 'var(--bg-secondary)',
-        borderLeft: '1px solid var(--border-color)',
+        background: 'var(--theme-bg-panel, #FFFFFF)',
+        borderLeft: '1px solid var(--theme-border, rgba(15, 23, 42, 0.08))',
+        boxShadow: 'var(--shadow-md)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -432,7 +552,7 @@ export default function PropertiesPanel() {
         {isSceneMode && activeScene && (
           <div style={{ paddingTop: '4px' }}>
             <h1 style={H1_STYLE}>
-              SCENE PROPERTIES
+              SCENE PROPERTIES ({activeScene.name})
             </h1>
 
             {/* Background Images */}
@@ -486,8 +606,6 @@ export default function PropertiesPanel() {
               {[
                 { id: 'bg-01', label: 'BG 01', url: '/Background_Images/bg-01.svg' },
                 { id: 'bg-02', label: 'BG 02', url: '/Background_Images/bg-02.svg' },
-                { id: 'bg-03', label: 'BG 03', url: '/Background_Images/bg-03.svg' },
-                { id: 'bg-04', label: 'BG 04', url: '/Background_Images/bg-04.svg' },
                 { id: 'bg-05', label: 'BG 05', url: '/Background_Images/bg-05.svg' },
                 { id: 'bg-06', label: 'BG 06', url: '/Background_Images/bg-06.svg' },
                 { id: 'bg-07', label: 'BG 07', url: '/Background_Images/bg-07.svg' },
@@ -589,31 +707,16 @@ export default function PropertiesPanel() {
               <h1 style={{ ...H1_STYLE, marginBottom: 0 }}>
                 COMPONENT PROPERTIES
               </h1>
-              {scenes.length > 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Scene:</span>
-                  <select
-                    value={activeSceneId}
-                    onChange={(e) => moveLayerToScene(selectedLayer.id, e.target.value)}
-                    style={{
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '4px',
-                      padding: '2px 6px',
-                      fontSize: '11px',
-                      outline: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {scenes.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <button
+                onClick={resetSelectedComponent}
+                title="Reset component to default properties"
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px',
+                }}
+              >
+                <RotateCcw size={12} /> Reset
+              </button>
             </div>
 
             <label style={H2_STYLE}>Text</label>
@@ -653,8 +756,8 @@ export default function PropertiesPanel() {
                 <input
                   type="number"
                   value={selectedLayer.fontSize ?? 48}
-                  onChange={(e) => updateLayer(selectedLayer.id, { fontSize: Number(e.target.value) })}
-                  min={12} max={180} step={2}
+                  onChange={(e) => updateLayer(selectedLayer.id, { fontSize: Math.max(1, Number(e.target.value)) })}
+                  min={1} max={300} step={1}
                   style={{
                     width: '100%', padding: '7px 8px', background: 'var(--bg-primary)',
                     border: '1px solid var(--border-color)', borderRadius: '6px',
@@ -685,13 +788,14 @@ export default function PropertiesPanel() {
                   style={{
                     width: '100%',
                     height: '36px',
-                    background: selectedLayer.isBold ? '#FFFFFF' : 'var(--bg-primary)',
-                    border: '1px solid var(--border-color)',
+                    background: selectedLayer.isBold ? '#0F172A' : 'var(--bg-primary)',
+                    border: selectedLayer.isBold ? '1px solid #0F172A' : '1px solid var(--border-color)',
                     borderRadius: '6px',
-                    color: selectedLayer.isBold ? '#000000' : 'var(--text-primary)',
+                    color: selectedLayer.isBold ? '#FFFFFF' : 'var(--text-primary)',
                     fontSize: '13px',
                     fontWeight: 800,
                     cursor: 'pointer',
+                    boxShadow: selectedLayer.isBold ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                     transition: 'all 0.15s ease',
                   }}
                   title="Toggle Bold"
@@ -709,14 +813,15 @@ export default function PropertiesPanel() {
                   style={{
                     width: '100%',
                     height: '36px',
-                    background: selectedLayer.isItalic ? '#FFFFFF' : 'var(--bg-primary)',
-                    border: '1px solid var(--border-color)',
+                    background: selectedLayer.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                    border: selectedLayer.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
                     borderRadius: '6px',
-                    color: selectedLayer.isItalic ? '#000000' : 'var(--text-primary)',
+                    color: selectedLayer.isItalic ? '#FFFFFF' : 'var(--text-primary)',
                     fontSize: '13px',
                     fontStyle: 'italic',
                     fontWeight: 700,
                     cursor: 'pointer',
+                    boxShadow: selectedLayer.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                     transition: 'all 0.15s ease',
                   }}
                   title="Toggle Italic"
@@ -802,35 +907,46 @@ export default function PropertiesPanel() {
               <h1 style={{ ...H1_STYLE, marginBottom: 0 }}>
                 COMPONENT PROPERTIES
               </h1>
-              {scenes.length > 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Scene:</span>
-                  <select
-                    value={activeSceneId}
-                    onChange={(e) => moveLayerToScene(selectedLayer.id, e.target.value)}
-                    style={{
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '4px',
-                      padding: '2px 6px',
-                      fontSize: '11px',
-                      outline: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {scenes.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <button
+                onClick={resetSelectedComponent}
+                title="Reset component to default properties"
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px',
+                }}
+              >
+                <RotateCcw size={12} /> Reset
+              </button>
             </div>
 
-            <div style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '12px', fontWeight: 600 }} title={COMPONENT_TEMPLATES.find((t: any) => t.id === selectedLayer.templateId)?.description}>
-              {COMPONENT_TEMPLATES.find((t: any) => t.id === selectedLayer.templateId)?.name}
+            <div style={{
+              background: 'var(--theme-bg-inset, #F4F5EE)',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              border: '1px solid var(--border-color)',
+              marginBottom: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }} title="Edit component name">
+              <input
+                type="text"
+                value={selectedLayer.name !== undefined ? selectedLayer.name : (COMPONENT_TEMPLATES.find((t: any) => t.id === selectedLayer.templateId)?.name || selectedLayer.templateId || '')}
+                placeholder={COMPONENT_TEMPLATES.find((t: any) => t.id === selectedLayer.templateId)?.name || 'Component Name'}
+                onChange={(e) => updateLayer(selectedLayer.id, { name: e.target.value } as any)}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary, #0F172A)',
+                  fontFamily: '"Plus Jakarta Sans", sans-serif',
+                  padding: 0,
+                }}
+              />
+              <Pencil size={13} style={{ color: 'var(--text-muted)', opacity: 0.65, flexShrink: 0 }} />
             </div>
 
             <PacingPresetControl
@@ -840,37 +956,42 @@ export default function PropertiesPanel() {
 
 
 
-            {/* Enter Animation */}
-            <label style={H2_STYLE}>Enter Animation</label>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-              <BasicDropdown
-                items={ENTER_ANIMATION_OPTIONS}
-                value={selectedLayer.enterAnimation || 'none'}
-                onChange={(val) => updateLayer(selectedLayer.id, { enterAnimation: val } as any)}
-                style={{ flex: 1 }}
-              />
-              {(selectedLayer.enterAnimation && selectedLayer.enterAnimation !== 'none') && (
-                <CustomDropdown value={selectedLayer.enterDuration ?? 1.0}
-                  onChange={(v) => updateLayer(selectedLayer.id, { enterDuration: v } as any)}
-                  options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
-              )}
-            </div>
+            {/* Enter & Exit Animation (for non-device components) */}
+            {selectedLayer.templateId !== 'phone-device' && (
+              <>
+                {/* Enter Animation */}
+                <label style={H2_STYLE}>Enter Animation</label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
+                  <BasicDropdown
+                    items={ENTER_ANIMATION_OPTIONS}
+                    value={selectedLayer.enterAnimation || 'none'}
+                    onChange={(val) => updateLayer(selectedLayer.id, { enterAnimation: val } as any)}
+                    style={{ flex: 1 }}
+                  />
+                  {(selectedLayer.enterAnimation && selectedLayer.enterAnimation !== 'none') && (
+                    <CustomDropdown value={selectedLayer.enterDuration ?? 1.0}
+                      onChange={(v) => updateLayer(selectedLayer.id, { enterDuration: v } as any)}
+                      options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
+                  )}
+                </div>
 
-            {/* Exit Animation */}
-            <label style={H2_STYLE}>Exit Animation</label>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-              <BasicDropdown
-                items={EXIT_ANIMATION_OPTIONS}
-                value={selectedLayer.exitAnimation || 'none'}
-                onChange={(val) => updateLayer(selectedLayer.id, { exitAnimation: val } as any)}
-                style={{ flex: 1 }}
-              />
-              {(selectedLayer.exitAnimation && selectedLayer.exitAnimation !== 'none') && (
-                <CustomDropdown value={selectedLayer.exitDuration ?? 1.0}
-                  onChange={(v) => updateLayer(selectedLayer.id, { exitDuration: v } as any)}
-                  options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
-              )}
-            </div>
+                {/* Exit Animation */}
+                <label style={H2_STYLE}>Exit Animation</label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
+                  <BasicDropdown
+                    items={EXIT_ANIMATION_OPTIONS}
+                    value={selectedLayer.exitAnimation || 'none'}
+                    onChange={(val) => updateLayer(selectedLayer.id, { exitAnimation: val } as any)}
+                    style={{ flex: 1 }}
+                  />
+                  {(selectedLayer.exitAnimation && selectedLayer.exitAnimation !== 'none') && (
+                    <CustomDropdown value={selectedLayer.exitDuration ?? 1.0}
+                      onChange={(v) => updateLayer(selectedLayer.id, { exitDuration: v } as any)}
+                      options={DURATION_OPTIONS} style={{ width: '84px', minWidth: '84px', flexShrink: 0 }} />
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Template-specific props */}
             <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '12px', paddingTop: '12px' }}>
@@ -916,13 +1037,14 @@ export default function PropertiesPanel() {
                         style={{
                           width: '100%',
                           height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
                           borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#000000' : 'var(--text-primary)',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
                           fontSize: '13px',
                           fontWeight: 800,
                           cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
                         title="Toggle Bold"
@@ -940,14 +1062,15 @@ export default function PropertiesPanel() {
                         style={{
                           width: '100%',
                           height: '36px',
-                          background: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
                           borderRadius: '6px',
-                          color: selectedLayer.props.isItalic ? '#000000' : 'var(--text-primary)',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
                           fontSize: '13px',
                           fontStyle: 'italic',
                           fontWeight: 700,
                           cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
                         title="Toggle Italic"
@@ -988,8 +1111,17 @@ export default function PropertiesPanel() {
                       );
                     }}
                   />
-                  {/* Uniform 3-column Item BG, Text Color, Bold row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  {/* Uniform 4-column Item BG, Text Color, Bold, Italic row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
                     {/* Item BG Color */}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Item BG</label>
@@ -1019,13 +1151,14 @@ export default function PropertiesPanel() {
                         style={{
                           width: '100%',
                           height: '36px',
-                          background: selectedLayer.props.isBold ? '#FFFFFF' : 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: selectedLayer.props.isBold ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isBold ? '1px solid #0F172A' : '1px solid var(--border-color)',
                           borderRadius: '6px',
-                          color: selectedLayer.props.isBold ? '#000000' : 'var(--text-primary)',
+                          color: selectedLayer.props.isBold ? '#FFFFFF' : 'var(--text-primary)',
                           fontSize: '13px',
                           fontWeight: 800,
                           cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isBold ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
                         title="Toggle Bold"
@@ -1033,23 +1166,32 @@ export default function PropertiesPanel() {
                         B
                       </button>
                     </div>
-                  </div>
 
-                  {/* Speed Slider */}
-                  <div style={{ marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <label style={H2_STYLE}>Speed</label>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>{(selectedLayer.props.speed ?? 1).toFixed(1)}x</span>
+                    {/* Italic */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
                     </div>
-                    <input
-                      type="range"
-                      min={0.2}
-                      max={4}
-                      step={0.1}
-                      value={selectedLayer.props.speed ?? 1}
-                      onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, speed: Number(e.target.value) } } as any)}
-                      style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent-primary, #ffffff)' }}
-                    />
                   </div>
                 </>
               )}
@@ -1084,7 +1226,7 @@ export default function PropertiesPanel() {
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   if (file.size > MAX_FILE_SIZE_BYTES) {
-                                    alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 40MB limit. Please upload a file smaller than 40MB.`);
+                                    alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload a file smaller than 50MB.`);
                                     return;
                                   }
                                   const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -1097,7 +1239,16 @@ export default function PropertiesPanel() {
                       </>
                     )}
                   />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px', alignItems: 'flex-start' }}>
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px', alignItems: 'flex-start' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title="Direction">Direction</label>
                       <BasicDropdown
@@ -1124,19 +1275,45 @@ export default function PropertiesPanel() {
                         style={{
                           width: '100%',
                           height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
                           borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#000000' : 'var(--text-primary)',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
                           fontSize: '13px',
                           fontWeight: 800,
                           cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                           transition: 'all 0.15s ease',
                           boxSizing: 'border-box',
                         }}
                         title="Toggle Bold Text"
                       >
                         B
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title="Italic">Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                          boxSizing: 'border-box',
+                        }}
+                        title="Toggle Italic Text"
+                      >
+                        I
                       </button>
                     </div>
                   </div>
@@ -1284,7 +1461,7 @@ export default function PropertiesPanel() {
                       {selectedLayer.props.centerImageUrl ? (
                         <img src={selectedLayer.props.centerImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>+ Img</span>
+                        <Upload size={16} style={{ color: 'var(--text-muted)' }} />
                       )}
                       <input type="file" accept="image/*" style={{ display: 'none' }}
                         onChange={(e) => {
@@ -1327,14 +1504,14 @@ export default function PropertiesPanel() {
                           {item.imageUrl ? (
                             <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+ Img</span>
+                            <Upload size={14} style={{ color: 'var(--text-muted)' }} />
                           )}
                           <input type="file" accept="image/*" style={{ display: 'none' }}
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
                                 if (file.size > MAX_FILE_SIZE_BYTES) {
-                                  alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 40MB limit. Please upload a file smaller than 40MB.`);
+                                  alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload a file smaller than 50MB.`);
                                   return;
                                 }
                                 const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -1415,6 +1592,68 @@ export default function PropertiesPanel() {
                     )}
                   />
 
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                    {/* Bold */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Bold"
+                      >
+                        B
+                      </button>
+                    </div>
+
+                    {/* Italic */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Speed Slider */}
                   <div style={{ marginTop: '10px', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -1448,7 +1687,7 @@ export default function PropertiesPanel() {
                       border: '1px solid var(--border-color)',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      color: '#ffffff',
+                      color: 'var(--text-primary)',
                       fontSize: '13px',
                       fontWeight: 600,
                       transition: 'all 0.15s ease',
@@ -1460,25 +1699,42 @@ export default function PropertiesPanel() {
                       width: '16px',
                       height: '16px',
                       borderRadius: '4px',
-                      background: (selectedLayer.props.isLoop ?? true) ? '#ffffff' : 'transparent',
+                      background: (selectedLayer.props.isLoop ?? true) ? '#FF9137' : 'transparent',
                       border: (selectedLayer.props.isLoop ?? true) ? 'none' : '1.5px solid var(--border-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
                     }}>
-                      {(selectedLayer.props.isLoop ?? true) && <Check size={12} color="#000000" strokeWidth={3} />}
+                      {(selectedLayer.props.isLoop ?? true) && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                     </div>
                     <span>Loop Animation</span>
                   </button>
 
-                  <label style={H2_STYLE}>Font</label>
-                  <div style={{ marginBottom: '10px' }}>
-                    <BasicDropdown
-                      items={FONT_OPTIONS}
-                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
-                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
-                    />
+                  {/* Font, Font Size */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={H2_STYLE}>Font</label>
+                      <BasicDropdown
+                        items={FONT_OPTIONS}
+                        value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                        onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                      />
+                    </div>
+                    <div>
+                      <label style={H2_STYLE}>Font Size</label>
+                      <input
+                        type="number"
+                        value={selectedLayer.props.fontSize ?? 48}
+                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Math.max(1, Number(e.target.value)) } } as any)}
+                        min={1} max={200} step={1}
+                        style={{
+                          width: '100%', padding: '7px 8px', background: 'var(--bg-primary)',
+                          border: '1px solid var(--border-color)', borderRadius: '6px',
+                          color: 'var(--text-primary)', fontSize: '12px', outline: 'none',
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {/* Uniform 3-column Color, Bold, Italic row */}
@@ -1502,13 +1758,14 @@ export default function PropertiesPanel() {
                         style={{
                           width: '100%',
                           height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
                           borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#000000' : 'var(--text-primary)',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
                           fontSize: '13px',
                           fontWeight: 800,
                           cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
                         title="Toggle Bold"
@@ -1526,14 +1783,15 @@ export default function PropertiesPanel() {
                         style={{
                           width: '100%',
                           height: '36px',
-                          background: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
                           borderRadius: '6px',
-                          color: selectedLayer.props.isItalic ? '#000000' : 'var(--text-primary)',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
                           fontSize: '13px',
                           fontStyle: 'italic',
                           fontWeight: 700,
                           cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
                         title="Toggle Italic"
@@ -1601,6 +1859,16 @@ export default function PropertiesPanel() {
                       onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, action: val } } as any)}
                     />
                   </div>
+
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
                   {/* Uniform 3-column Annotation Color, Text Color, Stroke Width row */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
                     {/* Annotation Color */}
@@ -1647,6 +1915,84 @@ export default function PropertiesPanel() {
                       />
                     </div>
                   </div>
+
+                  {/* Uniform 3-column Bold, Italic, Font Size row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+                    {/* Bold */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Bold"
+                      >
+                        B
+                      </button>
+                    </div>
+
+                    {/* Italic */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
+                    </div>
+
+                    {/* Font Size */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Size</label>
+                      <input
+                        type="number"
+                        value={selectedLayer.props.fontSize ?? 44}
+                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Math.max(1, Number(e.target.value)) } } as any)}
+                        min={1}
+                        max={200}
+                        step={1}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          padding: '0 8px',
+                          background: 'var(--bg-primary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px',
+                          textAlign: 'center',
+                        }}
+                      />
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -1664,7 +2010,7 @@ export default function PropertiesPanel() {
                           {item.imageUrl ? (
                             <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+ Img</span>
+                            <Upload size={14} style={{ color: 'var(--text-muted)' }} />
                           )}
                           <input type="file" accept="image/*" style={{ display: 'none' }}
                             onChange={(e) => {
@@ -1762,7 +2108,17 @@ export default function PropertiesPanel() {
                   <input type="text" value={selectedLayer.props.text ?? 'Reveal This Text'}
                     onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, text: e.target.value } } as any)}
                     style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                  
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' }}>
                     <ColorPickerControl
                       label="Text Color"
                       value={selectedLayer.props.color ?? '#ffffff'}
@@ -1770,15 +2126,147 @@ export default function PropertiesPanel() {
                     />
                     <ColorPickerControl
                       label="Reveal Color"
-                      value={selectedLayer.props.revealColor ?? '#facc15'}
+                      value={selectedLayer.props.revealColor ?? '#FF9137'}
                       onChange={(color) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, revealColor: color } } as any)}
                     />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Bold"
+                      >
+                        B
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
+                    </div>
                   </div>
                   <label style={H2_STYLE}>Font Size (px)</label>
                   <input type="number" value={selectedLayer.props.fontSize ?? 32}
-                    onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
-                    min={12} max={120} step={2}
+                    onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Math.max(1, Number(e.target.value)) } } as any)}
+                    min={1} max={200} step={1}
                     style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }} />
+                </>
+              )}
+
+              {selectedLayer.templateId === 'dia-text-reveal' && (
+                <>
+                  <label style={H2_STYLE}>Text (lines or words)</label>
+                  <textarea
+                    value={Array.isArray(selectedLayer.props.text) ? selectedLayer.props.text.join('\n') : (selectedLayer.props.text ?? 'Design Systems')}
+                    onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, text: e.target.value } } as any)}
+                    rows={2}
+                    style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px', resize: 'vertical' }}
+                  />
+
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    <ColorPickerControl
+                      label="Text Color"
+                      value={selectedLayer.props.textColor ?? '#ffffff'}
+                      onChange={(textColor) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, textColor } } as any)}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Bold"
+                      >
+                        B
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
+                    </div>
+                  </div>
+
+                  <label style={H2_STYLE}>Font Size (px)</label>
+                  <input
+                    type="number"
+                    value={selectedLayer.props.fontSize ?? 36}
+                    onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Math.max(1, Number(e.target.value)) } } as any)}
+                    min={1} max={200} step={1}
+                    style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }}
+                  />
                 </>
               )}
 
@@ -1799,7 +2287,7 @@ export default function PropertiesPanel() {
                         border: '1px solid var(--border-color)',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        color: '#ffffff',
+                        color: 'var(--text-primary)',
                         fontSize: '12px',
                         fontWeight: 600,
                         transition: 'all 0.15s ease',
@@ -1810,14 +2298,14 @@ export default function PropertiesPanel() {
                         width: '16px',
                         height: '16px',
                         borderRadius: '4px',
-                        background: (selectedLayer.props.showAvatar ?? true) ? '#ffffff' : 'transparent',
+                        background: (selectedLayer.props.showAvatar ?? true) ? '#FF9137' : 'transparent',
                         border: (selectedLayer.props.showAvatar ?? true) ? 'none' : '1.5px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}>
-                        {(selectedLayer.props.showAvatar ?? true) && <Check size={12} color="#000000" strokeWidth={3} />}
+                        {(selectedLayer.props.showAvatar ?? true) && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                       </div>
                       <span>Avatar</span>
                     </button>
@@ -1835,7 +2323,7 @@ export default function PropertiesPanel() {
                         border: '1px solid var(--border-color)',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        color: '#ffffff',
+                        color: 'var(--text-primary)',
                         fontSize: '12px',
                         fontWeight: 600,
                         transition: 'all 0.15s ease',
@@ -1846,14 +2334,14 @@ export default function PropertiesPanel() {
                         width: '16px',
                         height: '16px',
                         borderRadius: '4px',
-                        background: selectedLayer.props.showImage ? '#ffffff' : 'transparent',
+                        background: selectedLayer.props.showImage ? '#FF9137' : 'transparent',
                         border: selectedLayer.props.showImage ? 'none' : '1.5px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}>
-                        {selectedLayer.props.showImage && <Check size={12} color="#000000" strokeWidth={3} />}
+                        {selectedLayer.props.showImage && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                       </div>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Image</span>
                     </button>
@@ -1946,7 +2434,6 @@ export default function PropertiesPanel() {
                     <button
                       type="button"
                       onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isLoop: !(selectedLayer.props.isLoop ?? true) } } as any)}
-                      className="mg-card-toggle"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1956,7 +2443,7 @@ export default function PropertiesPanel() {
                         border: '1px solid var(--border-color)',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        color: '#ffffff',
+                        color: 'var(--text-primary)',
                         fontSize: '12px',
                         fontWeight: 600,
                         transition: 'all 0.15s ease',
@@ -1967,16 +2454,16 @@ export default function PropertiesPanel() {
                         width: '16px',
                         height: '16px',
                         borderRadius: '4px',
-                        background: (selectedLayer.props.isLoop ?? true) ? '#ffffff' : 'transparent',
+                        background: (selectedLayer.props.isLoop ?? true) ? '#FF9137' : 'transparent',
                         border: (selectedLayer.props.isLoop ?? true) ? 'none' : '1.5px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}>
-                        {(selectedLayer.props.isLoop ?? true) && <Check size={12} color="#000000" strokeWidth={3} />}
+                        {(selectedLayer.props.isLoop ?? true) && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                       </div>
-                      <span>Loop Animation</span>
+                      <span>Infinite Loop</span>
                     </button>
                   </div>
 
@@ -1997,8 +2484,17 @@ export default function PropertiesPanel() {
                     style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '10px' }}
                   />
 
-                  {/* Colors in 2-column grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  {/* Uniform 4-column row for Text Color, Flip Color, Bold, Italic */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' }}>
                     <ColorPickerControl
                       label="Text Color"
                       value={selectedLayer.props.color ?? '#ffffff'}
@@ -2009,6 +2505,53 @@ export default function PropertiesPanel() {
                       value={selectedLayer.props.flipColor ?? '#a855f7'}
                       onChange={(color) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, flipColor: color } } as any)}
                     />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
+                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Bold"
+                      >
+                        B
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
+                    </div>
                   </div>
 
                   {/* Uniform 3-column row for Font Size, Rotate Direction, and Stagger From */}
@@ -2019,10 +2562,10 @@ export default function PropertiesPanel() {
                       <input
                         type="number"
                         value={selectedLayer.props.fontSize ?? 36}
-                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Number(e.target.value) } } as any)}
-                        min={12}
-                        max={100}
-                        step={2}
+                        onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontSize: Math.max(1, Number(e.target.value)) } } as any)}
+                        min={1}
+                        max={200}
+                        step={1}
                         style={{
                           width: '100%',
                           height: '36px',
@@ -2115,7 +2658,7 @@ export default function PropertiesPanel() {
                         const file = e.target.files?.[0];
                         if (file) {
                           if (file.size > MAX_FILE_SIZE_BYTES) {
-                            alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 40MB limit. Please upload a file smaller than 40MB.`);
+                            alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload a file smaller than 50MB.`);
                             return;
                           }
                           const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -2212,7 +2755,7 @@ export default function PropertiesPanel() {
                         border: '1px solid var(--border-color)',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        color: '#ffffff',
+                        color: 'var(--text-primary)',
                         fontSize: '13px',
                         fontWeight: 600,
                         transition: 'all 0.15s ease',
@@ -2222,14 +2765,14 @@ export default function PropertiesPanel() {
                         width: '16px',
                         height: '16px',
                         borderRadius: '4px',
-                        background: (selectedLayer.props.loop ?? true) ? '#ffffff' : 'transparent',
+                        background: (selectedLayer.props.loop ?? true) ? '#FF9137' : 'transparent',
                         border: (selectedLayer.props.loop ?? true) ? 'none' : '1.5px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}>
-                        {(selectedLayer.props.loop ?? true) && <Check size={12} color="#000000" strokeWidth={3} />}
+                        {(selectedLayer.props.loop ?? true) && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                       </div>
                       <span>Loop</span>
                     </button>
@@ -2247,7 +2790,7 @@ export default function PropertiesPanel() {
                         border: '1px solid var(--border-color)',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        color: '#ffffff',
+                        color: 'var(--text-primary)',
                         fontSize: '13px',
                         fontWeight: 600,
                         transition: 'all 0.15s ease',
@@ -2257,16 +2800,16 @@ export default function PropertiesPanel() {
                         width: '16px',
                         height: '16px',
                         borderRadius: '4px',
-                        background: (selectedLayer.props.muted ?? true) ? '#ffffff' : 'transparent',
+                        background: (selectedLayer.props.muted ?? true) ? '#FF9137' : 'transparent',
                         border: (selectedLayer.props.muted ?? true) ? 'none' : '1.5px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}>
-                        {(selectedLayer.props.muted ?? true) && <Check size={12} color="#000000" strokeWidth={3} />}
+                        {(selectedLayer.props.muted ?? true) && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                       </div>
-                      <span>Mute</span>
+                      <span>Muted</span>
                     </button>
                   </div>
 
@@ -2380,10 +2923,7 @@ export default function PropertiesPanel() {
                         items={PHONE_ANIMATION_OPTIONS}
                         value={selectedLayer.props.animationTemplate ?? 'float'}
                         onChange={(animName) => {
-                          const animConfig = TEMPLATES.find((t: any) => t.id === animName);
-                          const newDuration = animConfig ? animConfig.duration : selectedLayer.duration;
                           updateLayer(selectedLayer.id, {
-                            duration: newDuration,
                             props: { ...selectedLayer.props, animationTemplate: animName },
                           } as any);
                         }}
@@ -2462,7 +3002,7 @@ export default function PropertiesPanel() {
                         <span style={{ color: '#ffffff', fontWeight: 700 }}>✓ Screen Video Loaded</span>
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to change)</span>
                       </>
-                    ) : selectedLayer.props.screenImage ? (
+                    ) : selectedLayer.props.screenImage && selectedLayer.props.screenImage !== '/Drag_And_Drop.png' ? (
                       <>
                         <div style={{
                           width: '100%',
@@ -2482,7 +3022,7 @@ export default function PropertiesPanel() {
                             style={{ maxWidth: '100%', maxHeight: '90px', objectFit: 'contain', borderRadius: '4px' }}
                           />
                         </div>
-                        <span style={{ color: '#3b82f6', fontWeight: 700 }}>✓ Screen Image Loaded</span>
+                        <span style={{ color: '#FF9137', fontWeight: 700 }}>✓ Screen Image Loaded</span>
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to change)</span>
                       </>
                     ) : (
@@ -2493,7 +3033,7 @@ export default function PropertiesPanel() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: 'rgba(0,0,0,0.3)',
+                          background: 'rgba(0,0,0,0.04)',
                           borderRadius: '6px',
                           overflow: 'hidden',
                           padding: '4px',
@@ -2502,10 +3042,10 @@ export default function PropertiesPanel() {
                           <img
                             src="/Drag_And_Drop.png"
                             alt="Default Screen Placeholder"
-                            style={{ maxWidth: '100%', maxHeight: '90px', objectFit: 'contain', borderRadius: '4px', opacity: 0.75 }}
+                            style={{ maxWidth: '100%', maxHeight: '90px', objectFit: 'contain', borderRadius: '4px', opacity: 0.9 }}
                           />
                         </div>
-                        <span>🖼️ Upload Image or Video</span>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>🖼️ Upload Image or Video</span>
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>(Click to upload custom screen)</span>
                       </>
                     )}
@@ -2514,7 +3054,7 @@ export default function PropertiesPanel() {
                         const file = e.target.files?.[0];
                         if (file) {
                           if (file.size > MAX_FILE_SIZE_BYTES) {
-                            alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 40MB limit. Please upload a file smaller than 40MB.`);
+                            alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload a file smaller than 50MB.`);
                             return;
                           }
                           const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -2537,7 +3077,7 @@ export default function PropertiesPanel() {
                         type="button"
                         onClick={() => {
                           const newPos = { ...selectedLayer.position, x: 50, y: 50 };
-                          updateLayer(selectedLayer.id, { position: newPos, scale: 1, props: { ...selectedLayer.props, deviceSize: 1, size: 1, posX: 0, posY: 0, rotX: 0, rotY: 0 } } as any);
+                          updateLayer(selectedLayer.id, { position: newPos, scale: 1, props: { ...selectedLayer.props, deviceSize: 1, size: 1, posX: 0, posY: 0, rotX: 0, rotY: 0, rotZ: 0 } } as any);
                         }}
                         title="Reset Device Settings"
                         style={{
@@ -2567,191 +3107,109 @@ export default function PropertiesPanel() {
 
                     {/* Size Slider */}
                     <div style={{ marginBottom: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <label style={H2_STYLE}>Size</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                            {(selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1).toFixed(2)}x
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              updateLayer(selectedLayer.id, { scale: 1, props: { ...selectedLayer.props, deviceSize: 1, size: 1 } } as any);
-                            }}
-                            title="Reset Size to 1.00x"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-secondary, #6b7280)',
-                              cursor: 'pointer',
-                              padding: '2px',
-                              borderRadius: '4px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              opacity: (selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1) !== 1 ? 1 : 0.35,
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            <RotateCcw size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      <input
-                        type="range"
+                      <FastDeviceSlider
+                        label="Size"
+                        value={selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1}
                         min={0.3}
                         max={3.0}
                         step={0.05}
-                        value={selectedLayer.props.deviceSize ?? selectedLayer.props.size ?? selectedLayer.scale ?? 1}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
+                        unit="x"
+                        formatDecimals={2}
+                        resetValue={1}
+                        onReset={() => {
+                          updateLayer(selectedLayer.id, { scale: 1, props: { ...selectedLayer.props, deviceSize: 1, size: 1 } } as any);
+                        }}
+                        onChange={(val) => {
                           updateLayer(selectedLayer.id, { scale: val, props: { ...selectedLayer.props, deviceSize: val, size: val } } as any);
                         }}
-                        style={{ width: '100%' }}
                       />
                     </div>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <label style={H2_STYLE}>Pos X</label>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.posX ?? 0).toFixed(2)}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const valX = 0;
-                                const newPos = { ...selectedLayer.position, x: 50 };
-                                updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: valX } } as any);
-                              }}
-                              title="Reset Pos X to 0.00"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-secondary, #6b7280)',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: (selectedLayer.props.posX ?? 0) !== 0 ? 1 : 0.35,
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <RotateCcw size={12} />
-                            </button>
-                          </div>
-                        </div>
-                        <input type="range" min={-2} max={2} step={0.05} value={selectedLayer.props.posX ?? 0}
-                          onChange={(e) => {
-                            const valX = Number(e.target.value);
-                            const newPos = { ...selectedLayer.position, x: 50 + valX * 12.5 };
-                            updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: valX } } as any);
-                          }}
-                          style={{ width: '100%' }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <label style={H2_STYLE}>Rot X</label>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.rotX ?? 0)}°</span>
-                            <button
-                              type="button"
-                              onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotX: 0 } } as any)}
-                              title="Reset Rot X to 0°"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-secondary, #6b7280)',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: (selectedLayer.props.rotX ?? 0) !== 0 ? 1 : 0.35,
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <RotateCcw size={12} />
-                            </button>
-                          </div>
-                        </div>
-                        <input type="range" min={-180} max={180} step={1} value={selectedLayer.props.rotX ?? 0}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotX: Number(e.target.value) } } as any)}
-                          style={{ width: '100%' }} />
-                      </div>
+                      <FastDeviceSlider
+                        label="Pos X"
+                        value={selectedLayer.props.posX ?? 0}
+                        min={-2}
+                        max={2}
+                        step={0.05}
+                        resetValue={0}
+                        onReset={() => {
+                          const newPos = { ...selectedLayer.position, x: 50 };
+                          updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: 0 } } as any);
+                        }}
+                        onChange={(valX) => {
+                          const newPos = { ...selectedLayer.position, x: 50 + valX * 40 };
+                          updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posX: valX } } as any);
+                        }}
+                      />
+                      <FastDeviceSlider
+                        label="Pos Y"
+                        value={selectedLayer.props.posY ?? 0}
+                        min={-2}
+                        max={2}
+                        step={0.05}
+                        resetValue={0}
+                        onReset={() => {
+                          const newPos = { ...selectedLayer.position, y: 50 };
+                          updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posY: 0 } } as any);
+                        }}
+                        onChange={(valY) => {
+                          const newPos = { ...selectedLayer.position, y: 50 - valY * 40 };
+                          updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posY: valY } } as any);
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <FastDeviceSlider
+                        label="Rot X"
+                        value={selectedLayer.props.rotX ?? 0}
+                        min={-180}
+                        max={180}
+                        step={1}
+                        unit="°"
+                        formatDecimals={0}
+                        resetValue={0}
+                        onReset={() => {
+                          updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotX: 0 } } as any);
+                        }}
+                        onChange={(valRotX) => {
+                          updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotX: valRotX } } as any);
+                        }}
+                      />
+                      <FastDeviceSlider
+                        label="Rot Y"
+                        value={selectedLayer.props.rotY ?? 0}
+                        min={-180}
+                        max={180}
+                        step={1}
+                        unit="°"
+                        formatDecimals={0}
+                        resetValue={0}
+                        onReset={() => {
+                          updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotY: 0 } } as any);
+                        }}
+                        onChange={(valRotY) => {
+                          updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotY: valRotY } } as any);
+                        }}
+                      />
                     </div>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <label style={H2_STYLE}>Pos Y</label>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.posY ?? 0).toFixed(2)}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const valY = 0;
-                                const newPos = { ...selectedLayer.position, y: 50 };
-                                updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posY: valY } } as any);
-                              }}
-                              title="Reset Pos Y to 0.00"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-secondary, #6b7280)',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: (selectedLayer.props.posY ?? 0) !== 0 ? 1 : 0.35,
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <RotateCcw size={12} />
-                            </button>
-                          </div>
-                        </div>
-                        <input type="range" min={-2} max={2} step={0.05} value={selectedLayer.props.posY ?? 0}
-                          onChange={(e) => {
-                            const valY = Number(e.target.value);
-                            const newPos = { ...selectedLayer.position, y: 50 - valY * 12.5 };
-                            updateLayer(selectedLayer.id, { position: newPos, props: { ...selectedLayer.props, posY: valY } } as any);
+                        <FastDeviceSlider
+                          label="Rot Z"
+                          value={selectedLayer.props.rotZ ?? 0}
+                          min={-180}
+                          max={180}
+                          step={1}
+                          unit="°"
+                          formatDecimals={0}
+                          resetValue={0}
+                          onReset={() => {
+                            updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotZ: 0 } } as any);
                           }}
-                          style={{ width: '100%' }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <label style={H2_STYLE}>Rot Y</label>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>{(selectedLayer.props.rotY ?? 0)}°</span>
-                            <button
-                              type="button"
-                              onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotY: 0 } } as any)}
-                              title="Reset Rot Y to 0°"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-secondary, #6b7280)',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: (selectedLayer.props.rotY ?? 0) !== 0 ? 1 : 0.35,
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <RotateCcw size={12} />
-                            </button>
-                          </div>
-                        </div>
-                        <input type="range" min={-180} max={180} step={1} value={selectedLayer.props.rotY ?? 0}
-                          onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotY: Number(e.target.value) } } as any)}
-                          style={{ width: '100%' }} />
+                          onChange={(valRotZ) => {
+                            updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, rotZ: valRotZ } } as any);
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -2806,13 +3264,46 @@ export default function PropertiesPanel() {
                       onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, align: val } } as any)}
                     />
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <label style={H2_STYLE}>Font</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <BasicDropdown
+                      items={FONT_OPTIONS}
+                      value={selectedLayer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
+                      onChange={(val) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, fontFamily: val } } as any)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-end' }}>
                     <div style={{ flex: 1 }}>
                       <label style={H2_STYLE}>Weight</label>
                       <input type="number" value={selectedLayer.props.weight ?? 700}
                         onChange={(e) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, weight: Number(e.target.value) } } as any)}
                         min={100} max={900} step={100}
-                        style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }} />
+                        style={{ width: '100%', height: '36px', padding: '0 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div style={{ width: '60px' }}>
+                      <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isItalic: !selectedLayer.props.isItalic } } as any)}
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          background: selectedLayer.props.isItalic ? '#0F172A' : 'var(--bg-primary)',
+                          border: selectedLayer.props.isItalic ? '1px solid #0F172A' : '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: selectedLayer.props.isItalic ? '#FFFFFF' : 'var(--text-primary)',
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: selectedLayer.props.isItalic ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Toggle Italic"
+                      >
+                        I
+                      </button>
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
@@ -2867,12 +3358,41 @@ export default function PropertiesPanel() {
       </div>
 
       {/* Pinned Bottom Footer Action */}
-      <div style={{
-        padding: '12px',
-        borderTop: '1px solid var(--border-color)',
-        background: 'var(--bg-secondary)',
-        flexShrink: 0,
-      }}>
+      <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+        <button
+          onClick={() => addScene()}
+          className="mg-btn-interactive"
+          style={{
+            width: '100%',
+            height: '38px',
+            background: '#FFCC4D',
+            color: '#0F172A',
+            border: '1px solid rgba(15, 23, 42, 0.1)',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 6px rgba(255, 204, 77, 0.3)',
+            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#F5B800';
+            e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#FFCC4D';
+            e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.1)';
+          }}
+          title="Add a new scene"
+        >
+          <Plus size={15} strokeWidth={2.5} style={{ color: '#0F172A' }} />
+          Add Scene
+        </button>
         <button
           type="button"
           onClick={() => dispatch({ isPickerOpen: true, activeSidebarTab: 'components' })}
@@ -2880,8 +3400,8 @@ export default function PropertiesPanel() {
           style={{
             width: '100%',
             height: '38px',
-            background: '#FFFFFF',
-            color: '#000000',
+            background: '#FF9137',
+            color: '#0F172A',
             border: 'none',
             borderRadius: '8px',
             fontSize: '13px',
@@ -2891,24 +3411,26 @@ export default function PropertiesPanel() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 2px 10px rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 2px 10px rgba(255, 145, 55, 0.3)',
             fontFamily: '"Plus Jakarta Sans", sans-serif',
             transition: 'all 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(255, 255, 255, 0.35)';
+            e.currentTarget.style.background = '#E6791E';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(255, 145, 55, 0.45)';
             e.currentTarget.style.transform = 'translateY(-1px)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.background = '#FF9137';
+            e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 145, 55, 0.3)';
             e.currentTarget.style.transform = 'translateY(0)';
           }}
-          title="Add a new component to current scene"
+          title="Add a component to current scene"
         >
-          <Plus size={15} strokeWidth={2.5} style={{ color: '#000000' }} />
-          New Component
+          <Plus size={15} strokeWidth={2.5} style={{ color: '#0F172A' }} />
+          Add Component
         </button>
       </div>
     </div>
   );
-}
+});

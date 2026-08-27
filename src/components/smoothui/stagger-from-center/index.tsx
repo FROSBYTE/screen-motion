@@ -14,6 +14,9 @@ export interface StaggerFromCenterProps {
   speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const DURATION_S = 0.62;
@@ -33,6 +36,8 @@ export default function StaggerFromCenter({
   stagger = 22,
   speed = 1,
   triggerOnView = false,
+  localTime,
+  layerStartTime = 0,
 }: StaggerFromCenterProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
@@ -41,9 +46,47 @@ export default function StaggerFromCenter({
   const characters = Array.from(children || "");
   const center = (characters.length - 1) / 2;
 
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = DURATION_S / Math.max(0.1, speed);
+    const staggerS = (stagger / Math.max(0.1, speed)) / MS;
+    const baseDelayS = delay / MS;
+
+    return (
+      <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>
+        {characters.map((char, index) => {
+          if (char === "\n") return <br key={index} />;
+          const distance = Math.abs(index - center);
+          const charStart = baseDelayS + distance * staggerS;
+          const charElapsed = Math.max(0, elapsed - charStart);
+          const progress = Math.min(1, Math.max(0, charElapsed / animDur));
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const opacity = eased;
+          const y = (1 - eased) * 12;
+
+          return (
+            <span
+              aria-hidden="true"
+              key={index}
+              style={{
+                display: "inline-block",
+                whiteSpace: "pre",
+                opacity,
+                transform: `translateY(${y.toFixed(2)}px)`,
+              }}
+            >
+              {char === " " ? "\u00A0" : String(char)}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
+
   return (
     <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>
       {characters.map((char, index) => {
+        if (char === "\n") return <br key={index} />;
         const distance = Math.abs(index - center);
         return (
           <motion.span

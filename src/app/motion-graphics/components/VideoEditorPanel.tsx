@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { Plus, Trash2, Undo2, Redo2, RotateCcw, Minus, Lock, Rewind, FastForward } from 'lucide-react';
+import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
+import { Lock, Rewind, FastForward, Play, Pause, Minus, Plus } from 'lucide-react';
 import { useMGState, getSceneDuration, type MGLayer } from '../store';
+import { COMPONENT_TEMPLATES } from './templates';
 
 // Scene strip color palette – dark professional tones
 const SCENE_COLORS = [
@@ -17,8 +18,8 @@ const SCENE_COLORS = [
 ];
 
 export default function VideoEditorPanel() {
-  const { state, dispatch, play, pause, seekTo, updateLayer, removeLayer, resetSelectedComponent, totalDuration, getSceneStartTime, undo, redo, canUndo, canRedo, pushUndo, moveKeyframe } = useMGState();
-  const { scenes, currentTime, isPlaying, selectedLayerId, activeSceneId, activeSidebarTab } = state;
+  const { state, dispatch, play, pause, seekTo, updateLayer, addScene, totalDuration, getSceneStartTime, pushUndo, moveKeyframe } = useMGState();
+  const { scenes, currentTime, isPlaying, selectedLayerId, multiSelectedLayerIds, activeSceneId, activeSidebarTab } = state;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
 
   const scenesRef = useRef(scenes);
@@ -35,12 +36,26 @@ export default function VideoEditorPanel() {
   const anySceneHasLayers = scenes.some((s) => s.layers.length > 0);
 
   const trackAreaRef = useRef<HTMLDivElement>(null);
+  const zoomSliderRef = useRef<HTMLDivElement>(null);
+  const draggedRef = useRef(false);
   const MIN_ZOOM = 0.2;
   const MAX_ZOOM = 1.8;
-  const [zoom, setZoom] = useState(0.68); // Default at 30%
+  const [zoom, setZoom] = useState(1.0); // Default at 50%
+  const [isDraggingZoom, setIsDraggingZoom] = useState(false);
   const [trackViewportWidth, setTrackViewportWidth] = useState(900);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
-  const [draggingLayer, setDraggingLayer] = useState<{ id: string; sceneId: string; type: 'move' | 'resize-left' | 'resize-right'; startX: number; startTime: number; startDuration: number } | null>(null);
+  const [draggingLayers, setDraggingLayers] = useState<{
+    type: 'move' | 'resize-left' | 'resize-right';
+    startX: number;
+    startY: number;
+    layers: {
+      id: string;
+      sceneId: string;
+      startTime: number;
+      startDuration: number;
+      startTrackIndex: number;
+    }[];
+  } | null>(null);
   const [draggingKeyframe, setDraggingKeyframe] = useState<{ layerId: string; keyframeId: string; startX: number; startTime: number; layerDuration: number; layerSceneStart: number; layerStartTime: number } | null>(null);
   const [snapGuide, setSnapGuide] = useState<{ time: number; kind: 'scene-start' | 'layer-edge' } | null>(null);
 
@@ -50,11 +65,33 @@ export default function VideoEditorPanel() {
 
   const zoomPercent = Math.min(100, Math.max(0, ((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100));
 
-  const handleZoomSliderClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const updateZoomFromClientX = useCallback((clientX: number) => {
+    if (!zoomSliderRef.current) return;
+    const rect = zoomSliderRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const newZoom = Number((MIN_ZOOM + ratio * (MAX_ZOOM - MIN_ZOOM)).toFixed(2));
     setZoom(newZoom);
+  }, []);
+
+  const handleZoomPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingZoom(true);
+    updateZoomFromClientX(e.clientX);
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      updateZoomFromClientX(moveEvent.clientX);
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingZoom(false);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   };
   const timelineWidth = scaleDuration * pxPerSec;
 
@@ -79,32 +116,83 @@ export default function VideoEditorPanel() {
 
   useEffect(() => {
     if (!isDraggingPlayhead) return;
-    const handleMove = (e: PointerEvent) => seekTo(getTimeFromX(e.clientX));
+    pause();
+    const handleMove = (e: PointerEvent) => {
+      pause();
+      seekTo(getTimeFromX(e.clientX));
+    };
     const handleUp = () => setIsDraggingPlayhead(false);
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleUp);
     return () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); };
-  }, [isDraggingPlayhead, getTimeFromX, seekTo]);
+  }, [isDraggingPlayhead, getTimeFromX, seekTo, pause]);
+
+  const currentTimeRef = useRef(currentTime);
+  currentTimeRef.current = currentTime;
+
+  const getSceneStartTimeRef = useRef(getSceneStartTime);
+  getSceneStartTimeRef.current = getSceneStartTime;
+
+  const updateLayerRef = useRef(updateLayer);
+  updateLayerRef.current = updateLayer;
+
+  const pxPerSecRef = useRef(pxPerSec);
+  pxPerSecRef.current = pxPerSec;
+
+  const moveKeyframeRef = useRef(moveKeyframe);
+  moveKeyframeRef.current = moveKeyframe;
+
+  const seekToRef = useRef(seekTo);
+  seekToRef.current = seekTo;
+
+  const updateSnapGuide = useCallback((newSnap: { time: number; kind: 'scene-start' | 'layer-edge' } | null) => {
+    setSnapGuide((prev) => {
+      if (!newSnap && !prev) return prev;
+      if (newSnap && prev && prev.time === newSnap.time && prev.kind === newSnap.kind) return prev;
+      return newSnap;
+    });
+  }, []);
 
   useEffect(() => {
-    if (!draggingLayer) return;
+    if (!draggingLayers) return;
     const handleMove = (e: PointerEvent) => {
-      const dt = (e.clientX - draggingLayer.startX) / pxPerSec;
-      const snapThreshold = 8 / pxPerSec;
-      // Snap candidates use layers from the dragging layer's scene
-      const dragScene = scenesRef.current.find((s) => s.id === draggingLayer.sceneId);
-      const dragSceneLayers = dragScene?.layers || [];
-      const candidates = [
-        { time: 0, kind: 'scene-start' as const },
-        ...dragSceneLayers
-          .filter((layer) => layer.id !== draggingLayer.id)
-          .flatMap((layer) => [
-            { time: layer.startTime, kind: 'layer-edge' as const },
-            { time: layer.startTime + layer.duration, kind: 'layer-edge' as const },
-          ]),
-      ];
+      const dtPixels = Math.abs(e.clientX - draggingLayers.startX);
+      const dyPixels = Math.abs(e.clientY - draggingLayers.startY);
+      if (dtPixels > 3 || dyPixels > 3) {
+        draggedRef.current = true;
+      }
+      
+      const currentPxPerSec = pxPerSecRef.current;
+      const dt = (e.clientX - draggingLayers.startX) / currentPxPerSec;
+      const snapThreshold = 10 / currentPxPerSec; // ~10px magnetic snapping assist
+      
       const MIN_LAYER_DURATION = 0.5;
       const MAX_LAYER_DURATION = 60.0;
+      
+      const primaryDrag = draggingLayers.layers[0];
+      const dragScene = scenesRef.current.find((s) => s.id === primaryDrag.sceneId);
+      const dragSceneLayers = dragScene?.layers || [];
+      const sStart = getSceneStartTimeRef.current(primaryDrag.sceneId);
+
+      // Clipping & Magnetic Snapping Candidates:
+      // 1. Scene start (time: 0)
+      // 2. Playhead position in scene local time
+      // 3. Edges of all other layers in the scene
+      const candidates: { time: number; kind: 'scene-start' | 'layer-edge' }[] = [
+        { time: 0, kind: 'scene-start' as const },
+      ];
+
+      const localPlayhead = currentTimeRef.current - sStart;
+      if (localPlayhead >= 0) {
+        candidates.push({ time: localPlayhead, kind: 'layer-edge' as const });
+      }
+
+      dragSceneLayers
+        .filter((layer) => !draggingLayers.layers.some((dl) => dl.id === layer.id))
+        .forEach((layer) => {
+          candidates.push({ time: layer.startTime, kind: 'layer-edge' as const });
+          candidates.push({ time: layer.startTime + layer.duration, kind: 'layer-edge' as const });
+        });
 
       const resolveSnap = (edges: { value: number; update: (target: number) => { startTime: number; duration: number } }[]) => {
         let closest: { time: number; kind: 'scene-start' | 'layer-edge'; update: { startTime: number; duration: number }; distance: number } | null = null;
@@ -112,68 +200,102 @@ export default function VideoEditorPanel() {
           for (const edge of edges) {
             const update = edge.update(candidate.time);
             const distance = Math.abs(edge.value - candidate.time);
-            if (update.startTime < 0 || update.duration < MIN_LAYER_DURATION || update.duration > MAX_LAYER_DURATION || distance > snapThreshold || (closest && distance >= closest.distance)) continue;
+            if (
+              update.startTime < 0 ||
+              update.duration < MIN_LAYER_DURATION ||
+              update.duration > MAX_LAYER_DURATION ||
+              distance > snapThreshold ||
+              (closest && distance >= closest.distance)
+            ) {
+              continue;
+            }
             closest = { ...candidate, update, distance };
           }
         }
         return closest;
       };
 
-      if (draggingLayer.type === 'move') {
-        const startTime = Math.max(0, draggingLayer.startTime + dt);
+      if (draggingLayers.type === 'move') {
+        const minStartTime = Math.min(...draggingLayers.layers.map((l) => l.startTime));
+        const clampedDt = Math.max(-minStartTime, dt);
+
+        let snapAppliedDt = clampedDt;
+
+        const primaryStartTime = Math.max(0, primaryDrag.startTime + clampedDt);
         const snap = resolveSnap([
-          { value: startTime, update: (target) => ({ startTime: Math.max(0, target), duration: draggingLayer.startDuration }) },
-          { value: startTime + draggingLayer.startDuration, update: (target) => ({ startTime: Math.max(0, target - draggingLayer.startDuration), duration: draggingLayer.startDuration }) },
+          { value: primaryStartTime, update: (target) => ({ startTime: Math.max(0, target), duration: primaryDrag.startDuration }) },
+          { value: primaryStartTime + primaryDrag.startDuration, update: (target) => ({ startTime: Math.max(0, target - primaryDrag.startDuration), duration: primaryDrag.startDuration }) },
         ]);
-        setSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
-        updateLayer(draggingLayer.id, snap?.update ?? { startTime, duration: draggingLayer.startDuration });
-      } else if (draggingLayer.type === 'resize-right') {
-        const rawDuration = draggingLayer.startDuration + dt;
+
+        if (snap) {
+          updateSnapGuide({ time: snap.time, kind: snap.kind });
+          snapAppliedDt = snap.update.startTime - primaryDrag.startTime;
+        } else {
+          updateSnapGuide(null);
+        }
+
+        // Vertical track movement (~42px per line)
+        const verticalDelta = e.clientY - draggingLayers.startY;
+        const deltaTracks = Math.round(verticalDelta / 42);
+
+        draggingLayers.layers.forEach((layer) => {
+          const newTrack = Math.max(0, layer.startTrackIndex + deltaTracks);
+          updateLayerRef.current(layer.id, {
+            startTime: layer.startTime + snapAppliedDt,
+            duration: layer.startDuration,
+            trackIndex: newTrack,
+          });
+        });
+      } else if (draggingLayers.type === 'resize-right') {
+        const dl = draggingLayers.layers[0];
+        const rawDuration = dl.startDuration + dt;
         const duration = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, rawDuration));
         const snap = resolveSnap([
-          { value: draggingLayer.startTime + duration, update: (target) => ({ startTime: draggingLayer.startTime, duration: Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, target - draggingLayer.startTime)) }) },
+          { value: dl.startTime + duration, update: (target) => ({ startTime: dl.startTime, duration: Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, target - dl.startTime)) }) },
         ]);
-        setSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
-        updateLayer(draggingLayer.id, snap?.update ?? { startTime: draggingLayer.startTime, duration });
+        updateSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
+        updateLayerRef.current(dl.id, snap?.update ?? { startTime: dl.startTime, duration });
       } else {
-        // resize-left (stretch/compress from left edge)
-        const endTime = draggingLayer.startTime + draggingLayer.startDuration;
-        const rawStartTime = draggingLayer.startTime + dt;
+        const dl = draggingLayers.layers[0];
+        const endTime = dl.startTime + dl.startDuration;
+        const rawStartTime = dl.startTime + dt;
         const startTime = Math.max(0, Math.min(rawStartTime, endTime - MIN_LAYER_DURATION));
         const duration = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, endTime - startTime));
         const clampedStartTime = endTime - duration;
         const snap = resolveSnap([
-          { value: clampedStartTime, update: (target) => {
-            const newStart = Math.max(0, Math.min(target, endTime - MIN_LAYER_DURATION));
-            const newDur = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, endTime - newStart));
-            return { startTime: endTime - newDur, duration: newDur };
-          }},
+          {
+            value: clampedStartTime,
+            update: (target) => {
+              const newStart = Math.max(0, Math.min(target, endTime - MIN_LAYER_DURATION));
+              const newDur = Math.min(MAX_LAYER_DURATION, Math.max(MIN_LAYER_DURATION, endTime - newStart));
+              return { startTime: endTime - newDur, duration: newDur };
+            },
+          },
         ]);
-        setSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
-        updateLayer(draggingLayer.id, snap?.update ?? { startTime: clampedStartTime, duration });
+        updateSnapGuide(snap ? { time: snap.time, kind: snap.kind } : null);
+        updateLayerRef.current(dl.id, snap?.update ?? { startTime: clampedStartTime, duration });
       }
     };
     const handleUp = () => {
-      setDraggingLayer(null);
-      setSnapGuide(null);
+      setDraggingLayers(null);
+      updateSnapGuide(null);
     };
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleUp);
     return () => {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
-      setSnapGuide(null);
     };
-  }, [draggingLayer, pxPerSec, updateLayer]);
+  }, [draggingLayers, updateSnapGuide]);
 
   useEffect(() => {
     if (!draggingKeyframe) return;
     const handleMove = (e: PointerEvent) => {
-      const dt = (e.clientX - draggingKeyframe.startX) / pxPerSec;
+      const dt = (e.clientX - draggingKeyframe.startX) / pxPerSecRef.current;
       const newTime = Math.max(0, Math.min(draggingKeyframe.layerDuration, draggingKeyframe.startTime + dt));
       const roundedTime = Math.round(newTime * 100) / 100;
-      moveKeyframe(draggingKeyframe.layerId, draggingKeyframe.keyframeId, roundedTime);
-      seekTo(draggingKeyframe.layerSceneStart + draggingKeyframe.layerStartTime + roundedTime);
+      moveKeyframeRef.current(draggingKeyframe.layerId, draggingKeyframe.keyframeId, roundedTime);
+      seekToRef.current(draggingKeyframe.layerSceneStart + draggingKeyframe.layerStartTime + roundedTime);
     };
     const handleUp = () => {
       setDraggingKeyframe(null);
@@ -184,209 +306,266 @@ export default function VideoEditorPanel() {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
     };
-  }, [draggingKeyframe, pxPerSec, moveKeyframe, seekTo]);
+  }, [draggingKeyframe]);
 
-  // Adaptive ruler interval calculation based on pxPerSec
-  let labelInterval = 5;
-  let minorTickInterval = 1;
+  // Adaptive ruler interval calculation based on zoom slider percentage:
+  // 0% - 20%: 0, 5, 10, 15... (interval: 5)
+  // 20% - 60%: 0, 2, 4, 6, 8... (interval: 2)
+  // > 60%: 0, 1, 2, 3, 4, 5... (interval: 1)
+  let labelInterval = 2;
+  let minorTickInterval = 0.5;
 
-  if (pxPerSec >= 80) {
-    labelInterval = 1;
-    minorTickInterval = 0.25;
-  } else if (pxPerSec >= 32) {
-    labelInterval = 1;
-    minorTickInterval = 0.5;
-  } else if (pxPerSec >= 16) {
-    labelInterval = 2;
-    minorTickInterval = 1;
-  } else if (pxPerSec >= 8) {
+  if (zoomPercent <= 20) {
     labelInterval = 5;
     minorTickInterval = 1;
+  } else if (zoomPercent <= 60) {
+    labelInterval = 2;
+    minorTickInterval = 0.5;
   } else {
-    labelInterval = 10;
-    minorTickInterval = 5;
+    labelInterval = 1;
+    minorTickInterval = 0.25;
   }
 
-  const ticks: { x: number; major: boolean; label?: string }[] = [];
-  const maxTime = Math.ceil(scaleDuration);
-  const stepCount = Math.ceil(maxTime / minorTickInterval);
+  const ticks = useMemo(() => {
+    const arr: { x: number; major: boolean; label?: string }[] = [];
+    const maxTime = Math.ceil(scaleDuration);
+    const stepCount = Math.ceil(maxTime / minorTickInterval);
 
-  for (let i = 0; i <= stepCount; i++) {
-    const t = Number((i * minorTickInterval).toFixed(2));
-    if (t > maxTime + 0.01) break;
+    for (let i = 0; i <= stepCount; i++) {
+      const t = Number((i * minorTickInterval).toFixed(2));
+      if (t > maxTime + 0.01) break;
 
-    const isMajor = Math.abs(t % labelInterval) < 0.001 || Math.abs((t % labelInterval) - labelInterval) < 0.001;
-    const isWholeSecond = Math.abs(t % 1) < 0.001;
+      const isMajor = Math.abs(t % labelInterval) < 0.001 || Math.abs((t % labelInterval) - labelInterval) < 0.001;
+      const isWholeSecond = Math.abs(t % 1) < 0.001;
 
-    let label: string | undefined = undefined;
-    if (isMajor) {
-      const mins = Math.floor(t / 60).toString().padStart(2, '0');
-      const secs = Math.floor(t % 60).toString().padStart(2, '0');
-      label = `${mins}:${secs}`;
-    }
-
-    ticks.push({
-      x: t * pxPerSec,
-      major: isMajor || isWholeSecond,
-      label,
-    });
-  }
-
-  // Lane packing for ALL scenes
-  const sceneStart = getSceneStartTime(activeSceneId);
-  // Build global lanes from all scenes
-  type GlobalLayerEntry = { layer: MGLayer; sceneId: string; sceneStart: number };
-  const allLayerEntries: GlobalLayerEntry[] = [];
-  scenes.forEach((scene) => {
-    const sStart = getSceneStartTime(scene.id);
-    scene.layers.forEach((layer) => {
-      allLayerEntries.push({ layer, sceneId: scene.id, sceneStart: sStart });
-    });
-  });
-
-  const globalLanes: GlobalLayerEntry[][] = [];
-  allLayerEntries.forEach((entry) => {
-    const s = entry.sceneStart + entry.layer.startTime;
-    const e = s + entry.layer.duration;
-    let placed = false;
-    for (const lane of globalLanes) {
-      if (!lane.some((l) => {
-        const ls = l.sceneStart + l.layer.startTime;
-        const le = ls + l.layer.duration;
-        return s < le && e > ls;
-      })) {
-        lane.push(entry);
-        placed = true;
-        break;
+      let label: string | undefined = undefined;
+      if (isMajor) {
+        label = t.toString();
       }
-    }
-    if (!placed) globalLanes.push([entry]);
-  });
 
-  const btnStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px',
-    background: 'var(--bg-input)', border: '1px solid var(--border-color)',
-    borderRadius: '8px', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)',
-    cursor: 'pointer', whiteSpace: 'nowrap',
-    transition: 'all 0.15s ease',
-  };
-  const iconBtnStyle: React.CSSProperties = { ...btnStyle, padding: '6px 10px' };
+      arr.push({
+        x: t * pxPerSec,
+        major: isMajor || isWholeSecond,
+        label,
+      });
+    }
+    return arr;
+  }, [scaleDuration, minorTickInterval, labelInterval, pxPerSec]);
+
+  const sceneStart = getSceneStartTime(activeSceneId);
+
+  // User-controlled multi-track lanes (grouping by layer.trackIndex)
+  const globalLanes = useMemo(() => {
+    type GlobalLayerEntry = { layer: MGLayer; sceneId: string; sceneStart: number };
+    const allLayerEntries: GlobalLayerEntry[] = [];
+    scenes.forEach((scene) => {
+      const sStart = getSceneStartTime(scene.id);
+      scene.layers.forEach((layer) => {
+        allLayerEntries.push({ layer, sceneId: scene.id, sceneStart: sStart });
+      });
+    });
+
+    let maxTrack = 0;
+    allLayerEntries.forEach((entry) => {
+      const t = entry.layer.trackIndex ?? 0;
+      if (t > maxTrack) maxTrack = t;
+    });
+
+    // Provide at least 2 tracks or (maxTrack + 2) so user has an intuitive empty lane below to drop into!
+    const numLanes = Math.max(2, maxTrack + 2);
+    const lanes: GlobalLayerEntry[][] = Array.from({ length: numLanes }, () => []);
+
+    allLayerEntries.forEach((entry) => {
+      const t = Math.max(0, entry.layer.trackIndex ?? 0);
+      if (!lanes[t]) {
+        lanes[t] = [];
+      }
+      lanes[t].push(entry);
+    });
+
+    return lanes;
+  }, [scenes, getSceneStartTime]);
+
+
 
   return (
-    <div style={{
-      flex: '0 0 clamp(260px, 34vh, 420px)',
-      minHeight: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      userSelect: 'none',
-      fontFamily: '"Plus Jakarta Sans", sans-serif',
-      background: 'var(--bg-secondary)',
-      borderTop: '1px solid var(--border-color)',
-    }}>
+    <div 
+      onPointerDown={(e) => {
+        const target = e.target as HTMLElement;
+        if (
+          !target.closest('[data-layer-clip]') &&
+          !target.closest('[data-scene-strip]') &&
+          !target.closest('[data-ruler]') &&
+          !target.closest('button, input, select, textarea, [data-interactive]')
+        ) {
+          if (selectedLayerId || (multiSelectedLayerIds && multiSelectedLayerIds.length > 0)) {
+            dispatch({ selectedLayerId: null, multiSelectedLayerIds: [], playbackRange: null });
+          }
+        }
+      }}
+      style={{
+        flex: '0 0 clamp(300px, 40vh, 600px)',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        userSelect: 'none',
+        fontFamily: '"Plus Jakarta Sans", sans-serif',
+        background: 'var(--bg-secondary)',
+        borderTop: '1px solid var(--border-color)',
+      }}
+    >
       {/* Progress row */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
-        <button
-          onClick={() => seekTo(currentTime - 5)}
-          className="mg-btn-interactive"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-muted)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#ffffff';
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.background = 'transparent';
-          }}
-          title="-5s"
-        >
-          <Rewind size={16} />
-        </button>
-        <button
-          onClick={() => isPlaying ? pause() : play()}
-          className="mg-btn-interactive"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-          }}
-          title={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-primary)"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-primary)"><path d="M8 5v14l11-7z"/></svg>
-          )}
-        </button>
-        <button
-          onClick={() => seekTo(currentTime + 5)}
-          className="mg-btn-interactive"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-muted)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#ffffff';
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.background = 'transparent';
-          }}
-          title="+5s"
-        >
-          <FastForward size={16} />
-        </button>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 24px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+        {/* Playback Controls Group */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginRight: '6px' }}>
+          {/* Rewind 5s */}
+          <button
+            onClick={() => seekTo(currentTime - 5)}
+            className="mg-btn-interactive"
+            style={{
+              width: '30px',
+              height: '30px',
+              background: '#FFFFFF',
+              border: '1px solid rgba(15, 23, 42, 0.12)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+              transition: 'all 0.15s ease',
+              padding: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#FF9137';
+              e.currentTarget.style.color = '#FF9137';
+              e.currentTarget.style.background = 'rgba(255, 145, 55, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.background = '#FFFFFF';
+            }}
+            title="Rewind 5s"
+          >
+            <Rewind size={16} strokeWidth={2.2} />
+          </button>
 
-        <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-primary)', fontWeight: 600 }}>
-          {Math.floor(currentTime / 60).toString().padStart(2, '0')}:
-          {Math.floor(currentTime % 60).toString().padStart(2, '0')}:
-          {Math.floor((currentTime % 1) * 100).toString().padStart(2, '0')}
-        </span>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 4px' }}>/</span>
-        <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-          {Math.floor(totalDuration / 60).toString().padStart(2, '0')}:
-          {Math.floor(totalDuration % 60).toString().padStart(2, '0')}:
-          {Math.floor((totalDuration % 1) * 100).toString().padStart(2, '0')}
-        </span>
+          {/* Hero Play / Pause */}
+          <button
+            onClick={() => isPlaying ? pause() : play()}
+            className="mg-btn-interactive"
+            style={{
+              width: '34px',
+              height: '34px',
+              background: isPlaying ? '#0F172A' : '#FF9137',
+              border: 'none',
+              borderRadius: '9px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#FFFFFF',
+              boxShadow: isPlaying ? '0 2px 6px rgba(15, 23, 42, 0.2)' : '0 2px 8px rgba(255, 145, 55, 0.35)',
+              transition: 'all 0.15s ease',
+              padding: 0,
+            }}
+            onMouseEnter={(e) => {
+              if (isPlaying) {
+                e.currentTarget.style.background = '#1E293B';
+              } else {
+                e.currentTarget.style.background = '#E6791E';
+                e.currentTarget.style.boxShadow = '0 3px 10px rgba(255, 145, 55, 0.5)';
+              }
+              e.currentTarget.style.transform = 'scale(1.04)';
+            }}
+            onMouseLeave={(e) => {
+              if (isPlaying) {
+                e.currentTarget.style.background = '#0F172A';
+              } else {
+                e.currentTarget.style.background = '#FF9137';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(255, 145, 55, 0.35)';
+              }
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+          >
+            {isPlaying ? (
+              <Pause size={16} strokeWidth={2.5} fill="#FFFFFF" color="#FFFFFF" />
+            ) : (
+              <Play size={16} strokeWidth={2.5} fill="#0F172A" color="#0F172A" style={{ marginLeft: '2px' }} />
+            )}
+          </button>
+
+          {/* Forward 5s */}
+          <button
+            onClick={() => seekTo(currentTime + 5)}
+            className="mg-btn-interactive"
+            style={{
+              width: '30px',
+              height: '30px',
+              background: '#FFFFFF',
+              border: '1px solid rgba(15, 23, 42, 0.12)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+              transition: 'all 0.15s ease',
+              padding: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#FF9137';
+              e.currentTarget.style.color = '#FF9137';
+              e.currentTarget.style.background = 'rgba(255, 145, 55, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.background = '#FFFFFF';
+            }}
+            title="Fast Forward 5s"
+          >
+            <FastForward size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+
+        {/* Timestamp Display Badge */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          background: '#FFFFFF',
+          border: '1px solid rgba(15, 23, 42, 0.1)',
+          borderRadius: '8px',
+          padding: '4px 10px',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          marginLeft: '4px',
+          height: '30px',
+        }}>
+          <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-primary)', fontWeight: 700, letterSpacing: '-0.02em' }}>
+            {Math.floor(currentTime / 60).toString().padStart(2, '0')}:
+            {Math.floor(currentTime % 60).toString().padStart(2, '0')}:
+            {Math.floor((currentTime % 1) * 100).toString().padStart(2, '0')}
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>/</span>
+          <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '-0.02em' }}>
+            {Math.floor(totalDuration / 60).toString().padStart(2, '0')}:
+            {Math.floor(totalDuration % 60).toString().padStart(2, '0')}:
+            {Math.floor((totalDuration % 1) * 100).toString().padStart(2, '0')}
+          </span>
+        </div>
         {/* Scrubber */}
         <div
           style={{
             flex: 1,
             height: '6px',
-            background: 'var(--bg-inset)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
+            background: '#E2E8F0',
+            border: '1px solid rgba(15, 23, 42, 0.08)',
             borderRadius: '9999px',
             position: 'relative',
             cursor: 'pointer',
@@ -415,117 +594,9 @@ export default function VideoEditorPanel() {
           <div style={{
             width: `${totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0}%`,
             height: '100%',
-            background: '#FFFFFF',
+            background: '#FF9137',
             borderRadius: '9999px',
           }} />
-        </div>
-      </div>
-
-      {/* Toolbar row with horizontal scroll view */}
-      <div style={{
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 24px',
-        background: 'var(--bg-secondary)',
-        borderBottom: '1px solid var(--border-color)',
-        flexWrap: 'nowrap',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        scrollbarWidth: 'thin',
-        WebkitOverflowScrolling: 'touch',
-      }}>
-        <button
-          onClick={() => dispatch({ isPickerOpen: true, activeSidebarTab: 'components' })}
-          className="mg-btn-interactive"
-          style={{
-            ...btnStyle,
-            borderRadius: '8px',
-            background: '#FFFFFF',
-            color: '#000000',
-            fontWeight: 700,
-            border: '1px solid #FFFFFF',
-            boxShadow: '0 2px 8px rgba(255, 255, 255, 0.15)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 14px rgba(255, 255, 255, 0.35)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(255, 255, 255, 0.15)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-          title="Add a component"
-        >
-          <Plus size={14} strokeWidth={2.5} style={{ color: '#000000' }} /> Add a component
-        </button>
-
-        <button
-          className="delete-btn-hover"
-          style={{ ...iconBtnStyle, marginRight: '4px' }}
-          title="Delete component"
-          onClick={() => { if (selectedLayerId) removeLayer(selectedLayerId); }}
-          disabled={!selectedLayerId}
-        >
-          <Trash2 size={14} />
-        </button>
-
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-          <button
-            style={iconBtnStyle}
-            className="mg-btn-interactive"
-            title="Undo (Ctrl+Z)"
-            disabled={!canUndo}
-            onClick={undo}
-            onMouseEnter={(e) => {
-              if (canUndo) {
-                e.currentTarget.style.background = 'var(--bg-card-hover)';
-                e.currentTarget.style.borderColor = 'var(--border-color-hover)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--bg-input)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <Undo2 size={14} />
-          </button>
-          <button
-            style={iconBtnStyle}
-            className="mg-btn-interactive"
-            title="Redo (Ctrl+Y)"
-            disabled={!canRedo}
-            onClick={redo}
-            onMouseEnter={(e) => {
-              if (canRedo) {
-                e.currentTarget.style.background = 'var(--bg-card-hover)';
-                e.currentTarget.style.borderColor = 'var(--border-color-hover)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--bg-input)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <Redo2 size={14} />
-          </button>
-          <button
-            style={btnStyle}
-            className="mg-btn-interactive"
-            title="Reset selected component properties (or all components in scene)"
-            onClick={resetSelectedComponent}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-card-hover)';
-              e.currentTarget.style.borderColor = 'var(--border-color-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--bg-input)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <RotateCcw size={14} style={{ opacity: 0.65 }} /> Reset Component
-          </button>
         </div>
 
         {/* Zoom Controller */}
@@ -533,10 +604,11 @@ export default function VideoEditorPanel() {
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          marginLeft: 'auto',
+          marginLeft: '8px',
           flexShrink: 0,
-          background: 'var(--bg-input)',
-          border: '1px solid var(--border-color)',
+          background: '#FFFFFF',
+          border: '1px solid rgba(15, 23, 42, 0.1)',
+          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
           borderRadius: '8px',
           padding: '2px 8px',
         }}>
@@ -553,10 +625,11 @@ export default function VideoEditorPanel() {
               color: 'var(--text-muted)',
               padding: '4px',
               borderRadius: '4px',
+              transition: 'all 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.color = '#FF9137';
+              e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'var(--text-muted)';
@@ -567,27 +640,44 @@ export default function VideoEditorPanel() {
             <Minus size={13} />
           </button>
           <div
-            onClick={handleZoomSliderClick}
-            style={{ width: '70px', height: '14px', display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}
+            ref={zoomSliderRef}
+            onPointerDown={handleZoomPointerDown}
+            onWheel={(e) => {
+              e.preventDefault();
+              const delta = e.deltaY < 0 ? 0.08 : -0.08;
+              setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number((z + delta).toFixed(2)))));
+            }}
+            style={{
+              width: '80px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'ew-resize',
+              position: 'relative',
+              touchAction: 'none',
+              userSelect: 'none',
+              padding: '0 2px',
+            }}
             title={`Zoom: ${Math.round(zoomPercent)}%`}
           >
-            <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: '9999px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '5px', background: '#E2E8F0', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '9999px', position: 'relative', overflow: 'hidden' }}>
               {/* Active bar */}
-              <div style={{ position: 'absolute', left: 0, height: '100%', background: '#FFFFFF', borderRadius: '9999px', width: `${zoomPercent}%` }} />
+              <div style={{ position: 'absolute', left: 0, height: '100%', background: '#FF9137', borderRadius: '9999px', width: `${zoomPercent}%` }} />
             </div>
             {/* Thumb */}
             <div style={{
               position: 'absolute',
               top: '50%',
               left: `${zoomPercent}%`,
-              transform: 'translate(-50%, -50%)',
-              width: '12px',
-              height: '12px',
-              background: '#000000',
+              transform: `translate(-50%, -50%) ${isDraggingZoom ? 'scale(1.2)' : 'scale(1)'}`,
+              width: '13px',
+              height: '13px',
+              background: '#FF9137',
               border: '2px solid #FFFFFF',
               borderRadius: '50%',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              boxShadow: isDraggingZoom ? '0 2px 8px rgba(255, 145, 55, 0.6)' : '0 2px 6px rgba(255, 145, 55, 0.4)',
               pointerEvents: 'none',
+              transition: isDraggingZoom ? 'none' : 'transform 0.1s ease',
             }} />
           </div>
           <button
@@ -603,10 +693,11 @@ export default function VideoEditorPanel() {
               color: 'var(--text-muted)',
               padding: '4px',
               borderRadius: '4px',
+              transition: 'all 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.color = '#FF9137';
+              e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'var(--text-muted)';
@@ -620,19 +711,20 @@ export default function VideoEditorPanel() {
       </div>
 
       {/* Tracks container */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', margin: '0 24px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', position: 'relative', margin: '16px 24px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
         {/* Scrollable tracks */}
         <div
           ref={trackAreaRef}
           onPointerDown={(e) => {
             const target = e.target as HTMLElement;
             if (
-              (target === e.currentTarget || target.dataset.emptyLane === 'true') &&
               !target.closest('[data-layer-clip]') &&
               !target.closest('[data-scene-strip]') &&
-              !target.closest('[data-ruler]')
+              !target.closest('[data-ruler]') &&
+              !target.closest('[data-keyframe-node]') &&
+              !target.closest('button, input, select, textarea')
             ) {
-              dispatch({ selectedLayerId: null, playbackRange: null });
+              dispatch({ selectedLayerId: null, multiSelectedLayerIds: [], playbackRange: null });
             }
           }}
           style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', position: 'relative' }}
@@ -641,9 +733,9 @@ export default function VideoEditorPanel() {
             style={{ position: 'relative', minWidth: `${timelineWidth}px`, minHeight: '100%' }}
           >
             {/* Scene Strip – locked top row (above ruler) */}
-            <div data-scene-strip onPointerDown={(e) => e.stopPropagation()} style={{ position: 'sticky', top: 0, zIndex: 32, height: '30px', display: 'flex', alignItems: 'stretch', background: 'var(--bg-inset)' }}>
+            <div data-scene-strip onPointerDown={(e) => e.stopPropagation()} style={{ position: 'relative', zIndex: 32, height: '30px', display: 'flex', alignItems: 'stretch', background: 'var(--bg-inset)' }}>
               {scenes.map((scene, idx) => {
-                const sceneDur = getSceneDuration(scene);
+                const sceneDur = getSceneDuration(scene, scenes.length);
                 if (sceneDur <= 0) return null;
                 const sStart = getSceneStartTime(scene.id);
                 const width = sceneDur * pxPerSec;
@@ -658,11 +750,12 @@ export default function VideoEditorPanel() {
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      const sceneDur = getSceneDuration(scene);
+                      const sceneDur = getSceneDuration(scene, scenes.length);
                       const sceneEnd = sStart + sceneDur;
                       dispatch({
                         activeSceneId: scene.id,
                         selectedLayerId: null,
+                        multiSelectedLayerIds: [],
                         activeSidebarTab: 'scene',
                         playbackRange: { start: sStart, end: sceneEnd },
                       });
@@ -676,27 +769,28 @@ export default function VideoEditorPanel() {
                       height: '100%',
                       background: isActive
                         ? `linear-gradient(135deg, ${colorScheme.bg}, ${colorScheme.bg}ee)`
-                        : `var(--bg-inset)`,
+                        : `linear-gradient(135deg, ${colorScheme.bg}dd, ${colorScheme.bg}bb)`,
                       borderBottom: isActive
                         ? `2px solid ${colorScheme.border}`
-                        : '2px solid var(--border-color)',
-                      borderRight: '1px solid var(--border-color)',
+                        : '2px solid rgba(255, 255, 255, 0.12)',
+                      borderRight: '1px solid rgba(255, 255, 255, 0.15)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '4px',
                       overflow: 'hidden',
-                      transition: 'background 150ms, border-color 150ms',
+                      transition: 'all 150ms ease',
                       boxShadow: isActive ? `inset 0 -1px 3px ${colorScheme.border}33` : 'none',
+                      opacity: isActive ? 1 : 0.85,
                     }}
                     title={`${scene.name} (${sceneDur.toFixed(1)}s)`}
                   >
-                    <Lock size={9} style={{ opacity: 0.35, flexShrink: 0 }} />
+                    <Lock size={9} style={{ opacity: isActive ? 0.6 : 0.35, flexShrink: 0, color: colorScheme.text }} />
                     <span style={{
-                      fontSize: '10px',
+                      fontSize: '10.5px',
                       fontWeight: isActive ? 700 : 500,
-                      color: isActive ? colorScheme.text : '#94a3b8',
+                      color: colorScheme.text,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -715,12 +809,12 @@ export default function VideoEditorPanel() {
                 data-ruler
                 onPointerDown={(e) => {
                   e.stopPropagation();
+                  pause();
                   seekTo(getTimeFromX(e.clientX));
                   setIsDraggingPlayhead(true);
                 }}
                 style={{
-                  position: 'sticky',
-                  top: '30px',
+                  position: 'relative',
                   zIndex: 30,
                   height: '32px',
                   cursor: 'ew-resize',
@@ -729,10 +823,31 @@ export default function VideoEditorPanel() {
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '32px', background: 'var(--bg-inset)', borderBottom: '1px solid var(--border-color)', pointerEvents: 'none' }} />
                 {ticks.map((tick, i) => (
-                  <div key={i} style={{ position: 'absolute', top: '6px', left: `${tick.x}px`, pointerEvents: 'none' }}>
-                    <div style={{ width: '1px', height: tick.label ? '12px' : (tick.major ? '8px' : '4px'), background: tick.label ? 'rgba(255,255,255,0.45)' : (tick.major ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)') }} />
+                  <div key={i} style={{ position: 'absolute', top: '0px', left: `${tick.x}px`, pointerEvents: 'none', height: '100%' }}>
+                    <div
+                      style={{
+                        width: '1px',
+                        height: tick.label ? '14px' : (tick.major ? '9px' : '6px'),
+                        background: tick.label
+                          ? 'rgba(15, 23, 42, 0.5)'
+                          : (tick.major ? 'rgba(15, 23, 42, 0.3)' : 'rgba(15, 23, 42, 0.18)'),
+                      }}
+                    />
                     {tick.label && (
-                      <span style={{ position: 'absolute', top: '100%', left: '4px', fontSize: '9px', fontWeight: 500, color: 'var(--text-muted)', transform: 'translateY(-50%) scale(0.9)', transformOrigin: 'left', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '14px',
+                          left: '4px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          fontFamily: 'var(--font-mono, monospace)',
+                          whiteSpace: 'nowrap',
+                          userSelect: 'none',
+                          lineHeight: 1,
+                        }}
+                      >
                         {tick.label}
                       </span>
                     )}
@@ -746,6 +861,7 @@ export default function VideoEditorPanel() {
               <div
                 onPointerDown={(e) => {
                   e.stopPropagation();
+                  pause();
                   setIsDraggingPlayhead(true);
                 }}
                 style={{
@@ -802,13 +918,20 @@ export default function VideoEditorPanel() {
                 <div key={laneIdx} style={{ position: 'relative', height: '42px' }}>
                   {lane.map((entry) => {
                     const { layer, sceneId, sceneStart: layerSceneStart } = entry;
-                    const isSelected = selectedLayerId === layer.id;
+                    const isSelected = selectedLayerId === layer.id || multiSelectedLayerIds.includes(layer.id);
                     const isFromActiveScene = sceneId === activeSceneId;
                     const left = (layerSceneStart + layer.startTime) * pxPerSec;
                     const width = layer.duration * pxPerSec;
-                    const label = layer.type === 'text' ? (layer as any).text : layer.templateId;
+                    const label = layer.name !== undefined
+                      ? layer.name
+                      : layer.type === 'text'
+                      ? ((layer as any).text.substring(0, 15) || 'Text')
+                      : layer.templateId === 'phone-device'
+                      ? ((layer as any).props?.deviceType === 'iphone' ? 'iPhone' : (layer as any).props?.deviceType === 'android' ? 'Android' : 'Phone')
+                      : COMPONENT_TEMPLATES.find((t) => t.id === layer.templateId)?.name || layer.templateId;
                     const sceneIdx = scenes.findIndex((s) => s.id === sceneId);
-                    const colorScheme = SCENE_COLORS[sceneIdx % SCENE_COLORS.length];
+                    const safeSceneIdx = sceneIdx >= 0 ? sceneIdx : 0;
+                    const colorScheme = SCENE_COLORS[safeSceneIdx % SCENE_COLORS.length];
 
                     return (
                       <div
@@ -816,11 +939,18 @@ export default function VideoEditorPanel() {
                         data-layer-clip
                         onClick={(e) => {
                           e.stopPropagation();
-                          dispatch({
-                            activeSceneId: sceneId,
-                            selectedLayerId: layer.id,
-                            activeSidebarTab: 'components',
-                          });
+                          if (e.ctrlKey) return; // Handled in onPointerDown
+                          if (draggedRef.current) return; // Was dragging, not a pure click
+
+                          // Pure click without modifier -> become sole selection
+                          if (multiSelectedLayerIds.length > 0 || selectedLayerId !== layer.id) {
+                            dispatch({
+                              activeSceneId: sceneId,
+                              selectedLayerId: layer.id,
+                              multiSelectedLayerIds: [],
+                              activeSidebarTab: 'components',
+                            });
+                          }
                         }}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
@@ -829,6 +959,7 @@ export default function VideoEditorPanel() {
                           dispatch({
                             activeSceneId: sceneId,
                             selectedLayerId: layer.id,
+                            multiSelectedLayerIds: [],
                             activeSidebarTab: 'components',
                             playbackRange: { start: compStart, end: compEnd },
                           });
@@ -837,27 +968,77 @@ export default function VideoEditorPanel() {
                         }}
                         onPointerDown={(e) => {
                           e.stopPropagation();
-                          dispatch({
-                            activeSceneId: sceneId,
-                            selectedLayerId: layer.id,
-                            activeSidebarTab: 'components',
-                          });
+                          draggedRef.current = false;
+                          
+                          let currentMulti = multiSelectedLayerIds;
+                          let currentPrimary = selectedLayerId;
+                          const isCurrentlySelected = currentPrimary === layer.id || currentMulti.includes(layer.id);
+                          
+                          if (e.ctrlKey) {
+                            if (isCurrentlySelected) {
+                              if (currentPrimary === layer.id) {
+                                currentPrimary = null;
+                                if (currentMulti.length > 0) {
+                                  currentPrimary = currentMulti[0];
+                                  currentMulti = currentMulti.slice(1);
+                                }
+                              } else {
+                                currentMulti = currentMulti.filter(id => id !== layer.id);
+                              }
+                            } else {
+                              currentMulti = [...currentMulti, layer.id];
+                              if (!currentPrimary) {
+                                currentPrimary = layer.id;
+                                currentMulti = currentMulti.filter(id => id !== layer.id);
+                              }
+                            }
+                            dispatch({ selectedLayerId: currentPrimary, multiSelectedLayerIds: currentMulti });
+                          } else {
+                            if (!isCurrentlySelected) {
+                              currentPrimary = layer.id;
+                              currentMulti = [];
+                              dispatch({
+                                activeSceneId: sceneId,
+                                selectedLayerId: currentPrimary,
+                                multiSelectedLayerIds: currentMulti,
+                                activeSidebarTab: 'components',
+                              });
+                            }
+                          }
+                          
                           pushUndo();
-                          setDraggingLayer({ id: layer.id, sceneId, type: 'move', startX: e.clientX, startTime: layer.startTime, startDuration: layer.duration });
+                          
+                          const dragIds = [currentPrimary, ...currentMulti].filter(Boolean) as string[];
+                          let layersToDrag = scenes.flatMap(s => s.layers).filter(l => dragIds.includes(l.id)).map(l => ({
+                            id: l.id,
+                            sceneId: scenes.find(s => s.layers.some(sl => sl.id === l.id))?.id || '',
+                            startTime: l.startTime,
+                            startDuration: l.duration,
+                            startTrackIndex: l.trackIndex ?? 0,
+                          }));
+                          
+                          if (dragIds.includes(layer.id)) {
+                            setDraggingLayers({
+                              type: 'move',
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              layers: layersToDrag,
+                            });
+                          }
                         }}
                         style={{
                           position: 'absolute', left: `${left}px`, width: `${width}px`, height: '34px', top: '4px',
                           background: isSelected
-                            ? '#9333ea'
-                            : (isFromActiveScene
-                              ? `linear-gradient(to bottom, ${colorScheme.bg}, #0f172a)`
-                              : 'var(--bg-input)'),
-                          border: isSelected ? '2px solid #a855f7' : `1px solid ${isFromActiveScene ? colorScheme.border + '60' : 'var(--border-color)'}`,
+                            ? '#70FFD2'
+                            : `linear-gradient(to bottom, ${colorScheme.bg}, #0f172a)`,
+                          border: isSelected ? '2px solid #38E4AE' : `1px solid ${isFromActiveScene ? colorScheme.border + '80' : colorScheme.border + '40'}`,
                           borderRadius: '8px', cursor: 'grab',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          overflow: 'hidden', transition: 'border-color 75ms, opacity 150ms',
-                          opacity: isFromActiveScene ? 1 : 0.5,
-                          boxShadow: isSelected ? '0 0 0 1px rgba(168,85,247,0.4), 0 2px 8px rgba(0,0,0,0.4)' : 'none',
+                          overflow: 'hidden', transition: 'border-color 75ms, opacity 150ms, box-shadow 150ms',
+                          opacity: isFromActiveScene ? 1 : 0.85,
+                          boxShadow: isSelected
+                            ? '0 0 0 1px rgba(112, 255, 210, 0.6), 0 3px 12px rgba(112, 255, 210, 0.35)'
+                            : (isFromActiveScene ? `0 2px 6px ${colorScheme.bg}66` : '0 1px 3px rgba(0,0,0,0.15)'),
                         }}
                       >
                         {/* Left cap handle */}
@@ -866,7 +1047,18 @@ export default function VideoEditorPanel() {
                             e.stopPropagation();
                             dispatch({ activeSceneId: sceneId });
                             pushUndo();
-                            setDraggingLayer({ id: layer.id, sceneId, type: 'resize-left', startX: e.clientX, startTime: layer.startTime, startDuration: layer.duration });
+                            setDraggingLayers({
+                              type: 'resize-left',
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              layers: [{
+                                id: layer.id,
+                                sceneId,
+                                startTime: layer.startTime,
+                                startDuration: layer.duration,
+                                startTrackIndex: layer.trackIndex ?? 0,
+                              }],
+                            });
                           }}
                           style={{
                             position: 'absolute',
@@ -878,14 +1070,14 @@ export default function VideoEditorPanel() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: isSelected ? '#a855f7' : 'rgba(255,255,255,0.06)',
-                            borderRight: isSelected ? '1px solid rgba(0,0,0,0.25)' : 'none',
+                            background: isSelected ? '#4AE3B5' : 'rgba(255,255,255,0.06)',
+                            borderRight: isSelected ? '1px solid rgba(15,23,42,0.15)' : 'none',
                             borderRadius: '6px 0 0 6px',
                             zIndex: 10,
                           }}
                           title="Drag to trim left"
                         >
-                          <div style={{ width: '3px', height: '14px', background: '#ffffff', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,0.4)' }} />
+                          <div style={{ width: '3px', height: '14px', background: isSelected ? '#0F172A' : '#ffffff', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
                         </div>
 
                         {/* Label */}
@@ -894,7 +1086,7 @@ export default function VideoEditorPanel() {
                           alignItems: 'center',
                           gap: '5px',
                           fontSize: '11px',
-                          color: '#ffffff',
+                          color: isSelected ? '#0F172A' : '#ffffff',
                           fontWeight: 700,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -963,7 +1155,18 @@ export default function VideoEditorPanel() {
                             e.stopPropagation();
                             dispatch({ activeSceneId: sceneId });
                             pushUndo();
-                            setDraggingLayer({ id: layer.id, sceneId, type: 'resize-right', startX: e.clientX, startTime: layer.startTime, startDuration: layer.duration });
+                            setDraggingLayers({
+                              type: 'resize-right',
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              layers: [{
+                                id: layer.id,
+                                sceneId,
+                                startTime: layer.startTime,
+                                startDuration: layer.duration,
+                                startTrackIndex: layer.trackIndex ?? 0,
+                              }],
+                            });
                           }}
                           style={{
                             position: 'absolute',
@@ -975,14 +1178,14 @@ export default function VideoEditorPanel() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: isSelected ? '#a855f7' : 'rgba(255,255,255,0.06)',
-                            borderLeft: isSelected ? '1px solid rgba(0,0,0,0.25)' : 'none',
+                            background: isSelected ? '#4AE3B5' : 'rgba(255,255,255,0.06)',
+                            borderLeft: isSelected ? '1px solid rgba(15,23,42,0.15)' : 'none',
                             borderRadius: '0 6px 6px 0',
                             zIndex: 10,
                           }}
                           title="Drag to trim right"
                         >
-                          <div style={{ width: '3px', height: '14px', background: '#ffffff', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,0.4)' }} />
+                          <div style={{ width: '3px', height: '14px', background: isSelected ? '#0F172A' : '#ffffff', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
                         </div>
                       </div>
                     );
@@ -992,6 +1195,60 @@ export default function VideoEditorPanel() {
             </div>
           </div>
         </div>
+
+        {/* Empty State Centered CTA in the Video Timeline Panel (No glow) */}
+        {!anySceneHasLayers && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '30px',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 30,
+              pointerEvents: 'none',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (scenes.length === 0) {
+                  addScene();
+                }
+                dispatch({ isPickerOpen: true, activeSidebarTab: 'components' });
+              }}
+              style={{
+                pointerEvents: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                background: '#FF9137',
+                color: '#0F172A',
+                fontSize: '13px',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: 'none',
+                fontFamily: '"Plus Jakarta Sans", sans-serif',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#E6791E';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#FF9137';
+              }}
+            >
+              <Plus size={16} strokeWidth={2.5} color="#0F172A" />
+              <span>Add Component</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

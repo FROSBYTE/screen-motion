@@ -24,6 +24,8 @@ export interface MaskedHeadingProps {
   stagger?: number;
   align?: 'left' | 'center' | 'right';
   weight?: number;
+  isItalic?: boolean;
+  fontFamily?: string;
   tracking?: number;
   lineHeight?: number;
   textScale?: number;
@@ -52,6 +54,8 @@ export default function MaskedHeading({
   trigger = 'view',
   align = 'center',
   weight = 700,
+  isItalic = false,
+  fontFamily = '"Plus Jakarta Sans", sans-serif',
   tracking = -0.03,
   lineHeight = 1.06,
   textScale = 0.115,
@@ -306,6 +310,8 @@ export default function MaskedHeading({
       style={{
         textAlign: align,
         fontWeight: weight,
+        fontStyle: isItalic ? 'italic' : 'normal',
+        fontFamily,
         letterSpacing: `${tracking}em`,
         lineHeight,
         ...style,

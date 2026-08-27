@@ -12,6 +12,8 @@ export interface AnimatedListProps {
   fontSize?: number;
   borderRadius?: number;
   isBold?: boolean;
+  isItalic?: boolean;
+  fontFamily?: string;
   layerDuration?: number;
   localTime?: number;
   layerStartTime?: number;
@@ -39,9 +41,11 @@ export default function AnimatedList({
   className = '',
   itemBg = '#ffffff',
   textColor = '#000000',
-  fontSize = 14,
-  borderRadius = 8,
+  fontSize = 16,
+  borderRadius = 10,
   isBold = false,
+  isItalic = false,
+  fontFamily = '"Plus Jakarta Sans", sans-serif',
   layerDuration,
   localTime,
   layerStartTime = 0,
@@ -87,7 +91,7 @@ export default function AnimatedList({
     const displayedItems = normalizedItems.slice(0, visibleCount);
 
     return (
-      <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '320px' }}>
+      <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '480px' }}>
         {displayedItems.map((item, index) => {
           const itemTime = index * itemInterval;
           const itemAge = Math.max(0, elapsed - itemTime);
@@ -111,7 +115,8 @@ export default function AnimatedList({
                 fontSize: `${fontSize}px`,
                 color: textColor,
                 fontWeight: isBold ? 800 : 500,
-                fontFamily: '"Plus Jakarta Sans", sans-serif',
+                fontStyle: isItalic ? 'italic' : 'normal',
+                fontFamily,
               }}
             >
               {item}
@@ -123,7 +128,7 @@ export default function AnimatedList({
   }
 
   return (
-    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '320px' }}>
+    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '480px' }}>
       <AnimatePresence>
         {visibleItems.map((item, index) => (
           <motion.div
@@ -141,7 +146,8 @@ export default function AnimatedList({
               fontSize: `${fontSize}px`,
               color: textColor,
               fontWeight: isBold ? 800 : 500,
-              fontFamily: '"Plus Jakarta Sans", sans-serif',
+              fontStyle: isItalic ? 'italic' : 'normal',
+              fontFamily,
             }}
           >
             {item}

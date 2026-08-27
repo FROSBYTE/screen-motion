@@ -38,7 +38,10 @@ export interface MGProjectSummary {
   layerCount: number;
   duration: number;
   thumbnailBg?: string;
+  aspectRatio?: '16:9' | '9:16';
 }
+
+export type MGResolution = '1080p' | '720p' | '4k' | string;
 
 export interface MGProjectData {
   id: string;
@@ -47,6 +50,7 @@ export interface MGProjectData {
   updatedAt: number;
   scenes: any[];
   assetIds?: string[];
+  aspectRatio?: '16:9' | '9:16';
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -176,6 +180,7 @@ export async function listProjects(): Promise<MGProjectSummary[]> {
           layerCount,
           duration: totalDuration || 3,
           thumbnailBg,
+          aspectRatio: (p as any).aspectRatio || '16:9',
         };
       });
 
@@ -227,12 +232,13 @@ export async function saveProject(project: MGProjectData, assetIds?: string[]): 
 /**
  * Create a new empty motion graphics project.
  */
-export async function createProject(title: string = 'Untitled Project', initialScenes?: any[]): Promise<MGProjectData> {
+export async function createProject(title: string = 'Untitled Project', initialScenes?: any[], aspectRatio: '16:9' | '9:16' = '16:9'): Promise<MGProjectData> {
   const newProject: MGProjectData = {
     id: generateProjectId(),
     title,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    aspectRatio,
     scenes: initialScenes || [
       {
         id: `scene-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

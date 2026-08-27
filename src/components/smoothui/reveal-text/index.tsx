@@ -8,6 +8,9 @@ export interface RevealTextProps {
   direction?: "up" | "down" | "left" | "right";
   speed?: number;
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const REVEAL_ANIMATION_DURATION_S = 0.25;
@@ -29,6 +32,8 @@ const RevealText: React.FC<RevealTextProps> = ({
   speed = 1,
   triggerOnView = false,
   className = "",
+  localTime,
+  layerStartTime = 0,
 }) => {
   const ref = React.useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
@@ -36,6 +41,35 @@ const RevealText: React.FC<RevealTextProps> = ({
   const animate = (!triggerOnView || inView) && !shouldReduceMotion;
   const effectiveSpeed = Math.max(speed, 0.3);
   const ease = speed < 1 ? SMOOTH_EASE : DEFAULT_EASE;
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = REVEAL_ANIMATION_DURATION_S / effectiveSpeed;
+    const baseDelayS = delay / MILLISECONDS_TO_SECONDS;
+    const itemElapsed = Math.max(0, elapsed - baseDelayS);
+    const progress = Math.min(1, Math.max(0, itemElapsed / animDur));
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const opacity = eased;
+    const offset = (1 - eased) * 24;
+    const transform = direction === 'up' ? `translateY(${offset.toFixed(2)}px)`
+      : direction === 'down' ? `translateY(-${offset.toFixed(2)}px)`
+      : direction === 'left' ? `translateX(${offset.toFixed(2)}px)`
+      : `translateX(-${offset.toFixed(2)}px)`;
+
+    return (
+      <span
+        className={className}
+        ref={ref}
+        style={{
+          display: "inline-block",
+          opacity,
+          transform,
+        }}
+      >
+        {children}
+      </span>
+    );
+  }
 
   return (
     <motion.span

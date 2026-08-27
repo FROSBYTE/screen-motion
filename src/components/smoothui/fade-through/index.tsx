@@ -10,6 +10,9 @@ export interface FadeThroughProps {
   phrases?: string[];
   children?: string;
   speed?: number;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const ENTER_DURATION_S = 0.42;
@@ -28,6 +31,8 @@ export default function FadeThrough({
   className = "",
   interval = 2500,
   speed = 1,
+  localTime,
+  layerStartTime = 0,
 }: FadeThroughProps) {
   const shouldReduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
@@ -35,14 +40,44 @@ export default function FadeThrough({
   const phrases = phrasesProp ?? (children ? children.split("\n") : []);
 
   useEffect(() => {
-    if (shouldReduceMotion || !phrases || phrases.length <= 1) {
+    if (localTime !== undefined || shouldReduceMotion || !phrases || phrases.length <= 1) {
       return;
     }
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % (phrases.length || 1));
     }, interval / speed);
     return () => clearInterval(id);
-  }, [shouldReduceMotion, phrases, interval, speed]);
+  }, [shouldReduceMotion, phrases, interval, speed, localTime]);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const cycleDuration = interval / (1000 * Math.max(0.1, speed));
+    const idx = phrases.length > 0 ? Math.floor(elapsed / cycleDuration) % phrases.length : 0;
+    const cycleElapsed = elapsed % cycleDuration;
+    const enterDur = ENTER_DURATION_S / Math.max(0.1, speed);
+    const progress = Math.min(1, Math.max(0, cycleElapsed / enterDur));
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const opacity = eased;
+    const y = (1 - eased) * 6;
+
+    return (
+      <span
+        aria-live="polite"
+        className={className}
+        style={{ display: "inline-block", position: "relative" }}
+      >
+        <span
+          style={{
+            display: "inline-block",
+            opacity,
+            transform: `translateY(${y.toFixed(2)}px)`,
+          }}
+        >
+          {phrases[idx] ?? ""}
+        </span>
+      </span>
+    );
+  }
 
   const current = phrases[index] ?? "";
 

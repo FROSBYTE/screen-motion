@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -16,6 +16,8 @@ import {
   ExternalLink,
   Smartphone,
   FolderOpen,
+  Download,
+  Upload,
 } from 'lucide-react';
 import {
   listProjects,
@@ -23,8 +25,11 @@ import {
   duplicateProject,
   deleteProject,
   renameProject,
+  getProject,
+  saveProject,
   MGProjectSummary,
 } from '@/lib/storage/indexedDb';
+import NewProjectModal from './components/NewProjectModal';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -35,6 +40,8 @@ export default function ProjectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProjects = async () => {
     try {
@@ -59,15 +66,56 @@ export default function ProjectsPage() {
     return () => window.removeEventListener('click', handleOutside);
   }, []);
 
-  const handleCreateNew = async () => {
+  const handleCreateNew = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCreateSubmit = async (title: string, aspectRatio: '16:9' | '9:16') => {
+    setIsModalOpen(false);
     try {
       setIsCreating(true);
-      const newProj = await createProject('Untitled Video');
+      const newProj = await createProject(title, undefined, aspectRatio);
       router.push(`/motion-graphics/${newProj.id}`);
     } catch (err) {
       console.error('Failed to create project:', err);
       setIsCreating(false);
     }
+  };
+
+  const handleImportProject = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const jsonStr = event.target?.result as string;
+        const projectData = JSON.parse(jsonStr);
+
+        if (!projectData.id || !projectData.scenes) {
+          throw new Error('Invalid project file format');
+        }
+
+        // Generate new ID to avoid overwriting existing
+        const newId = `mg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+        projectData.id = newId;
+        projectData.title = `${projectData.title} (Imported)`;
+        projectData.createdAt = Date.now();
+        projectData.updatedAt = Date.now();
+
+        await saveProject(projectData);
+        await fetchProjects();
+      } catch (err) {
+        console.error('Failed to import project:', err);
+        alert('Failed to import project. The file might be corrupted or invalid.');
+      }
+      
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleDuplicate = async (e: React.MouseEvent, id: string) => {
@@ -78,6 +126,36 @@ export default function ProjectsPage() {
       await fetchProjects();
     } catch (err) {
       console.error('Failed to duplicate project:', err);
+    }
+  };
+
+  const handleExportProject = async (e: React.MouseEvent, id: string, title: string) => {
+    e.stopPropagation();
+    setActiveMenuId(null);
+    try {
+      const projectData = await getProject(id);
+      if (!projectData) {
+        console.error('Project not found');
+        return;
+      }
+      
+      const jsonStr = JSON.stringify(projectData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      // Sanitize filename
+      const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      a.download = `project_${safeTitle}.json`;
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export project:', err);
     }
   };
 
@@ -142,18 +220,18 @@ export default function ProjectsPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#000000',
-      color: '#FFFFFF',
-      fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      background: 'var(--theme-bg-base, #FAFAF7)',
+      color: '#0F172A',
+      fontFamily: 'var(--font-sans), -apple-system, sans-serif',
       display: 'flex',
       flexDirection: 'column',
     }}>
       {/* Top Header Navigation */}
       <header style={{
         height: '56px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        background: '#0a0a0a',
-        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(24px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -170,20 +248,20 @@ export default function ProjectsPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              color: '#FFFFFF',
+              color: '#0F172A',
               textDecoration: 'none',
               fontWeight: 800,
               fontSize: '17px',
               letterSpacing: '-0.03em',
             }}
           >
-            <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
-            <span>screen<span style={{ color: '#FFFFFF', opacity: 0.85 }}>motion</span></span>
+            <img src="/logo.svg" alt="Screen Motion" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'invert(1)' }} />
+            <span>screen<span style={{ color: '#0F172A', opacity: 0.85 }}>motion</span></span>
           </Link>
 
-          <span style={{ color: '#71717A', fontSize: '13px' }}>/</span>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#A1A1AA' }}>
-            Motion Graphics Projects
+          <span style={{ color: 'rgba(15, 23, 42, 0.2)', fontSize: '13px' }}>/</span>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            Workspace / Projects
           </span>
         </div>
 
@@ -196,10 +274,10 @@ export default function ProjectsPage() {
               alignItems: 'center',
               gap: '6px',
               padding: '7px 14px',
-              borderRadius: '8px',
-              background: '#141414',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#A1A1AA',
+              borderRadius: '6px',
+              background: '#F4F5EE',
+              border: '1px solid rgba(15, 23, 42, 0.08)',
+              color: '#475569',
               fontSize: '12px',
               fontWeight: 600,
               textDecoration: 'none',
@@ -211,6 +289,40 @@ export default function ProjectsPage() {
           </Link>
 
           <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isCreating}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              background: '#FFFFFF',
+              color: '#0F172A',
+              border: '1px solid rgba(15, 23, 42, 0.12)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: isCreating ? 'not-allowed' : 'pointer',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+              transition: 'all 0.15s ease',
+              opacity: isCreating ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#F4F5EE')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
+          >
+            <Upload size={16} strokeWidth={2.5} />
+            Import
+          </button>
+
+          <input
+            type="file"
+            accept=".json"
+            ref={fileInputRef}
+            onChange={handleImportProject}
+            style={{ display: 'none' }}
+          />
+
+          <button
             onClick={handleCreateNew}
             disabled={isCreating}
             style={{
@@ -218,19 +330,21 @@ export default function ProjectsPage() {
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
-              borderRadius: '8px',
-              background: '#FFFFFF',
-              color: '#000000',
+              borderRadius: '6px',
+              background: '#FF9137',
+              color: '#0F172A',
               border: 'none',
               fontSize: '13px',
               fontWeight: 700,
               cursor: isCreating ? 'not-allowed' : 'pointer',
-              boxShadow: '0 2px 12px rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 4px 14px rgba(255, 145, 55, 0.35)',
               transition: 'all 0.15s ease',
               opacity: isCreating ? 0.7 : 1,
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#E6791E')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#FF9137')}
           >
-            <Plus size={16} strokeWidth={2.5} />
+            <Plus size={16} strokeWidth={2.5} color="#0F172A" />
             {isCreating ? 'Creating...' : 'New Project'}
           </button>
         </div>
@@ -254,10 +368,10 @@ export default function ProjectsPage() {
           marginBottom: '28px',
         }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, color: '#FFFFFF' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, color: '#0F172A' }}>
               Your Projects
             </h1>
-            <p style={{ fontSize: '13px', color: '#A1A1AA', margin: '4px 0 0 0' }}>
+            <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
               {projects.length} {projects.length === 1 ? 'project' : 'projects'} saved locally in browser
             </p>
           </div>
@@ -275,7 +389,7 @@ export default function ProjectsPage() {
                 left: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#71717A',
+                color: '#64748B',
               }}
             />
             <input
@@ -285,16 +399,17 @@ export default function ProjectsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
-                padding: '8px 12px 8px 34px',
-                borderRadius: '8px',
-                background: '#141414',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#FFFFFF',
+                padding: '8px 34px 8px 34px',
+                borderRadius: '6px',
+                background: '#EEF0F5',
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                color: '#0F172A',
                 fontSize: '13px',
                 outline: 'none',
                 boxSizing: 'border-box',
               }}
             />
+
           </div>
         </div>
 
@@ -310,10 +425,11 @@ export default function ProjectsPage() {
                 key={i}
                 style={{
                   height: '220px',
-                  borderRadius: '12px',
-                  background: '#0d0d0d',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  opacity: 0.5,
+                  borderRadius: '8px',
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                  opacity: 0.6,
                 }}
               />
             ))}
@@ -322,36 +438,30 @@ export default function ProjectsPage() {
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '64px 20px',
-            textAlign: 'center',
-            background: '#0a0a0a',
-            border: '1px dashed rgba(255, 255, 255, 0.15)',
-            borderRadius: '16px',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-end',
+            padding: '48px 48px',
+            minHeight: '400px',
+            textAlign: 'left',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(238,240,245,0.8) 100%)',
+            border: 'none',
+            borderBottom: '1px solid rgba(15, 23, 42, 0.1)',
+            borderRadius: '0',
             marginTop: '12px',
           }}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              marginBottom: '16px',
-            }}>
-              <FolderOpen size={30} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 6px 0', color: '#FFFFFF' }}>
-              {searchQuery ? 'No matching projects' : 'No projects yet'}
+              width: '40px',
+              height: '2px',
+              background: '#0F172A',
+              marginBottom: '32px'
+            }} />
+            <h3 style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 700, margin: '0 0 16px 0', color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'var(--font-sans)' }}>
+              {searchQuery ? 'No matching projects found.' : 'Initialize your first canvas.'}
             </h3>
-            <p style={{ fontSize: '13px', color: '#A1A1AA', maxWidth: '360px', margin: '0 0 20px 0' }}>
+            <p style={{ fontSize: '15px', color: '#64748B', maxWidth: '460px', margin: '0 0 32px 0', lineHeight: 1.6 }}>
               {searchQuery
                 ? `No projects found matching "${searchQuery}". Try searching for something else.`
-                : 'Create your first motion graphics video with animated text, 3D device mockups, and smooth transitions.'}
+                : 'Studio-grade motion graphics running entirely in your browser. No server rendering, no waiting.'}
             </p>
             <button
               onClick={handleCreateNew}
@@ -360,19 +470,21 @@ export default function ProjectsPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '10px 22px',
+                padding: '12px 24px',
                 borderRadius: '8px',
-                background: '#FFFFFF',
-                color: '#000000',
+                background: '#FF9137',
+                color: '#0F172A',
                 border: 'none',
                 fontSize: '13px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 14px rgba(255, 145, 55, 0.35)',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#E6791E')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#FF9137')}
             >
-              <Plus size={16} strokeWidth={2.5} />
-              Create New Project
+              <Plus size={16} strokeWidth={2.5} color="#0F172A" />
+              {isCreating ? 'Creating...' : 'New Project'}
             </button>
           </div>
         ) : (
@@ -381,13 +493,12 @@ export default function ProjectsPage() {
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '20px',
           }}>
-            {/* New Project Card CTA */}
             <div
               onClick={handleCreateNew}
               style={{
-                borderRadius: '12px',
-                border: '1px dashed rgba(255, 255, 255, 0.2)',
-                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '8px',
+                border: '1px dashed rgba(15, 23, 42, 0.2)',
+                background: '#FFFFFF',
                 height: '240px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -395,22 +506,23 @@ export default function ProjectsPage() {
                 justifyContent: 'center',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.03)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#FFFFFF';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                e.currentTarget.style.borderColor = '#FF9137';
+                e.currentTarget.style.background = '#FFFDE6';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.2)';
+                e.currentTarget.style.background = '#FFFFFF';
               }}
             >
               <div style={{
                 width: '44px',
                 height: '44px',
                 borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.08)',
-                color: '#FFFFFF',
+                background: 'rgba(255, 145, 55, 0.15)',
+                color: '#FF9137',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -418,8 +530,8 @@ export default function ProjectsPage() {
               }}>
                 <Plus size={22} strokeWidth={2.5} />
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF' }}>New Video Project</span>
-              <span style={{ fontSize: '12px', color: '#71717A', marginTop: '4px' }}>Start from blank studio</span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>New Video Project</span>
+              <span style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>Start from blank studio</span>
             </div>
 
             {/* Existing Project Cards */}
@@ -429,50 +541,48 @@ export default function ProjectsPage() {
                 onClick={() => router.push(`/motion-graphics/${proj.id}`)}
                 style={{
                   position: 'relative',
-                  borderRadius: '12px',
-                  background: '#0d0d0d',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
                   overflow: 'hidden',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   height: '240px',
                   transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+                  boxShadow: '0 4px 14px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.25)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(15, 23, 42, 0.12)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6)';
+                  e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.08)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03)';
                 }}
               >
                 {/* Visual Thumbnail Area */}
                 <div style={{
                   height: '140px',
                   width: '100%',
-                  background: proj.thumbnailBg || '#050505',
+                  background: proj.thumbnailBg || '#EEF0F5',
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderBottom: '1px solid rgba(15, 23, 42, 0.06)',
                   overflow: 'hidden',
                 }}>
                   {/* Subtle Grid Accent */}
                   <div style={{
                     position: 'absolute',
                     inset: 0,
-                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(rgba(15,23,42,0.08) 1px, transparent 1px)',
                     backgroundSize: '16px 16px',
-                    opacity: 0.3,
+                    opacity: 0.6,
                   }} />
 
-                  <Film size={36} color="rgba(255,255,255,0.25)" />
+                  <Film size={36} color="rgba(15,23,42,0.25)" />
 
                   {/* Badges on Thumbnail */}
                   <div style={{
@@ -482,18 +592,39 @@ export default function ProjectsPage() {
                     display: 'flex',
                     gap: '6px',
                   }}>
+                    {proj.aspectRatio === '9:16' && (
+                      <span style={{
+                        padding: '2px 6px',
+                        background: 'rgba(255, 145, 55, 0.85)',
+                        backdropFilter: 'blur(4px)',
+                        color: '#0F172A',
+                        fontSize: '9px',
+                        fontFamily: 'var(--font-mono)',
+                        textTransform: 'uppercase',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        border: '1px solid rgba(255, 145, 55, 0.2)',
+                        borderRadius: '4px'
+                      }}>
+                        <Smartphone size={11} /> 9:16
+                      </span>
+                    )}
                     <span style={{
-                      padding: '3px 7px',
-                      borderRadius: '6px',
-                      background: 'rgba(0, 0, 0, 0.8)',
-                      backdropFilter: 'blur(8px)',
-                      color: '#A1A1AA',
-                      fontSize: '10px',
-                      fontWeight: 600,
+                      padding: '2px 6px',
+                      background: 'rgba(255, 255, 255, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#0F172A',
+                      fontSize: '9px',
+                      fontFamily: 'var(--font-mono)',
+                      textTransform: 'uppercase',
+                      fontWeight: 700,
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(15, 23, 42, 0.08)',
+                      borderRadius: '4px'
                     }}>
                       <Layers size={11} /> {proj.sceneCount} {proj.sceneCount === 1 ? 'Scene' : 'Scenes'}
                     </span>
@@ -505,18 +636,18 @@ export default function ProjectsPage() {
                     right: '10px',
                   }}>
                     <span style={{
-                      padding: '3px 7px',
-                      borderRadius: '6px',
-                      background: 'rgba(0, 0, 0, 0.85)',
-                      backdropFilter: 'blur(8px)',
-                      color: '#FFFFFF',
-                      fontSize: '11px',
+                      padding: '2px 6px',
+                      background: 'rgba(255, 255, 255, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#0F172A',
+                      fontSize: '10px',
+                      fontFamily: 'var(--font-mono)',
                       fontWeight: 700,
-                      fontVariantNumeric: 'tabular-nums',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(15, 23, 42, 0.08)',
+                      borderRadius: '4px'
                     }}>
                       <Clock size={11} /> {proj.duration.toFixed(1)}s
                     </span>
@@ -530,7 +661,7 @@ export default function ProjectsPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  background: '#0d0d0d',
+                  background: '#FFFFFF',
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {editingId === proj.id ? (
@@ -548,10 +679,10 @@ export default function ProjectsPage() {
                           style={{
                             width: '100%',
                             padding: '3px 6px',
-                            background: '#000000',
-                            border: '1px solid #FFFFFF',
+                            background: '#EEF0F5',
+                            border: '1px solid #0F172A',
                             borderRadius: '4px',
-                            color: '#FFFFFF',
+                            color: '#0F172A',
                             fontSize: '13px',
                             fontWeight: 600,
                             outline: 'none',
@@ -564,14 +695,14 @@ export default function ProjectsPage() {
                           margin: 0,
                           fontSize: '13px',
                           fontWeight: 700,
-                          color: '#FFFFFF',
+                          color: '#0F172A',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}>
                           {proj.title}
                         </h4>
-                        <span style={{ fontSize: '11px', color: '#71717A', marginTop: '2px', display: 'block' }}>
+                        <span style={{ fontSize: '11px', color: '#64748B', marginTop: '2px', display: 'block' }}>
                           Edited {formatRelativeTime(proj.updatedAt)}
                         </span>
                       </>
@@ -588,7 +719,7 @@ export default function ProjectsPage() {
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#71717A',
+                        color: '#64748B',
                         padding: '6px',
                         borderRadius: '6px',
                         cursor: 'pointer',
@@ -597,8 +728,8 @@ export default function ProjectsPage() {
                         justifyContent: 'center',
                         transition: 'all 0.15s ease',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = '#71717A')}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#0F172A')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#64748B')}
                     >
                       <MoreVertical size={16} />
                     </button>
@@ -611,10 +742,10 @@ export default function ProjectsPage() {
                           bottom: '100%',
                           marginBottom: '6px',
                           width: '140px',
-                          background: '#0a0a0a',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          background: '#FFFFFF',
+                          border: '1px solid rgba(15, 23, 42, 0.12)',
                           borderRadius: '8px',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                          boxShadow: '0 12px 32px -4px rgba(15, 23, 42, 0.15)',
                           padding: '4px',
                           zIndex: 100,
                         }}
@@ -629,13 +760,14 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#FFFFFF',
+                            color: '#0F172A',
                             fontSize: '12px',
+                            fontWeight: 600,
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F3F7')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <ExternalLink size={13} /> Open
@@ -651,13 +783,14 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#FFFFFF',
+                            color: '#0F172A',
                             fontSize: '12px',
+                            fontWeight: 600,
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F3F7')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Edit2 size={13} /> Rename
@@ -673,19 +806,43 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#FFFFFF',
+                            color: '#0F172A',
                             fontSize: '12px',
+                            fontWeight: 600,
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F3F7')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Copy size={13} /> Duplicate
                         </button>
 
-                        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
+                        <button
+                          onClick={(e) => handleExportProject(e, proj.id, proj.title)}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '7px 10px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#0F172A',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F3F7')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <Download size={13} /> Export JSON
+                        </button>
+
+                        <div style={{ height: '1px', background: 'rgba(15, 23, 42, 0.06)', margin: '4px 0' }} />
 
                         <button
                           onClick={(e) => handleDelete(e, proj.id, proj.title)}
@@ -697,13 +854,14 @@ export default function ProjectsPage() {
                             padding: '7px 10px',
                             border: 'none',
                             background: 'transparent',
-                            color: '#ef4444',
+                            color: '#EF4444',
                             fontSize: '12px',
+                            fontWeight: 600,
                             borderRadius: '6px',
                             cursor: 'pointer',
                             textAlign: 'left',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Trash2 size={13} /> Delete
@@ -717,6 +875,12 @@ export default function ProjectsPage() {
           </div>
         )}
       </main>
+      
+      <NewProjectModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateSubmit}
+      />
     </div>
   );
 }

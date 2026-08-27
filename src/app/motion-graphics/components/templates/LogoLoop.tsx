@@ -15,6 +15,8 @@ export interface LogoLoopProps {
   logoHeight?: number;
   textColor?: string;
   isBold?: boolean;
+  isItalic?: boolean;
+  fontFamily?: string;
   className?: string;
   layerDuration?: number;
   localTime?: number;
@@ -34,10 +36,12 @@ export default function LogoLoop({
   items = DEFAULT_ITEMS,
   speed = 1,
   direction = 'left',
-  gap = 48,
-  logoHeight = 28,
+  gap = 56,
+  logoHeight = 38,
   textColor = '#ffffff',
   isBold = true,
+  isItalic = false,
+  fontFamily = '"Plus Jakarta Sans", sans-serif',
   className = '',
   layerDuration,
   localTime,
@@ -73,13 +77,14 @@ export default function LogoLoop({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: item.type === 'text' ? '0 12px' : '0',
-        fontSize: '14px',
+        padding: item.type === 'text' ? '0 16px' : '0',
+        fontSize: '16px',
         fontWeight: isBold ? 800 : 500,
-        fontFamily: '"Plus Jakarta Sans", sans-serif',
+        fontStyle: isItalic ? 'italic' : 'normal',
+        fontFamily,
         color: textColor,
         background: item.type === 'text' ? 'rgba(255,255,255,0.05)' : 'transparent',
-        borderRadius: '6px',
+        borderRadius: '8px',
         border: item.type === 'text' ? '1px solid rgba(255,255,255,0.1)' : 'none',
       }}
     >
@@ -116,7 +121,7 @@ export default function LogoLoop({
         style={{
           overflow: 'hidden',
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '780px',
           display: 'flex',
           gap: `${gap}px`,
           userSelect: 'none',

@@ -14,6 +14,9 @@ export interface BottomUpLettersProps {
   speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const DURATION_S = 0.4;
@@ -28,6 +31,8 @@ export default function BottomUpLetters({
   stagger = 88,
   speed = 1,
   triggerOnView = false,
+  localTime,
+  layerStartTime = 0,
 }: BottomUpLettersProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
@@ -38,16 +43,52 @@ export default function BottomUpLetters({
     isMountedRef.current = true;
   }, []);
 
-  const characters = Array.from(children);
+  const characters = Array.from(children || "");
   const effectiveSpeed = Math.max(speed, 0.3);
   const effectiveEase = speed < 1 ? SMOOTH_EASE : EASE;
   const effectiveStagger = Math.min(stagger / effectiveSpeed, 250);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = DURATION_S / effectiveSpeed;
+    const staggerS = effectiveStagger / MS;
+    const baseDelayS = delay / MS;
+
+    return (
+      <span aria-label={children} className={className} ref={ref}>
+        {characters.map((char, index) => {
+          if (char === "\n") return <br key={index} />;
+          const charStart = baseDelayS + index * staggerS;
+          const charElapsed = Math.max(0, elapsed - charStart);
+          const progress = Math.min(1, Math.max(0, charElapsed / animDur));
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const opacity = eased;
+          const y = (1 - eased) * 46;
+
+          return (
+            <span
+              aria-hidden="true"
+              key={index}
+              style={{
+                display: "inline-block",
+                whiteSpace: "pre",
+                opacity,
+                transform: `translateY(${y.toFixed(2)}px)`,
+              }}
+            >
+              {char === " " ? "\u00A0" : char}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   return (
     <span aria-label={children} className={className} ref={ref}>
       {characters.map((char, index) => {
         if (char === "\n") {
-          return <span key={index} style={{ display: "block", width: "100%", height: 0 }} />;
+          return <br key={index} />;
         }
         return (
           <motion.span

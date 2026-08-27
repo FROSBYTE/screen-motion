@@ -3,22 +3,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { motion, AnimatePresence } from "framer-motion";
-import Iridescence from "@/components/Iridescence";
-import Footer1 from "@/components/smoothui/blocks/footers/footer-1";
+import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
+
 import SmoothHero from "@/components/SmoothHero";
 import { AppProvider } from "@/store";
 
-const Preview3D = dynamic(() => import("@/components/Preview3D"), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#6b7280", fontSize: "14px", fontWeight: 600 }}>
-      Loading 3D Motion Render Engine...
-    </div>
-  )
-});
-
-const IRIDESCENCE_COLOR: [number, number, number] = [0.9, 0.8, 1.0];
 const SHOWCASE_ANIMATIONS = [
   { name: "Orbit 3D", id: "orbit" },
   { name: "Hero Reveal", id: "hero-reveal" },
@@ -35,8 +24,8 @@ const TEMPLATE_CARDS = [
   { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/showcase-videos/screen-motion-1080p-corkscrew-reveal-1785452727399.webm", gradient: "#050509" },
   { id: "bounce-drop", animationName: "Bounce Drop", video: "/showcase-videos/screen-motion-1080p-bounce-drop-1785438886976.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
   { id: "flip", animationName: "Flip & Land", video: "/showcase-videos/screen-motion-1080p-flip-1785165653076.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" },
-  { id: "depth-zoom", animationName: "Depth Zoom 4K", video: "/showcase-videos/screen-motion-4k-depth-zoom-1785492356200.webm", gradient: "linear-gradient(135deg, #312e81 0%, #4c1d95 100%)" },
-  { id: "rise", animationName: "Studio Rise 4K", video: "/showcase-videos/screen-motion-4k-rise-1785492156624.webm", gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" },
+  { id: "depth-zoom", animationName: "Depth Zoom", video: "/showcase-videos/screen-motion-4k-depth-zoom-1785492356200.webm", gradient: "linear-gradient(135deg, #312e81 0%, #4c1d95 100%)" },
+  { id: "rise", animationName: "Studio Rise", video: "/showcase-videos/screen-motion-4k-rise-1785492156624.webm", gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" },
   { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #facc15 100%)" },
   { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
   { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #facc15 50%, #f97316 100%)" },
@@ -47,58 +36,47 @@ const TEMPLATE_CARDS = [
 const WORKFLOW_STEPS = [
   {
     step: 1,
-    title: "Add your design",
-    description: "ScreenMotion supports PNG, JPG, and WEBP image uploads, plus MP4, WEBM, and MOV video files displayed directly on the 3D device screen.",
+    title: "Add your product design",
+    description: "Upload your SaaS screenshots, screen recordings, logos, or app captures directly into the canvas",
     video: "/animation-card-videos/hero-reveal-template.webm"
   },
   {
     step: 2,
-    title: "Make it yours",
-    description: "Customize camera angles, 3D device models, lighting, and motion timelines for studio-quality Renders.",
+    title: "Customize motion & style",
+    description: "Customize kinetic typography, 3D device mockups, studio lighting, colors, and motion timelines without learning complex video editing software",
     video: "/animation-card-videos/orbit-template.webm"
   },
   {
     step: 3,
-    title: "Get your mockup",
-    description: "Export your final 3D device mockup in ultra-crisp 4K video or high resolution PNG image formats.",
+    title: "Export your product video",
+    description: "Export your final SaaS promotional video in ultra-smooth 60 FPS MP4 format ready for your website, socials, and launch campaigns",
     video: "/animation-card-videos/dynamic-showcase-template.webm"
   }
 ];
 
 const USE_CASES = [
-  { title: "Landing Pages", desc: "Hero 3D animations that boost website conversions." },
-  { title: "Pitch Decks", desc: "Studio Renders tailored for investor presentations." },
-  { title: "App Store Previews", desc: "High fidelity promo videos for iOS and Play Store listings." },
-  { title: "Social Media Ads", desc: "Attention grabbing motion clips for Instagram, Twitter, and LinkedIn." },
-  { title: "Content Marketing", desc: "Engaging product walkthroughs and feature announcements." },
-  { title: "Product Promos", desc: "Cinematic 4K videos for launch campaigns and web demos." }
+  { title: "Pitch Decks", desc: "High-impact product videos tailored for investors and stakeholder presentations" },
+  { title: "App Store & Launches", desc: "High fidelity promo videos for Product Hunt launches, iOS, and Web stores" },
+  { title: "Social Media Ads", desc: "Attention grabbing SaaS motion clips for Twitter, LinkedIn, and Instagram ads" },
+  { title: "Content Marketing", desc: "Engaging feature walkthroughs, UI changelogs, and product announcements" }
 ];
 
 const FAQ_ITEMS = [
   {
-    question: "What file formats does ScreenMotion support?",
-    answer: "PNG, JPG, and WEBP images, plus MP4, WEBM, and MOV video files. Videos play directly on the 3D device screen."
+    question: "How does ScreenMotion work?",
+    answer: "Use ready-made product video templates and customize to your SaaS Import screenshots, adjust text and 3D device motions, and export in seconds That's it"
   },
   {
-    question: "Do I need 3D design experience to create mockups?",
-    answer: "No. Choose a template, upload your screenshot, and export your video."
+    question: "Do I need video editing skills or After Effects?",
+    answer: "No ScreenMotion is built specifically for creators who struggle with complex timeline software Everything runs right in your browser"
   },
   {
-    question: "Can I export high resolution 4K videos?",
-    answer: "Yes, you can export in 4K video and high-resolution PNG formats directly in your browser."
+    question: "What formats can I export?",
+    answer: "We support ultra-crisp MP4 video exports at 1080p Full HD with 60 & 30 FPS and high-resolution PNG image exports"
   },
   {
-    question: "What devices are available in the 3D engine?",
-    answer: "iPhone and Android models. More devices will be added soon."
-  },
-  {
-    question: "Is there a free trial or beta access?",
-    answer: "Yes, you can test all 3D animation templates for free directly in the browser."
-  },
-  {
-    question: "What is Motion Graphics in ScreenMotion?",
-    answer: "It is a completely free product video maker specially built for SaaS devs and creators. It is currently a work in progress (BETA)—you can try it out in your browser at no cost, share your suggestions with us, and join the waitlist for future updates!",
-    highlight: true
+    question: "How is my data handled?",
+    answer: "100% safe Everything is processed locally on your machine, nothing leaves your browser Your assets and videos never leave your device"
   }
 ];
 
@@ -111,78 +89,125 @@ interface TemplateCardData {
 }
 
 function TemplateCardItem({ card }: { card: TemplateCardData }) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isIntersecting, setIsIntersecting] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          videoRef.current?.play().catch(() => {});
+        } else {
+          videoRef.current?.pause();
+        }
+      },
+      { threshold: 0.15, rootMargin: '100px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Link
-      href={`/editor?template=${card.id}`}
-      style={{ textDecoration: "none", color: "inherit", display: "block" }}
+      href="/projects"
+      style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%", outline: "none" }}
+      className="template-card-link"
+      aria-label={`Launch ${card.animationName} template`}
     >
       <motion.div
-        whileHover={{ y: -6, scale: 1.02 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
+        ref={containerRef}
+        whileHover={{ y: -6, scale: 1.015 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: "relative",
-          borderRadius: "20px",
+          borderRadius: "14px",
           overflow: "hidden",
-          background: card.gradient || "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-          aspectRatio: "16 / 9",
+          background: card.gradient || "#0F172A",
           width: "100%",
-          boxShadow: "0 12px 32px -8px rgba(0, 0, 0, 0.12)",
-          border: "1.5px solid rgba(0, 0, 0, 0.16)",
+          aspectRatio: "16/10",
+          border: "1px solid rgba(15, 23, 42, 0.08)",
+          boxShadow: "0 8px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04)",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          transform: "translateZ(0)",
         }}
       >
-        {/* Main Video element */}
-        <video
-          src={card.video}
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            position: "absolute",
-            inset: 0,
-            zIndex: 1
-          }}
-        />
+        {/* Main Video element with lazy IntersectionObserver playback */}
+        <div style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "hidden" }}>
+          {isIntersecting && (
+            <video
+              ref={videoRef}
+              src={card.video}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+                display: "block",
+              }}
+            />
+          )}
+        </div>
 
-        {/* Hover Overlay with Animation Name & Use Template CTA */}
+        {/* Bottom Label + Launch Action without black tint */}
         <div
-          className="card-hover-cta"
           style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 3,
-            backgroundColor: "rgba(0, 0, 0, 0.38)",
-            backdropFilter: "blur(3px)",
-            WebkitBackdropFilter: "blur(3px)",
-            opacity: 0,
-            transition: "opacity 0.25s ease",
+            position: "relative",
+            zIndex: 2,
+            padding: "16px 18px",
+            background: "transparent",
             display: "flex",
-            alignItems: "flex-end",
+            alignItems: "center",
             justifyContent: "space-between",
-            padding: "16px 20px"
+            gap: "12px",
           }}
         >
-          <div style={{ color: "#ffffff", fontWeight: 700, fontSize: "15px", textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>
-            {card.animationName}
+          <div>
+            <div style={{
+              color: "#FFFFFF",
+              fontWeight: 700,
+              fontSize: "14.5px",
+              letterSpacing: "-0.01em",
+              textShadow: "0 2px 6px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)"
+            }}>
+              {card.animationName}
+            </div>
+            <div style={{
+              color: "rgba(255, 255, 255, 0.85)",
+              fontSize: "11px",
+              fontFamily: "var(--font-mono)",
+              marginTop: "2px",
+              textShadow: "0 1px 4px rgba(0,0,0,0.8)"
+            }}>
+              SaaS Product Motion
+            </div>
           </div>
           <span
+            className="template-launch-badge"
             style={{
-              backgroundColor: "#ffffff",
-              color: "#111827",
+              backgroundColor: "#FF9137",
+              color: "#0F172A",
               fontWeight: 700,
               fontSize: "12px",
-              padding: "7px 16px",
-              borderRadius: "999px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.25)"
+              padding: "6px 14px",
+              borderRadius: "6px",
+              boxShadow: "0 2px 10px rgba(255, 145, 55, 0.4)",
+              flexShrink: 0,
             }}
           >
-            Use Template
+            Launch
           </span>
         </div>
       </motion.div>
@@ -190,10 +215,23 @@ function TemplateCardItem({ card }: { card: TemplateCardData }) {
   );
 }
 
+function TemplateShowcaseGrid({ cards }: { cards: TemplateCardData[] }) {
+  return (
+    <div className="template-showcase-grid">
+      {cards.map((card) => (
+        <div key={card.id} className="template-card-cell">
+          <TemplateCardItem card={card} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const { scrollYProgress } = useScroll();
 
   return (
     <div
@@ -201,11 +239,25 @@ export default function LandingPage() {
         minHeight: "100vh",
         position: "relative",
         overflowX: "hidden",
-        backgroundColor: "#000000",
-        color: "#ffffff",
-        fontFamily: "'Inter', sans-serif"
+        backgroundColor: "var(--theme-bg-base, #FAFAF7)",
+        color: "var(--theme-text-light, #0F172A)",
+        fontFamily: "var(--font-sans)",
       }}
     >
+      {/* Global Scroll Progress Indicator with ColorHunt Multi-Color Palette */}
+      <motion.div
+        style={{
+          scaleX: scrollYProgress,
+          transformOrigin: "0%",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "3px",
+          background: "linear-gradient(90deg, #70FFD2 0%, #FFFC8C 35%, #FFCC4D 70%, #FF9137 100%)",
+          zIndex: 9999,
+        }}
+      />
 
       {/* Embedded CSS for Glassmorphic & Layout Specifics */}
       <style jsx global>{`
@@ -216,16 +268,16 @@ export default function LandingPage() {
           padding: 0 !important;
         }
         .font-headline {
-          font-family: 'Google Sans', 'Sora', sans-serif;
+          font-family: var(--font-sans);
         }
         .font-display {
-          font-family: 'Google Sans', 'Sora', sans-serif;
+          font-family: var(--font-sans);
         }
         .font-body {
-          font-family: 'Google Sans', 'Inter', sans-serif;
+          font-family: var(--font-sans);
         }
         .font-label {
-          font-family: 'Google Sans', 'Space Grotesk', sans-serif;
+          font-family: var(--font-mono);
         }
         .horizontal-templates-scroll::-webkit-scrollbar {
           display: none;
@@ -350,54 +402,51 @@ export default function LandingPage() {
         a:hover .card-hover-cta {
           opacity: 1 !important;
         }
-        .template-3x3-grid {
+        .template-showcase-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 28px;
-          align-items: start;
+          gap: 24px;
+        }
+        .template-card-cell {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
         }
         @media (max-width: 1024px) {
-          .template-3x3-grid {
+          .template-showcase-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
           }
         }
         @media (max-width: 640px) {
-          .template-3x3-grid {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
+          .template-showcase-grid {
+            grid-template-columns: 1fr;
             gap: 16px;
           }
         }
+        .template-card-link:focus-visible > div {
+          border-color: #FF9137 !important;
+          box-shadow: 0 0 0 2px rgba(255, 145, 55, 0.5) !important;
+        }
 
-        .use-cases-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 20px;
-        }
-        @media (min-width: 1025px) {
-          .use-cases-card-center-start {
-            grid-column-start: 2;
+        /* FAQ Premium Layout */
+        @media (min-width: 860px) {
+          .faq-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 80px;
+            align-items: start;
+          }
+          .faq-header-sticky {
+            position: sticky;
+            top: 120px;
           }
         }
-        @media (max-width: 1024px) {
-          .use-cases-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-        @media (max-width: 640px) {
-          .use-cases-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-          }
-          .use-cases-card {
-            padding: 16px 12px !important;
-            aspect-ratio: 16 / 11;
+        @media (max-width: 859px) {
+          .faq-layout {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-          }
-          .use-cases-card p {
-            font-size: 12px !important;
-            line-height: 1.4 !important;
+            gap: 48px;
           }
         }
       `}</style>
@@ -430,26 +479,26 @@ export default function LandingPage() {
           }}
         >
           <h2 className="font-headline" style={{
-            fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
-            fontWeight: 800,
-            color: "#f8fafc",
+            fontSize: "clamp(2rem, 4vw, 3rem)",
+            fontWeight: 400,
+            color: "#0F172A",
             margin: "0 0 12px 0",
-            letterSpacing: "-0.03em"
+            letterSpacing: "-0.035em"
           }}>
-            3D Device Animations Made Simple
+            Product Video Templates For SaaS
           </h2>
           <p className="font-body" style={{
             fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-            color: "#94a3b8",
+            color: "#475569",
             margin: 0,
             maxWidth: "680px",
             lineHeight: 1.6
           }}>
-            Generate crisp creative assets lightning fast and without headaches
+            Pick a ready-made motion graphic template, customize in seconds, and export stunning product videos
           </p>
         </motion.div>
 
-        {/* 3x3 Template Grid */}
+        {/* Grid Breaker / Asymmetric Template Grid */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -462,324 +511,14 @@ export default function LandingPage() {
             paddingRight: "24px"
           }}
         >
-          <div className="template-3x3-grid">
-            {TEMPLATE_CARDS.map((card) => (
-              <TemplateCardItem key={card.id} card={card} />
-            ))}
-          </div>
+          <TemplateShowcaseGrid cards={TEMPLATE_CARDS} />
         </motion.div>
       </section>
 
-      {/* 3 Steps to Studio-Grade Mockups Section */}
-      {false && (
-      <section style={{
-        paddingTop: "100px",
-        paddingBottom: "100px",
-        width: "100%",
-        position: "relative",
-        zIndex: 10
-      }}>
-        <div style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          paddingLeft: "24px",
-          paddingRight: "24px"
-        }}>
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6 }}
-            style={{ marginBottom: "48px", maxWidth: "780px" }}
-          >
-            <h2 className="font-headline" style={{
-              fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
-              fontWeight: 800,
-              color: "#111827",
-              margin: "0 0 16px 0",
-              letterSpacing: "-0.03em",
-              lineHeight: 1.15
-            }}>
-              How it works
-            </h2>
-
-            <p className="font-body" style={{
-              fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-              color: "#111827",
-              margin: 0,
-              lineHeight: 1.6,
-              maxWidth: "680px"
-            }}>
-              We simplified the process to fit perfectly into your workflow. So even if you're 5 minutes away from a big presentation, you can get a stunning mockup that will blow them away.
-            </p>
-          </motion.div>
-
-          {/* Grid Layout: Left Step Cards + Right Interactive Mac Studio Frame */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-            gap: "36px",
-            alignItems: "stretch"
-          }}>
-            {/* Left Steps Column */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px", justifyContent: "center" }}>
-              {WORKFLOW_STEPS.map((item, idx) => {
-                const isActive = activeStep === idx;
-                return (
-                  <motion.div
-                    key={item.step}
-                    onClick={() => setActiveStep(idx)}
-                    whileHover={{ scale: 1.01 }}
-                    transition={{ duration: 0.2 }}
-                    style={{
-                      padding: "24px 28px",
-                      borderRadius: "20px",
-                      backgroundColor: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.65)",
-                      border: isActive ? "2px solid #3b82f6" : "1px solid rgba(0, 0, 0, 0.06)",
-                      boxShadow: isActive ? "0 12px 32px -8px rgba(59, 130, 246, 0.18)" : "0 4px 14px rgba(0, 0, 0, 0.03)",
-                      cursor: "pointer",
-                      transition: "all 0.25s ease"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
-                      {/* Step Number Circle */}
-                      <span style={{
-                        width: "28px",
-                        height: "28px",
-                        borderRadius: "50%",
-                        backgroundColor: isActive ? "#1e293b" : "#e2e8f0",
-                        color: isActive ? "#ffffff" : "#475569",
-                        fontSize: "13px",
-                        fontWeight: 700,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        marginTop: "2px"
-                      }}>
-                        {item.step}
-                      </span>
-
-                      <div>
-                        <h3 className="font-headline" style={{
-                          fontSize: "18px",
-                          fontWeight: 800,
-                          color: "#111827",
-                          margin: "0 0 6px 0",
-                          letterSpacing: "-0.01em"
-                        }}>
-                          {item.title}
-                        </h3>
-
-                        {isActive && (
-                          <motion.p
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            transition={{ duration: 0.3 }}
-                            className="font-body"
-                            style={{
-                              fontSize: "14px",
-                              color: "#4b5563",
-                              margin: 0,
-                              lineHeight: 1.55
-                            }}
-                          >
-                            {item.description}
-                          </motion.p>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {/* Right Interactive Mockup Video Frame */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6 }}
-              style={{
-                borderRadius: "24px",
-                overflow: "hidden",
-                boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.25)",
-                border: "1px solid rgba(255, 255, 255, 0.4)",
-                position: "relative",
-                minHeight: "420px",
-                background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
-              }}
-            >
-              {/* Control Header with Coming Soon Badge */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "12px 18px",
-                backgroundColor: "#1e293b",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.08)"
-              }}>
-                <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8" }}>
-                  {WORKFLOW_STEPS[activeStep].title}
-                </span>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "3px 10px",
-                  borderRadius: "999px",
-                  backgroundColor: "rgba(59, 130, 246, 0.15)",
-                  color: "#60a5fa",
-                  fontSize: "10.5px",
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  border: "1px solid rgba(96, 165, 250, 0.3)"
-                }}>
-                  Coming Soon
-                </span>
-              </div>
-
-              {/* Studio Canvas Placeholder (No Video Preview) */}
-              <div style={{
-                width: "100%",
-                height: "calc(100% - 41px)",
-                minHeight: "380px",
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "32px",
-                textAlign: "center",
-                background: "radial-gradient(ellipse at center, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)"
-              }}>
-                <div style={{
-                  width: "64px",
-                  height: "64px",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(59, 130, 246, 0.1)",
-                  border: "1px solid rgba(96, 165, 250, 0.25)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "20px",
-                  boxShadow: "0 0 30px rgba(59, 130, 246, 0.2)"
-                }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: "28px", color: "#60a5fa" }}>
-                    play_circle
-                  </span>
-                </div>
-
-                <h3 className="font-headline" style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  margin: "0 0 8px 0"
-                }}>
-                  Interactive Preview
-                </h3>
-
-                <p className="font-body" style={{
-                  fontSize: "14px",
-                  color: "#94a3b8",
-                  margin: 0,
-                  maxWidth: "320px",
-                  lineHeight: 1.5
-                }}>
-                  Live video workflow previews are coming soon
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Use Cases & Applications Section */}
-      <section style={{
+      {/* Use Cases & Applications Section (Ledger Format) */}
+      <section id="use-cases" style={{
         paddingTop: "60px",
         paddingBottom: "100px",
-        width: "100%",
-        position: "relative",
-        zIndex: 10
-      }}>
-        <div style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          paddingLeft: "24px",
-          paddingRight: "24px"
-        }}>
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6 }}
-            style={{ textAlign: "center", marginBottom: "48px" }}
-          >
-            <h2 className="font-headline" style={{
-              fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
-              fontWeight: 800,
-              color: "#f8fafc",
-              margin: "0 0 16px 0",
-              letterSpacing: "-0.03em"
-            }}>
-              Built for Every Stage of Your Product Journey
-            </h2>
-            <p className="font-body" style={{
-              fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-              color: "#94a3b8",
-              maxWidth: "760px",
-              margin: "0 auto",
-              lineHeight: 1.6
-            }}>
-              Fluid 3D motion captures user attention faster than static images, making your product presentations instantly memorable.
-            </p>
-          </motion.div>
-
-          <div className="use-cases-grid">
-            {USE_CASES.map((uc, idx) => (
-              <motion.div
-                key={uc.title}
-                className={`use-cases-card ${idx === 4 ? "use-cases-card-center-start" : ""}`.trim()}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-30px" }}
-                transition={{ duration: 0.4, delay: idx * 0.06 }}
-                whileHover={{ y: -4 }}
-                style={{
-                  padding: "24px 28px",
-                  borderRadius: "20px",
-                  backgroundColor: "#0a0a0a",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.6)",
-                  transition: "all 0.25s ease"
-                }}
-              >
-                <h3 className="font-headline use-case-title" style={{
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  margin: "0 0 8px 0"
-                }}>
-                  {uc.title}
-                </h3>
-                <p className="font-body" style={{
-                  fontSize: "14px",
-                  color: "#a1a1aa",
-                  margin: 0,
-                  lineHeight: 1.55
-                }}>
-                  {uc.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" style={{
-        paddingTop: "60px",
-        paddingBottom: "120px",
         width: "100%",
         position: "relative",
         zIndex: 10
@@ -790,37 +529,106 @@ export default function LandingPage() {
           paddingLeft: "24px",
           paddingRight: "24px"
         }}>
-          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.6 }}
-            style={{ textAlign: "center", marginBottom: "48px" }}
+            style={{ marginBottom: "48px" }}
           >
             <h2 className="font-headline" style={{
-              fontSize: "clamp(2.25rem, 4.5vw, 3.25rem)",
-              fontWeight: 800,
-              color: "#ffffff",
-              margin: "0 0 12px 0",
-              letterSpacing: "-0.03em"
+              fontSize: "clamp(2rem, 3vw, 2.5rem)",
+              fontWeight: 400,
+              color: "#0F172A",
+              margin: "0 0 16px 0",
+              letterSpacing: "-0.035em"
             }}>
-              FAQ
+              Use Cases
+            </h2>
+          </motion.div>
+
+          <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid rgba(15, 23, 42, 0.08)" }}>
+            {USE_CASES.map((uc, idx) => (
+              <motion.div
+                key={uc.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-30px" }}
+                transition={{ duration: 0.4, delay: idx * 0.06 }}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "80px 1fr 1.5fr",
+                  gap: "24px",
+                  padding: "32px 0",
+                  borderBottom: "1px solid rgba(15, 23, 42, 0.06)",
+                  alignItems: "baseline",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "#94A3B8" }}>
+                  0{idx + 1}
+                </div>
+                <div style={{ fontSize: "18px", fontWeight: 500, color: "#0F172A", letterSpacing: "-0.01em" }}>
+                  {uc.title}
+                </div>
+                <div style={{ fontSize: "14px", color: "#475569", lineHeight: 1.6 }}>
+                  {uc.desc}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section (Editorial Ledger Layout) */}
+      <section id="faq" style={{
+        paddingTop: "80px",
+        paddingBottom: "160px",
+        width: "100%",
+        position: "relative",
+        zIndex: 10,
+        borderTop: "1px solid rgba(15, 23, 42, 0.08)"
+      }}>
+        <div style={{
+          maxWidth: "1080px",
+          margin: "0 auto",
+          paddingLeft: "24px",
+          paddingRight: "24px"
+        }} className="faq-layout">
+          
+          {/* Left Sticky Header */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.6 }}
+            className="faq-header-sticky"
+          >
+            <h2 className="font-headline" style={{
+              fontSize: "clamp(2rem, 3.5vw, 2.5rem)",
+              fontWeight: 400,
+              color: "#0F172A",
+              margin: "0 0 16px 0",
+              letterSpacing: "-0.035em",
+              lineHeight: 1.1
+            }}>
+              Frequently Asked<br/>Questions
             </h2>
             <p className="font-body" style={{
-              fontSize: "clamp(1.05rem, 1.8vw, 1.2rem)",
-              color: "#a1a1aa",
-              margin: 0
+              fontSize: "1rem",
+              color: "#475569",
+              margin: 0,
+              maxWidth: "100%",
+              lineHeight: 1.6,
+              paddingRight: "20px"
             }}>
-              Everything you need to know about ScreenMotion and 3D device mockups
+              Discover how ScreenMotion helps SaaS founders and creators make high-converting product videos without complex tools Everything you need to know is right here
             </p>
           </motion.div>
 
-          {/* Accordion List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Right Accordion List (Ledger Style) */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
             {FAQ_ITEMS.map((faq, index) => {
               const isOpen = openFaqIndex === index;
-              const isHighlighted = (faq as any).highlight;
               return (
                 <motion.div
                   key={index}
@@ -829,62 +637,56 @@ export default function LandingPage() {
                   viewport={{ once: true, margin: "-20px" }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                   style={{
-                    borderRadius: "16px",
-                    backgroundColor: isHighlighted ? "#111111" : "#0a0a0a",
-                    border: isHighlighted ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.1)",
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.6)",
-                    overflow: "hidden",
-                    transition: "all 0.25s ease"
+                    borderTop: "1px solid rgba(15, 23, 42, 0.08)",
+                    borderBottom: index === FAQ_ITEMS.length - 1 ? "1px solid rgba(15, 23, 42, 0.08)" : "none",
                   }}
                 >
                   <button
                     onClick={() => setOpenFaqIndex(isOpen ? null : index)}
                     style={{
                       width: "100%",
-                      padding: "20px 24px",
+                      padding: "24px 0",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      gap: "16px",
+                      gap: "24px",
                       background: "transparent",
                       border: "none",
                       cursor: "pointer",
                       textAlign: "left"
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-                      <span className="font-headline faq-question-text" style={{
-                        fontWeight: 700,
-                        color: "#ffffff"
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "24px", flex: 1 }}>
+                      <span style={{ 
+                        fontFamily: "var(--font-mono)", 
+                        fontSize: "12px", 
+                        color: isOpen ? "#FF9137" : "#94A3B8" 
                       }}>
-                        {faq.question}
+                        0{index + 1}
                       </span>
-                      {isHighlighted && (
-                        <span style={{
-                          fontSize: "10px",
-                          fontWeight: 800,
-                          color: "#000000",
-                          backgroundColor: "#ffffff",
-                          padding: "3px 8px",
-                          borderRadius: "6px",
-                          letterSpacing: "0.05em",
-                          whiteSpace: "nowrap",
-                          flexShrink: 0
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span className="font-headline" style={{
+                          fontSize: "1.1rem",
+                          fontWeight: 600,
+                          color: isOpen ? "#FF9137" : "#334155",
+                          letterSpacing: "-0.01em",
+                          transition: "color 0.2s ease"
                         }}>
-                          FREE
+                          {faq.question}
                         </span>
-                      )}
-                    </span>
+                      </div>
+                    </div>
                     <span
-                      className="material-symbols-outlined"
                       style={{
-                        fontSize: "22px",
-                        color: "#a1a1aa",
-                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                        transition: "transform 0.3s ease"
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "18px",
+                        fontWeight: 400,
+                        color: isOpen ? "#FF9137" : "#64748B",
+                        transition: "transform 0.3s ease, color 0.3s ease",
+                        transform: isOpen ? "rotate(45deg)" : "rotate(0deg)"
                       }}
                     >
-                      expand_more
+                      +
                     </span>
                   </button>
 
@@ -900,10 +702,11 @@ export default function LandingPage() {
                         <div
                           className="font-body"
                           style={{
-                            padding: "0 24px 20px 24px",
-                            fontSize: "14.5px",
+                            padding: "0 0 32px 42px",
+                            fontSize: "15px",
                             lineHeight: 1.6,
-                            color: "#a1a1aa"
+                            color: "#475569",
+                            maxWidth: "800px"
                           }}
                         >
                           {faq.answer}
@@ -918,8 +721,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SmoothUI Footer1 Component */}
-      <Footer1 />
+
     </div>
   );
 }

@@ -44,10 +44,6 @@ type AppUpdate = Omit<Partial<AppState>, 'scene'> & {
 };
 
 interface AppContextValue {
-  undo: () => void;
-  redo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   state: AppState;
   dispatch: (update: AppUpdate | ((prev: AppState) => AppUpdate)) => void;
   uploadScreenshot: (file: File) => void;
@@ -130,13 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const dispatch = (update: AppUpdate | ((prev: AppState) => AppUpdate)) => {
     setState((prev) => {
-      // DISABLED_FEATURE_START: Undo/Redo System History Tracking
-      // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
-      /*
-      setHistory((h) => [...h, prev].slice(-20));
-      setFuture([]);
-      */
-      // DISABLED_FEATURE_END: Undo/Redo System History Tracking
+
       const nextPartial = typeof update === 'function' ? update(prev) : update;
       const nextState: AppState = {
         ...prev,
@@ -162,33 +152,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // DISABLED_FEATURE_START: Undo/Redo Actions and States
-  // DO NOT DELETE: Keeping this code disabled for future reference or reactivation.
-  /*
-  const undo = () => {
-    if (history.length === 0) return;
-    const prev = history[history.length - 1];
-    setFuture((f) => [state, ...f]);
-    setHistory((h) => h.slice(0, -1));
-    setState(prev);
-  };
 
-  const redo = () => {
-    if (future.length === 0) return;
-    const next = future[0];
-    setHistory((h) => [...h, state]);
-    setFuture((f) => f.slice(1));
-    setState(next);
-  };
-
-  const canUndo = history.length > 0;
-  const canRedo = future.length > 0;
-  */
-  const undo = () => {};
-  const redo = () => {};
-  const canUndo = false;
-  const canRedo = false;
-  // DISABLED_FEATURE_END: Undo/Redo Actions and States
 
   const uploadScreenshot = (file: File) => {
     const isImage = file.type.startsWith('image/');
@@ -270,7 +234,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.screenshotUrl]);
 
   return (
-    <AppContext.Provider value={{ undo, redo, canUndo, canRedo, state, dispatch, uploadScreenshot, resetProject }}>
+    <AppContext.Provider value={{ state, dispatch, uploadScreenshot, resetProject }}>
       {children}
     </AppContext.Provider>
   );

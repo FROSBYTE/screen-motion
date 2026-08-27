@@ -1,6 +1,6 @@
 'use client';
 
-// Suppress three.js deprecation & HMR development warnings coming from react-three-fiber and Turbopack internals
+// Suppress three.js deprecation, shader compiler info logs & HMR development warnings
 if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -10,6 +10,9 @@ if (typeof window !== 'undefined') {
       typeof message === 'string' &&
       (message.includes('THREE.Clock: This module has been deprecated.') ||
        message.includes('THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated.') ||
+       message.includes('THREE.WebGLProgram: Program Info Log:') ||
+       message.includes('warning X4122:') ||
+       message.includes('cannot be represented accurately in double precision') ||
        message.includes('Unexpected import of module') ||
        message.includes('deleted by an HMR update'))
     ) {
@@ -21,6 +24,7 @@ if (typeof window !== 'undefined') {
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   FolderOpen,
@@ -32,22 +36,31 @@ import {
   CloudAlert,
   Edit2,
   Save,
+  Undo2,
+  Redo2,
+  Monitor,
+  Smartphone,
 } from 'lucide-react';
-import { MotionGraphicsProvider, useMGState } from './store';
+import { MotionGraphicsProvider, useMGDoc } from './store';
 import { AlignmentProvider } from '@/context/AlignmentContext';
 import MotionCanvas from './components/MotionCanvas';
 import VideoEditorPanel from './components/VideoEditorPanel';
 import HierarchyPanel from './components/HierarchyPanel';
 import PropertiesPanel from './components/PropertiesPanel';
-import ExportVideoModal from './components/ExportVideoModal';
 import { createProject, listProjects } from '@/lib/storage/indexedDb';
+
+const ExportVideoModal = dynamic(() => import('./components/ExportVideoModal'), { ssr: false });
 
 export function MotionGraphicsStudioContent() {
   const router = useRouter();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const { saveStatus, hasUnsavedChanges, saveCurrentProject, title, setTitle, projectId } = useMGState();
+  const { state, saveStatus, hasUnsavedChanges, saveCurrentProject, title, setTitle, projectId, undo, redo, canUndo, canRedo, setAspectRatio } = useMGDoc();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
+
+  const { scenes } = state;
+  const totalLayers = scenes.reduce((sum, s) => sum + (s.layers?.length || 0), 0);
+  const isExportDisabled = scenes.length <= 1 && totalLayers === 0;
 
   useEffect(() => {
     setTempTitle(title);
@@ -74,7 +87,28 @@ export function MotionGraphicsStudioContent() {
 
   return (
     <>
-      <style>{`html, body { overflow: hidden; }`}</style>
+      <style>{`
+        html, body { overflow: hidden; }
+        
+        /* Custom High-Contrast Scrollbars */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.04);
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(15, 23, 42, 0.25);
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #FF9137;
+        }
+        ::-webkit-scrollbar-corner {
+          background: transparent;
+        }
+      `}</style>
 
       {/* Main App Container */}
       <div style={{
@@ -82,7 +116,9 @@ export function MotionGraphicsStudioContent() {
         flexDirection: 'column',
         height: '100dvh',
         width: '100vw',
-        overflow: 'hidden',
+        minWidth: '1024px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
         background: 'var(--bg-primary)',
       }}>
         {/* Top Header Navigation Bar */}
@@ -98,7 +134,7 @@ export function MotionGraphicsStudioContent() {
           zIndex: 100,
         }}>
           {/* Left: App Logo + Projects Link + Editable Title + Save Status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
             <Link
               href="/"
               style={{
@@ -111,7 +147,7 @@ export function MotionGraphicsStudioContent() {
               }}
               title="Screen Motion Home"
             >
-              <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+              <img src="/logo.svg" alt="Screen Motion" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'invert(1)' }} />
             </Link>
 
             <Link
@@ -134,14 +170,14 @@ export function MotionGraphicsStudioContent() {
               title="Return to Projects Dashboard"
             >
               <FolderOpen size={14} style={{ color: 'var(--accent-primary)' }} />
-              <span>Projects</span>
+              <span>Back To Projects</span>
             </Link>
 
             <div style={{ height: '16px', width: '1px', background: 'var(--border-color)', margin: '0 2px' }} />
 
             {/* Editable Project Title */}
             {isEditingTitle ? (
-              <form onSubmit={handleTitleSubmit} style={{ display: 'flex', alignItems: 'center' }}>
+              <form onSubmit={handleTitleSubmit} style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
                 <input
                   type="text"
                   value={tempTitle}
@@ -174,10 +210,12 @@ export function MotionGraphicsStudioContent() {
                   borderRadius: '6px',
                   transition: 'background 0.15s ease',
                   border: '1px solid transparent',
+                  minWidth: 0,
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
@@ -185,12 +223,36 @@ export function MotionGraphicsStudioContent() {
                 }}
                 title="Click to rename project"
               >
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {title || 'Untitled Project'}
                 </span>
-                <Edit2 size={12} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
+                <Edit2 size={12} style={{ color: 'var(--text-muted)', opacity: 0.6, flexShrink: 0 }} />
               </div>
             )}
+
+            <div style={{ height: '16px', width: '1px', background: 'var(--border-color)', margin: '0 2px' }} />
+
+            {/* Aspect Ratio Switcher */}
+            <div
+              className="mg-btn-interactive"
+              onClick={() => setAspectRatio(state.aspectRatio === '16:9' ? '9:16' : '16:9')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: 'transparent',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title={`Current Orientation: ${state.aspectRatio === '16:9' ? 'Landscape (1920x1080)' : 'Portrait (1080x1920)'}. Click to switch.`}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              {state.aspectRatio === '16:9' ? <Monitor size={14} color="var(--text-muted)" /> : <Smartphone size={14} color="var(--text-muted)" />}
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>{state.aspectRatio}</span>
+            </div>
 
             {/* Manual Save Button & Shortcut */}
             <button
@@ -262,39 +324,100 @@ export function MotionGraphicsStudioContent() {
                 </>
               )}
             </button>
+            {/* Undo / Redo */}
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginLeft: 'auto', paddingRight: '10px' }}>
+              <button
+                className="mg-btn-interactive"
+                disabled={!canUndo}
+                onClick={undo}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px', borderRadius: '6px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: canUndo ? 'var(--text-primary)' : 'var(--text-muted)',
+                  cursor: canUndo ? 'pointer' : 'not-allowed',
+                  opacity: canUndo ? 1 : 0.5,
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (canUndo) e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 size={14} />
+              </button>
+              <button
+                className="mg-btn-interactive"
+                disabled={!canRedo}
+                onClick={redo}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px', borderRadius: '6px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: canRedo ? 'var(--text-primary)' : 'var(--text-muted)',
+                  cursor: canRedo ? 'pointer' : 'not-allowed',
+                  opacity: canRedo ? 1 : 0.5,
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (canRedo) e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Right: Actions (Export) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="mg-btn-interactive"
+              onClick={() => {
+                if (!isExportDisabled) setIsExportModalOpen(true);
+              }}
+              disabled={isExportDisabled}
+              className={isExportDisabled ? '' : 'mg-btn-interactive'}
               style={{
-                background: '#FFFFFF',
-                border: 'none',
+                background: isExportDisabled ? '#F4F5EE' : '#FF9137',
+                border: isExportDisabled ? '1px solid rgba(15, 23, 42, 0.08)' : 'none',
                 borderRadius: '8px',
-                color: '#000000',
+                color: isExportDisabled ? '#94A3B8' : '#0F172A',
                 padding: '6px 14px',
                 fontSize: '12px',
                 fontWeight: 700,
-                cursor: 'pointer',
+                cursor: isExportDisabled ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 2px 10px rgba(255,255,255,0.2)',
+                boxShadow: isExportDisabled ? 'none' : '0 2px 10px rgba(255, 145, 55, 0.3)',
                 transition: 'all 0.15s ease',
+                opacity: isExportDisabled ? 0.6 : 1,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(255,255,255,0.4)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
+                if (!isExportDisabled) {
+                  e.currentTarget.style.background = '#E6791E';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(255, 145, 55, 0.45)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 10px rgba(255,255,255,0.2)';
-                e.currentTarget.style.transform = 'translateY(0)';
+                if (!isExportDisabled) {
+                  e.currentTarget.style.background = '#FF9137';
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 145, 55, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
               }}
-              title="Export Full Video (MP4 / WebM)"
+              title={isExportDisabled ? 'Add components or a second scene to export video' : 'Export Full Video (MP4 / WebM)'}
             >
-              <Download size={14} style={{ color: '#000000' }} />
+              <Download size={14} style={{ color: isExportDisabled ? '#94A3B8' : '#0F172A' }} />
               <span>Export</span>
             </button>
           </div>
@@ -318,6 +441,7 @@ export function MotionGraphicsStudioContent() {
                 justifyContent: 'center',
                 position: 'relative',
                 minHeight: 0,
+                minWidth: '400px',
                 overflow: 'hidden',
               }}>
                 <MotionCanvas />
@@ -333,11 +457,13 @@ export function MotionGraphicsStudioContent() {
         </div>
       </div>
 
-      {/* Export Video Modal */}
-      <ExportVideoModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-      />
+      {/* Export Video Modal (Lazy loaded on demand) */}
+      {isExportModalOpen && (
+        <ExportVideoModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -351,7 +477,7 @@ export default function MotionGraphicsPage() {
       if (projects.length > 0) {
         router.replace(`/motion-graphics/${projects[0].id}`);
       } else {
-        createProject('Untitled Video').then((p) => {
+        createProject('Untitled Video', undefined, '16:9').then((p) => {
           router.replace(`/motion-graphics/${p.id}`);
         });
       }

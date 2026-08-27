@@ -122,6 +122,9 @@ export interface DiaTextRevealProps extends Omit<
    * @defaultValue `false`
    */
   fixedWidth?: boolean
+  localTime?: number
+  layerStartTime?: number
+  layerDuration?: number
 }
 
 export function DiaTextReveal({
@@ -136,6 +139,9 @@ export function DiaTextReveal({
   once = true,
   className,
   fixedWidth = false,
+  localTime,
+  layerStartTime = 0,
+  layerDuration,
   ...props
 }: DiaTextRevealProps) {
   const texts = Array.isArray(text) ? text : [text]
@@ -186,6 +192,7 @@ export function DiaTextReveal({
   }, [Array.isArray(text) ? text.join("\0") : text, isMulti, texts])
 
   playRef.current = () => {
+    if (localTime !== undefined) return
     const { duration, delay, repeat, repeatDelay, texts } = optsRef.current
 
     sweepPos.set(SWEEP_START)
@@ -209,6 +216,7 @@ export function DiaTextReveal({
   }
 
   useEffect(() => {
+    if (localTime !== undefined) return
     if (prefersReducedMotion) {
       sweepPos.set(SWEEP_END)
       return
@@ -222,7 +230,42 @@ export function DiaTextReveal({
       stopRef.current?.()
       clearTimeout(timerRef.current)
     }
-  }, [isInView, startOnView, once, prefersReducedMotion, sweepPos])
+  }, [isInView, startOnView, once, prefersReducedMotion, sweepPos, localTime])
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime)
+    const cycleDuration = Math.max(0.1, duration + (repeat ? repeatDelay : 0))
+    const cycleCount = Math.floor(elapsed / cycleDuration)
+    const currentIdx = repeat && isMulti ? cycleCount % texts.length : 0
+    const timeInCycle = elapsed % cycleDuration
+    const progress = Math.min(1, Math.max(0, (timeInCycle - delay) / duration))
+    const pos = SWEEP_START + sweepEase(progress) * (SWEEP_END - SWEEP_START)
+    const deterministicGradient = buildGradient(pos, colors, textColor)
+
+    return (
+      <motion.span
+        ref={spanRef}
+        className={cn("align-bottom leading-[100%] text-inherit", className)}
+        style={{
+          transform: "translateY(-2px)",
+          color: "transparent",
+          backgroundClip: "text",
+          WebkitBackgroundClip: "text",
+          backgroundSize: "100% 100%",
+          backgroundImage: deterministicGradient,
+          display: "inline-block",
+          ...(isMulti && {
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            verticalAlign: "text-center",
+          }),
+        }}
+        {...props}
+      >
+        {texts[currentIdx]}
+      </motion.span>
+    )
+  }
 
   const fixedW =
     isMulti && fixedWidth && measuredWidths.length > 0

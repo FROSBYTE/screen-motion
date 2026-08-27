@@ -13,6 +13,8 @@ export interface Text3DFlipProps {
   flipColor?: string;
   fontSize?: number;
   fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
   staggerDuration?: number;
   staggerFrom?: StaggerFrom;
   rotateDirection?: RotateDirection;
@@ -37,8 +39,10 @@ export default function Text3DFlip({
   flippedText = '',
   color = '#ffffff',
   flipColor = '#a855f7',
-  fontSize = 36,
+  fontSize = 52,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
+  isBold = true,
+  isItalic = false,
   staggerFrom = 'first',
   rotateDirection = 'top',
   speed = 1,
@@ -161,7 +165,8 @@ export default function Text3DFlip({
         perspective: '800px',
         fontSize: `${fontSize}px`,
         fontFamily,
-        fontWeight: 700,
+        fontWeight: isBold ? 800 : 400,
+        fontStyle: isItalic ? 'italic' : 'normal',
       }}
     >
       {words.map((word, wordIdx) => (
@@ -184,33 +189,26 @@ export default function Text3DFlip({
                 : `rotateY(${rotateDirection === 'left' ? -charAngle : charAngle}deg)`;
 
             if (deterministicRotationAngles) {
+              const isBackFace = charAngle >= 90;
+              const activeChar = isBackFace ? flippedChar : char;
+              const activeColor = isBackFace ? flipColor : color;
+              const cosScale = Math.max(0.05, Math.abs(Math.cos((charAngle * Math.PI) / 180)));
+              const isVertical = rotateDirection === 'top' || rotateDirection === 'bottom';
+              const scaleTransform = isVertical ? `scaleY(${cosScale.toFixed(3)})` : `scaleX(${cosScale.toFixed(3)})`;
+
               return (
                 <span
                   key={`${wordIdx}-${charIdx}`}
                   style={{
                     display: 'inline-block',
-                    transformStyle: 'preserve-3d',
                     position: 'relative',
-                    color,
+                    color: activeColor,
                     whiteSpace: 'pre',
-                    transform: rotationTransform,
+                    transform: scaleTransform,
+                    transformOrigin: 'center center',
                   }}
                 >
-                  <span style={{ backfaceVisibility: 'hidden', display: 'inline-block' }}>
-                    {char}
-                  </span>
-                  <span style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    color: flipColor,
-                    backfaceVisibility: 'hidden',
-                    transform: rotateDirection === 'top' || rotateDirection === 'bottom'
-                      ? 'rotateX(180deg)' : 'rotateY(180deg)',
-                    display: 'inline-block',
-                  }}>
-                    {flippedChar}
-                  </span>
+                  {activeChar}
                 </span>
               );
             }

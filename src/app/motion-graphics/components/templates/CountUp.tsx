@@ -36,7 +36,7 @@ export default function CountUp({
   isBold = true,
   isItalic = false,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
-  fontSize = 48,
+  fontSize = 64,
   layerDuration,
   localTime,
   layerStartTime = 0,

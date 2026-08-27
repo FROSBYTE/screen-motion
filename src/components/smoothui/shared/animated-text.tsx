@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { ElementType, ReactNode } from "react";
 
@@ -17,32 +18,31 @@ export function AnimatedText({
   delay = 0,
 }: AnimatedTextProps) {
   const shouldReduceMotion = useReducedMotion();
-  const Component = Tag as any;
 
   return (
     <motion.div
       animate={
         shouldReduceMotion
           ? { opacity: 1 }
-          : { opacity: 1, filter: "blur(0px)", y: 0 }
+          : { filter: "blur(0px)", opacity: 1, y: 0 }
       }
       initial={
         shouldReduceMotion
           ? { opacity: 1 }
-          : { opacity: 0, filter: "blur(12px)", y: 12 }
+          : { filter: "blur(12px)", opacity: 0, y: 12 }
       }
       transition={
         shouldReduceMotion
           ? { duration: 0 }
           : {
-              type: "spring" as const,
               bounce: 0.3,
-              duration: 1.5,
               delay,
+              duration: 1.5,
+              type: "spring" as const,
             }
       }
     >
-      <Component className={className}>{children}</Component>
+      {React.createElement(Tag, { className }, children)}
     </motion.div>
   );
 }

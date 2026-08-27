@@ -16,6 +16,9 @@ export interface HighlighterProps {
   animationDuration?: number;
   speed?: number;
   fontSize?: number;
+  fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
   className?: string;
   layerDuration?: number;
   localTime?: number;
@@ -144,7 +147,10 @@ export default function Highlighter({
   strokeWidth = 2,
   animationDuration = 600,
   speed = 1,
-  fontSize = 32,
+  fontSize = 44,
+  fontFamily = '"Plus Jakarta Sans", sans-serif',
+  isBold = true,
+  isItalic = false,
   className = '',
   layerDuration,
   localTime,
@@ -159,20 +165,17 @@ export default function Highlighter({
     return () => clearTimeout(timer);
   }, [localTime]);
 
-  const deterministicProgress = localTime !== undefined
-    ? (() => {
-        const elapsed = Math.max(0, localTime - layerStartTime);
-        const animStart = 0.1;
-        const animT = Math.max(0, Math.min(1, (elapsed - animStart) / Math.max(0.01, effectiveDuration)));
-        return 1 - Math.pow(1 - animT, 3);
-      })()
-    : null;
-
-  // Parse highlight words
   const wordsToHighlight = highlightWords.split(',').map((w) => w.trim()).filter(Boolean);
 
-  // Build segments: split text by highlight words while preserving order
-  const buildSegments = (): { text: string; isHighlighted: boolean }[] => {
+  let deterministicProgress: number | null = null;
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const progress = Math.min(1, Math.max(0, elapsed / Math.max(0.1, effectiveDuration)));
+    deterministicProgress = 1 - Math.pow(1 - progress, 3);
+  }
+
+  // Build segmented text: highlighted parts wrapped in AnnotationMark
+  const buildSegments = () => {
     if (wordsToHighlight.length === 0) return [{ text, isHighlighted: false }];
 
     const segments: { text: string; isHighlighted: boolean }[] = [];
@@ -208,7 +211,17 @@ export default function Highlighter({
   const segments = buildSegments();
 
   return (
-    <span className={className} style={{ fontSize: `${fontSize}px`, fontWeight: 700, color: textColor, display: 'inline' }}>
+    <span
+      className={className}
+      style={{
+        fontSize: `${fontSize}px`,
+        fontFamily,
+        fontWeight: isBold ? 800 : 400,
+        fontStyle: isItalic ? 'italic' : 'normal',
+        color: textColor,
+        display: 'inline',
+      }}
+    >
       {segments.map((seg, i) => (
         seg.isHighlighted ? (
           <span key={i} style={{ position: 'relative', display: 'inline-block', color: highlightTextColor || textColor }}>

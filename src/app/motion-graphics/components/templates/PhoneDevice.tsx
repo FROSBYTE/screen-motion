@@ -2,7 +2,7 @@
 
 import React, { Suspense, useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, Center, useVideoTexture, useTexture } from '@react-three/drei';
+import { useGLTF, Center, useVideoTexture, useTexture, Environment } from '@react-three/drei';
 import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
 import type { TemplateName } from '@/types';
 import * as THREE from 'three';
@@ -20,12 +20,17 @@ export interface PhoneDeviceProps {
   posY?: number;
   rotX?: number;
   rotY?: number;
+  rotZ?: number;
   className?: string;
 }
 
 // Screen mesh names in each model
 const IPHONE_SCREEN_MESH = 'Object_18';
 const ANDROID_SCREEN_MESH = 'S22_Ultra001_2';
+
+function usePlaceholderTexture() {
+  return useTexture('/Drag_And_Drop.png');
+}
 
 function VideoScreenMaterial({ url }: { url: string }) {
   const texture = useVideoTexture(url, {
@@ -49,13 +54,16 @@ function VideoScreenMaterial({ url }: { url: string }) {
 }
 
 function ImageScreenMaterial({ url }: { url: string }) {
-  const texture = useTexture(url);
+  const safeUrl = url && url.trim() !== '' ? url : '/Drag_And_Drop.png';
+  const texture = useTexture(safeUrl);
 
   React.useLayoutEffect(() => {
     if (texture) {
       texture.colorSpace = THREE.SRGBColorSpace;
-      texture.minFilter = THREE.LinearFilter;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
       texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = true;
+      texture.anisotropy = 16;
       texture.flipY = true;
       texture.needsUpdate = true;
     }
@@ -68,9 +76,23 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
   const { scene } = useGLTF('/models/iphone16.gltf') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const initialColors = useRef<Record<string, THREE.Color>>({});
-  const appliedColor = useRef('');
   const uvFixed = useRef(false);
   const [screenMeshGeometry, setScreenMeshGeometry] = React.useState<THREE.BufferGeometry | null>(null);
+
+  // Store initial colors on first pass across all cloned materials
+  useEffect(() => {
+    if (Object.keys(initialColors.current).length === 0) {
+      cloned.traverse((child: any) => {
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((mat: any) => {
+          if (mat && mat.color && !initialColors.current[mat.uuid]) {
+            initialColors.current[mat.uuid] = mat.color.clone();
+          }
+        });
+      });
+    }
+  }, [cloned]);
 
   // Fix UV coordinates on the screen mesh so the image/video maps correctly
   useEffect(() => {
@@ -106,7 +128,7 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
     uvFixed.current = true;
   }, [cloned]);
 
-  // Apply device color to body materials (not screen)
+  // Apply device color to body materials matching /editor exactly
   useEffect(() => {
     cloned.traverse((child: any) => {
       if (!child.isMesh) return;
@@ -118,11 +140,19 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
         if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'Object_18') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
+        const initial = initialColors.current[mat.uuid];
         const name = (mat.name || '').toLowerCase();
         const isNotchOrLens =
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || name.includes('notch') ||
-          name.includes('island') || name.includes('hole') || name.includes('camera') ||
-          name.includes('lens') || name.includes('sensor') || name.includes('speaker') ||
+          (initial && initial.r < 0.12 && initial.g < 0.12 && initial.b < 0.12) ||
+          mat.name === 'Lens_Glass' ||
+          mat.name === 'Flash' ||
+          name.includes('notch') ||
+          name.includes('island') ||
+          name.includes('hole') ||
+          name.includes('camera') ||
+          name.includes('lens') ||
+          name.includes('sensor') ||
+          name.includes('speaker') ||
           name.includes('bezel');
 
         if (isNotchOrLens) {
@@ -137,22 +167,33 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
     });
   }, [deviceColor, cloned]);
 
+  useEffect(() => {
+    return () => {
+      cloned.traverse((child: any) => {
+        if (child.isMesh) {
+          child.geometry?.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m: any) => m?.dispose());
+          } else {
+            child.material?.dispose();
+          }
+        }
+      });
+    };
+  }, [cloned]);
+
   return (
     <group>
       <primitive object={cloned} />
       {screenMeshGeometry && (
         <mesh geometry={screenMeshGeometry}>
           {screenVideo ? (
-            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+            <Suspense fallback={<ImageScreenMaterial url="/Drag_And_Drop.png" />}>
               <VideoScreenMaterial url={screenVideo} />
             </Suspense>
-          ) : screenImage ? (
-            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
-              <ImageScreenMaterial url={screenImage} />
-            </Suspense>
           ) : (
-            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
-              <ImageScreenMaterial url="/Drag_And_Drop.png" />
+            <Suspense fallback={<ImageScreenMaterial url="/Drag_And_Drop.png" />}>
+              <ImageScreenMaterial url={screenImage || '/Drag_And_Drop.png'} />
             </Suspense>
           )}
         </mesh>
@@ -164,8 +205,6 @@ function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: s
 function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
   const { scene } = useGLTF('/models/S22Ultra.glb') as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
-  const initialColors = useRef<Record<string, THREE.Color>>({});
-  const appliedColor = useRef('');
   const uvFixed = useRef(false);
   const [screenMeshGeometry, setScreenMeshGeometry] = React.useState<THREE.BufferGeometry | null>(null);
 
@@ -214,45 +253,39 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
         if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'S22_Ultra001_2') return;
         if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
 
-        const isBodyPart =
+        const isBodyOrBack =
           mat.name === 'Rearcase' ||
           mat.name === 'Back_Cover_Glass' ||
           mat.name === 'BackCamDeco' ||
-          mat.name === 'Cam_Body' ||
-          mat.name === 'Rearcase_hole' ||
-          mat.name === 'BackCover_Glass_hole' ||
-          child.name === 'S22_Ultra001' ||
-          child.name === 'S22_Ultra001_16' ||
-          child.name === 'S22_Ultra001_17' ||
-          child.name === 'S22_Ultra001_10';
+          mat.name === 'Cam_Body';
 
-        if (isBodyPart) {
+        if (isBodyOrBack) {
           mat.color.set(deviceColor);
           if (mat.map) mat.map = null;
-          mat.needsUpdate = true;
-          return;
-        }
-
-        const isHardware =
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' ||
-          mat.name === 'Black_hole' || mat.name === 'Sensor' || mat.name === 'Bezel' ||
-          mat.name === 'Cam_Bezel' || mat.name === 'Cam_Glass' || mat.name === 'Flash_Glass' ||
-          mat.name === 'Usb_1' || mat.name === 'Usb_2' || mat.name === 'Antenna_Plastic' ||
-          mat.name === 'Speaker/Mic';
-
-        if (isHardware) {
+        } else {
+          // Camera lens, sensors, USB, flash, bezel are always black #000000
           mat.color.set('#000000');
           if (mat.map) mat.map = null;
-          mat.needsUpdate = true;
-          return;
         }
-
-        mat.color.set(deviceColor);
-        if (mat.map) mat.map = null;
         mat.needsUpdate = true;
       });
     });
   }, [deviceColor, cloned]);
+
+  useEffect(() => {
+    return () => {
+      cloned.traverse((child: any) => {
+        if (child.isMesh) {
+          child.geometry?.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m: any) => m?.dispose());
+          } else {
+            child.material?.dispose();
+          }
+        }
+      });
+    };
+  }, [cloned]);
 
   return (
     <group position={[0, -7.3704, 0]} scale={88.58}>
@@ -260,16 +293,12 @@ function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { devi
       {screenMeshGeometry && (
         <mesh geometry={screenMeshGeometry}>
           {screenVideo ? (
-            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
+            <Suspense fallback={<ImageScreenMaterial url="/Drag_And_Drop.png" />}>
               <VideoScreenMaterial url={screenVideo} />
             </Suspense>
-          ) : screenImage ? (
-            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
-              <ImageScreenMaterial url={screenImage} />
-            </Suspense>
           ) : (
-            <Suspense fallback={<meshBasicMaterial color="#0f0f1a" toneMapped={false} />}>
-              <ImageScreenMaterial url="/Drag_And_Drop.png" />
+            <Suspense fallback={<ImageScreenMaterial url="/Drag_And_Drop.png" />}>
+              <ImageScreenMaterial url={screenImage || '/Drag_And_Drop.png'} />
             </Suspense>
           )}
         </mesh>
@@ -290,6 +319,7 @@ function AnimatedDevice({
   posY = 0,
   rotX = 0,
   rotY = 0,
+  rotZ = 0,
 }: {
   deviceType: string;
   deviceColor: string;
@@ -302,6 +332,7 @@ function AnimatedDevice({
   posY: number;
   rotX: number;
   rotY: number;
+  rotZ: number;
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const animRef = useRef<TemplateAnimation | null>(null);
@@ -346,7 +377,7 @@ function AnimatedDevice({
       <group 
         scale={[0.15 * deviceSize, 0.15 * deviceSize, 0.15 * deviceSize]}
         position={[posX, posY, 0]}
-        rotation={[(rotX * Math.PI) / 180, (rotY * Math.PI) / 180, 0]}
+        rotation={[(rotX * Math.PI) / 180, (rotY * Math.PI) / 180, (rotZ * Math.PI) / 180]}
       >
         {deviceType === 'iphone' ? (
           <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
@@ -371,6 +402,7 @@ export default function PhoneDevice({
   posY = 0,
   rotX = 0,
   rotY = 0,
+  rotZ = 0,
   className = '',
 }: PhoneDeviceProps) {
   const isPortrait = true;
@@ -393,15 +425,86 @@ export default function PhoneDevice({
   return (
     <div className={className} style={containerStyle}>
       <Canvas
-        camera={{ position: [0, 0, 4], fov: 45 }}
-        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+        camera={{ position: [0, 0, 4], fov: 45, near: 0.1, far: 100 }}
+        shadows="percentage"
+        gl={{
+          antialias: true,
+          alpha: true,
+          preserveDrawingBuffer: true,
+          powerPreference: 'high-performance',
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.15,
+        }}
         style={{ background: 'transparent' }}
-        dpr={[1, 2]}
+        className="motion-device-canvas"
+        dpr={[2, 3]}
       >
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
-        <directionalLight position={[-3, 3, -2]} intensity={0.4} />
+        {/* Ambient Base Light */}
+        <ambientLight intensity={0.35} />
+
+        {/* Key Light: Main directional source with shadow mapping */}
+        <directionalLight
+          color="#fffef8"
+          intensity={2.2}
+          position={[6, 8, 6]}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-bias={-0.0001}
+        />
+
+        {/* Fill Light: Soft cool-tinted fill from opposite angle */}
+        <directionalLight
+          color="#818cf8"
+          intensity={0.65}
+          position={[-6, 3, 5]}
+        />
+
+        {/* Cinematic Rim / Backlight 1: Warm Yellow Edge Highlight */}
+        <pointLight
+          color="#facc15"
+          intensity={2.2}
+          distance={25}
+          position={[-5, 5, -4]}
+        />
+
+        {/* Cinematic Rim / Backlight 2: Warm Specular Highlight */}
+        <pointLight
+          color="#fb7185"
+          intensity={1.8}
+          distance={25}
+          position={[5, 6, -4]}
+        />
+
+        {/* Back Direction Light: Illuminates device back when flipped */}
+        <directionalLight
+          color="#ffffff"
+          intensity={2.0}
+          position={[0, 4, -8]}
+        />
+
+        {/* High-Key Studio Overhead Spotlight */}
+        <spotLight
+          color="#ffffff"
+          intensity={2.0}
+          position={[0, 9, 4]}
+          angle={0.65}
+          penumbra={0.75}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+        />
+
+        {/* Under/Bounce Soft Light */}
+        <pointLight
+          color="#a78bfa"
+          intensity={0.45}
+          distance={15}
+          position={[0, -5, 3]}
+        />
+
         <Suspense fallback={null}>
+          <Environment preset="city" environmentIntensity={0.35} />
           <AnimatedDevice
             deviceType={deviceType}
             deviceColor={deviceColor}
@@ -414,6 +517,7 @@ export default function PhoneDevice({
             posY={posY}
             rotX={rotX}
             rotY={rotY}
+            rotZ={rotZ}
           />
         </Suspense>
       </Canvas>

@@ -8,6 +8,10 @@ export interface ShortSlideDownProps {
   /** Interval between phrase completions in milliseconds. */
   interval?: number;
   phrases: string[];
+  speed?: number;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const BUILD_EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -22,6 +26,9 @@ export default function ShortSlideDown({
   phrases,
   className = "",
   interval = 2500,
+  speed = 1,
+  localTime,
+  layerStartTime = 0,
 }: ShortSlideDownProps) {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [wordCount, setWordCount] = useState(1);
@@ -32,7 +39,7 @@ export default function ShortSlideDown({
   const words = currentPhrase.split(" ");
 
   useEffect(() => {
-    if (shouldReduceMotion) return;
+    if (localTime !== undefined || shouldReduceMotion) return;
 
     setWordCount(1);
     setExiting(false);
@@ -66,7 +73,45 @@ export default function ShortSlideDown({
         clearTimeout(t);
       }
     };
-  }, [phraseIndex, phrases.length, interval, shouldReduceMotion, words.length]);
+  }, [phraseIndex, phrases.length, interval, shouldReduceMotion, words.length, localTime]);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const wordDelay = 0.25 / Math.max(0.1, speed);
+    const activeCount = Math.min(words.length, Math.floor(elapsed / wordDelay) + 1);
+    const shown = words.slice(0, activeCount);
+
+    return (
+      <span
+        aria-live="polite"
+        className={`flex flex-col items-center ${className}`}
+        style={{ gap: 12 }}
+      >
+        {shown.map((word, i) => {
+          const wStart = i * wordDelay;
+          const wElapsed = Math.max(0, elapsed - wStart);
+          const wDur = (i === 0 ? 0.36 : 0.45) / Math.max(0.1, speed);
+          const p = Math.min(1, Math.max(0, wElapsed / wDur));
+          const eased = 1 - Math.pow(1 - p, 3);
+          const opacity = eased;
+          const y = (1 - eased) * -28;
+
+          return (
+            <span
+              key={`${phraseIndex}-${i}`}
+              style={{
+                display: "block",
+                opacity,
+                transform: `translateY(${y.toFixed(2)}px)`,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   const visibleWords = shouldReduceMotion ? words : words.slice(0, wordCount);
   const restingAnimate = shouldReduceMotion

@@ -17,6 +17,9 @@ export interface MaskRevealUpProps {
   speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const DURATION_S = 0.76;
@@ -32,6 +35,8 @@ export default function MaskRevealUp({
   stagger = 90,
   speed = 1,
   triggerOnView = false,
+  localTime,
+  layerStartTime = 0,
 }: MaskRevealUpProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
@@ -43,6 +48,46 @@ export default function MaskRevealUp({
   const effectiveSpeed = Math.max(speed, 0.3);
   const effectiveEase = speed < 1 ? SMOOTH_EASE : EASE;
   const effectiveStagger = Math.min(stagger / effectiveSpeed, 300);
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = DURATION_S / effectiveSpeed;
+    const staggerS = effectiveStagger / MS;
+    const baseDelayS = delay / MS;
+
+    return (
+      <span
+        aria-label={label}
+        className={className}
+        ref={ref}
+        style={{ display: "block" }}
+      >
+        {lines.map((line, index) => {
+          const lineStart = baseDelayS + index * staggerS;
+          const lineElapsed = Math.max(0, elapsed - lineStart);
+          const progress = Math.min(1, Math.max(0, lineElapsed / animDur));
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const opacity = eased;
+          const y = (1 - eased) * 30;
+
+          return (
+            <span key={index} style={{ display: "block", overflow: "hidden" }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "block",
+                  opacity,
+                  transform: `translateY(${y.toFixed(2)}px)`,
+                }}
+              >
+                {line === "" ? <br /> : line}
+              </span>
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   return (
     <span
@@ -75,7 +120,7 @@ export default function MaskRevealUp({
                   }
             }
           >
-            {line}
+            {line === "" ? <br /> : line}
           </motion.span>
         </span>
       ))}

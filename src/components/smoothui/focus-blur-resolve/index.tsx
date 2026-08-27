@@ -12,6 +12,9 @@ export interface FocusBlurResolveProps {
   speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const DURATION_S = 0.76;
@@ -31,11 +34,39 @@ export default function FocusBlurResolve({
   delay = 0,
   speed = 1,
   triggerOnView = false,
+  localTime,
+  layerStartTime = 0,
 }: FocusBlurResolveProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = DURATION_S / Math.max(0.1, speed);
+    const baseDelayS = delay / MS;
+    const itemElapsed = Math.max(0, elapsed - baseDelayS);
+    const progress = Math.min(1, Math.max(0, itemElapsed / animDur));
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const opacity = eased;
+    const y = (1 - eased) * 14;
+
+    return (
+      <span aria-label={children} className={className} ref={ref}>
+        <span
+          aria-hidden="true"
+          style={{
+            display: "inline-block",
+            opacity,
+            transform: `translateY(${y.toFixed(2)}px)`,
+          }}
+        >
+          {children}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <span aria-label={children} className={className} ref={ref}>

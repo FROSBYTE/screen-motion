@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { motion } from 'motion/react';
+import { Plus } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useMGState, MGTextLayer, MGComponentLayer, MGLayer, MGScene, SceneTransition, getSceneDuration, interpolateProperty } from '../store';
 import BottomUpLetters from '@/components/smoothui/bottom-up-letters';
@@ -33,6 +34,7 @@ import Highlighter from './templates/Highlighter';
 import AnimatedBeam from './templates/AnimatedBeam';
 import OrbitingCircles from './templates/OrbitingCircles';
 import TextReveal from './templates/TextReveal';
+
 import SkeletonShimmer from './templates/SkeletonShimmer';
 import Text3DFlip from './templates/Text3DFlip';
 import MediaUploadComponent from './templates/MediaUpload';
@@ -42,381 +44,15 @@ import PhoneDeviceComponent from './templates/PhoneDevice';
 import MaskedHeadingComponent from './templates/MaskedHeading';
 import { applyVideoFileToLayer, applyImageFileToLayer } from './PropertiesPanel';
 import { useAlignmentGuides } from '@/context/AlignmentContext';
-import AlignmentGuidesOverlay from '@/components/AlignmentGuidesOverlay';
+import AlignmentGuidesOverlay from '@/components/3d-editor/overlays/AlignmentGuidesOverlay';
 import type { AlignmentGuide } from '@/types';
-import { useGLTF, Center } from '@react-three/drei';
-import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
-import type { TemplateName } from '@/types';
-import * as THREE from 'three';
+import DevicePoolCanvas, { ActiveDeviceDescriptor } from './3d/DevicePoolCanvas';
 
-// iPhone screen mesh name
-const IPHONE_SCREEN_MESH = 'Object_18';
-const ANDROID_SCREEN_MESH = 'S22_Ultra001_2';
 
-function IPhoneModel({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
-  const { scene, materials } = useGLTF('/models/iphone16.gltf') as any;
-  const cloned = useMemo(() => scene.clone(true), [scene]);
-  const initialColors = useRef<Record<string, THREE.Color>>({});
-  const appliedColor = useRef('');
-  const uvFixed = useRef(false);
 
-  useEffect(() => {
-    if (uvFixed.current) return;
-    const screenMesh = cloned.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh | null;
-    if (!screenMesh) return;
-    const geometry = screenMesh.geometry;
-    geometry.computeBoundingBox();
-    const box = geometry.boundingBox;
-    if (!box) return;
-
-    const posAttr = geometry.attributes.position;
-    const uvAttr = geometry.attributes.uv;
-    if (!posAttr || !uvAttr) return;
-
-    const minX = box.min.x;
-    const maxX = box.max.x;
-    const minY = box.min.y;
-    const maxY = box.max.y;
-    const width = maxX - minX;
-    const height = maxY - minY;
-
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i);
-      const y = posAttr.getY(i);
-      uvAttr.setXY(i, (x - minX) / width, (y - minY) / height);
-    }
-    uvAttr.needsUpdate = true;
-    uvFixed.current = true;
-  }, [cloned]);
-
-  useEffect(() => {
-    cloned.traverse((child: any) => {
-      if (!child.isMesh) return;
-      if (child.name === IPHONE_SCREEN_MESH) return;
-
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat: any) => {
-        if (!mat || !mat.color) return;
-        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'Object_18') return;
-        if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
-
-        const name = (mat.name || '').toLowerCase();
-        const isNotchOrLens =
-          mat.name === 'Lens_Glass' || mat.name === 'Flash' || name.includes('notch') ||
-          name.includes('island') || name.includes('hole') || name.includes('camera') ||
-          name.includes('lens') || name.includes('sensor') || name.includes('speaker') ||
-          name.includes('bezel');
-
-        if (isNotchOrLens) {
-          mat.color.set('#000000');
-          if (mat.map) mat.map = null;
-        } else {
-          mat.color.set(deviceColor);
-          if (mat.map) mat.map = null;
-        }
-        mat.needsUpdate = true;
-      });
-    });
-  }, [deviceColor, cloned]);
-
-  useEffect(() => {
-    const screenMesh = cloned.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh | null;
-    if (!screenMesh) return;
-
-    if (screenVideo) {
-      const video = document.createElement('video');
-      video.src = screenVideo;
-      video.crossOrigin = 'anonymous';
-      video.loop = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.play().catch(() => {});
-      const videoTexture = new THREE.VideoTexture(video);
-      videoTexture.colorSpace = THREE.SRGBColorSpace;
-      videoTexture.minFilter = THREE.LinearFilter;
-      videoTexture.magFilter = THREE.LinearFilter;
-      videoTexture.flipY = true;
-      screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
-    } else {
-      const imgUrl = screenImage || '/Drag_And_Drop.png';
-      const loader = new THREE.TextureLoader();
-      loader.load(imgUrl, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.flipY = true;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
-      });
-    }
-  }, [screenImage, screenVideo, cloned]);
-
-  return <primitive object={cloned} />;
-}
-
-function AndroidModelComponent({ deviceColor, screenImage, screenVideo }: { deviceColor: string; screenImage?: string; screenVideo?: string }) {
-  const { scene } = useGLTF('/models/S22Ultra.glb') as any;
-  const cloned = useMemo(() => scene.clone(true), [scene]);
-
-  const uvFixed = useRef(false);
-
-  useEffect(() => {
-    if (uvFixed.current) return;
-    const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
-    if (!screenMesh) return;
-
-    const geo = screenMesh.geometry;
-    geo.computeBoundingBox();
-    const box = geo.boundingBox;
-    if (!box) return;
-
-    const width = box.max.x - box.min.x;
-    const height = box.max.y - box.min.y;
-    const minX = box.min.x;
-    const minY = box.min.y;
-
-    const posAttr = geo.attributes.position;
-    const uvAttr = geo.attributes.uv;
-
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i);
-      const y = posAttr.getY(i);
-      uvAttr.setXY(i, (x - minX) / width, (y - minY) / height);
-    }
-    uvAttr.needsUpdate = true;
-    uvFixed.current = true;
-  }, [cloned]);
-
-  useEffect(() => {
-    cloned.traverse((child: any) => {
-      if (!child.isMesh) return;
-      if (child.name === ANDROID_SCREEN_MESH) return;
-
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat: any) => {
-        if (!mat || !mat.color) return;
-        if (mat.name === 'Display_ActiveArea' || mat.name === 'Screen' || mat.name === 'S22_Ultra001_2') return;
-        if (mat.emissive && (mat.emissive.r > 0.2 || mat.emissive.g > 0.2)) return;
-
-        const isBodyPart =
-          mat.name === 'Rearcase' ||
-          mat.name === 'Back_Cover_Glass' ||
-          mat.name === 'BackCamDeco' ||
-          mat.name === 'Cam_Body' ||
-          mat.name === 'Rearcase_hole' ||
-          mat.name === 'BackCover_Glass_hole' ||
-          child.name === 'S22_Ultra001' ||
-          child.name === 'S22_Ultra001_16' ||
-          child.name === 'S22_Ultra001_17' ||
-          child.name === 'S22_Ultra001_10';
-
-        if (isBodyPart) {
-          mat.color.set(deviceColor);
-          if (mat.map) mat.map = null;
-          mat.needsUpdate = true;
-          return;
-        }
-
-        const isHardware =
-          mat.name === 'Zoom_Cam' || mat.name === 'Flash' || mat.name === 'Cam_lens' ||
-          mat.name === 'Black_hole' || mat.name === 'Sensor' || mat.name === 'Bezel' ||
-          mat.name === 'Cam_Bezel' || mat.name === 'Cam_Glass' || mat.name === 'Flash_Glass' ||
-          mat.name === 'Usb_1' || mat.name === 'Usb_2' || mat.name === 'Antenna_Plastic' ||
-          mat.name === 'Speaker/Mic';
-
-        if (isHardware) {
-          mat.color.set('#000000');
-          if (mat.map) mat.map = null;
-          mat.needsUpdate = true;
-          return;
-        }
-
-        mat.color.set(deviceColor);
-        if (mat.map) mat.map = null;
-        mat.needsUpdate = true;
-      });
-    });
-  }, [deviceColor, cloned]);
-
-  useEffect(() => {
-    const screenMesh = cloned.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh | null;
-    if (!screenMesh) return;
-
-    if (screenVideo) {
-      const video = document.createElement('video');
-      video.src = screenVideo;
-      video.crossOrigin = 'anonymous';
-      video.loop = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.play().catch(() => {});
-      const videoTexture = new THREE.VideoTexture(video);
-      videoTexture.colorSpace = THREE.SRGBColorSpace;
-      videoTexture.minFilter = THREE.LinearFilter;
-      videoTexture.magFilter = THREE.LinearFilter;
-      videoTexture.flipY = true;
-      screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
-    } else {
-      const imgUrl = screenImage || '/Drag_And_Drop.png';
-      const loader = new THREE.TextureLoader();
-      loader.load(imgUrl, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.flipY = true;
-        screenMesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
-      });
-    }
-  }, [screenImage, screenVideo, cloned]);
-
-  return (
-    <group position={[0, -7.3704, 0]} scale={88.58}>
-      <primitive object={cloned} />
-    </group>
-  );
-}
-
-function AnimatedDeviceInline({
-  deviceType,
-  deviceColor,
-  screenImage,
-  screenVideo,
-  animationTemplate,
-  speed = 1,
-  deviceSize = 1,
-  posX = 0,
-  posY = 0,
-  rotX = 0,
-  rotY = 0,
-  localTime = 0,
-}: {
-  deviceType: string;
-  deviceColor: string;
-  screenImage?: string;
-  screenVideo?: string;
-  animationTemplate: string;
-  speed: number;
-  deviceSize: number;
-  posX: number;
-  posY: number;
-  rotX: number;
-  rotY: number;
-  localTime?: number;
-}) {
-  const groupRef = useRef<THREE.Group>(null!);
-  const innerGroupRef = useRef<THREE.Group>(null!);
-  const animRef = useRef<TemplateAnimation | null>(null);
-  const { camera } = useThree();
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    if (!groupRef.current || !camera) return;
-
-    if (groupRef.current) {
-      groupRef.current.visible = false;
-    }
-
-    // Kill previous animation
-    if (animRef.current) {
-      animRef.current.timeline.kill();
-    }
-
-    // Reset transforms - groupRef is the animation target
-    groupRef.current.position.set(0, 0, 0);
-    groupRef.current.rotation.set(0, 0, 0);
-    groupRef.current.scale.setScalar(1);
-
-    // Get screen mesh from inner group
-    const screenMesh = groupRef.current.getObjectByName('Object_18') as THREE.Mesh 
-      || groupRef.current.getObjectByName('Object_9') as THREE.Mesh 
-      || groupRef.current.getObjectByName('S22_Ultra001_2') as THREE.Mesh 
-      || groupRef.current.getObjectByName('Display_ActiveArea') as THREE.Mesh 
-      || null;
-
-    const target: AnimationTarget = {
-      camera: camera as THREE.PerspectiveCamera,
-      device: groupRef.current,
-      screenMesh: screenMesh,
-    };
-
-    try {
-      const anim = createAnimation(animationTemplate as TemplateName, 'portrait', target, speed);
-      animRef.current = anim;
-      const dur = anim.duration || 3;
-      const progress = Math.max(0, Math.min(localTime / dur, 1));
-      anim.timeline.progress(progress);
-      anim.timeline.pause();
-    } catch {
-      animRef.current = null;
-    }
-
-    if (groupRef.current) {
-      groupRef.current.visible = true;
-    }
-    setIsReady(true);
-
-    return () => {
-      if (animRef.current) animRef.current.timeline.kill();
-    };
-  }, [animationTemplate, camera, speed]);
-
-  useEffect(() => {
-    if (animRef.current) {
-      animRef.current.timeline.timeScale(speed);
-    }
-  }, [speed]);
-
-  // Sync GSAP timeline progress with scene localTime for frame-accurate playback & export across all templates
-  useEffect(() => {
-    if (animRef.current && animRef.current.timeline) {
-      const dur = animRef.current.duration || 3;
-      const progress = Math.max(0, Math.min(localTime / dur, 1));
-      animRef.current.timeline.progress(progress);
-      animRef.current.timeline.pause();
-    }
-  }, [localTime]);
-
-  function CameraOffsetController({ posX = 0, posY = 0 }: { posX: number; posY: number }) {
-    const { camera, size } = useThree();
-
-    useFrame(() => {
-      const cam = camera as THREE.PerspectiveCamera;
-      if (posX !== 0 || posY !== 0) {
-        const pxX = -posX * (size.width / 5);
-        const pxY = posY * (size.height / 5);
-        cam.setViewOffset(size.width, size.height, pxX, pxY, size.width, size.height);
-      } else {
-        if (cam.view) cam.clearViewOffset();
-      }
-    });
-
-    return null;
-  }
-
-  const baseScale = 0.15 * (deviceSize || 1);
-
-  return (
-    <group ref={groupRef} visible={isReady}>
-      <CameraOffsetController posX={posX} posY={posY} />
-      <group ref={innerGroupRef} position={[0, 0, 0]}>
-        <group 
-          scale={[baseScale, baseScale, baseScale]}
-          rotation-x={(rotX * Math.PI) / 180}
-          rotation-y={(rotY * Math.PI) / 180}
-        >
-          {deviceType === 'iphone' ? (
-            <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
-          ) : (
-            <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
-          )}
-        </group>
-      </group>
-    </group>
-  );
-}
-
-function ShortSlideDownWrapper({ children, speed = 1 }: { children?: string; speed?: number }) {
+function ShortSlideDownWrapper({ children, speed = 1, localTime, layerStartTime, layerDuration }: { children?: string; speed?: number; localTime?: number; layerStartTime?: number; layerDuration?: number }) {
   const text = children || '';
-  return <ShortSlideDown phrases={[text]} interval={2500 / speed} />;
+  return <ShortSlideDown phrases={[text]} speed={speed} interval={2500 / speed} localTime={localTime} layerStartTime={layerStartTime} layerDuration={layerDuration} />;
 }
 
 type EnterAnimType = 'none' | 'fade-in' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'scale-up' | 'blur-in';
@@ -455,12 +91,12 @@ const EXIT_TARGET: Record<ExitAnimType, any> = {
   'blur-out': { opacity: 0, filter: 'blur(12px)' },
 };
 
-function easeCubicOut(t: number) {
-  return 1 - Math.pow(1 - t, 3);
+function easeEnterOut(t: number) {
+  return 1 - Math.pow(1 - t, 2.5);
 }
 
-function easeCubicInOut(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function easeExitOut(t: number) {
+  return Math.pow(t, 2.0);
 }
 
 function computeEnterExitStyle(
@@ -488,7 +124,7 @@ function computeEnterExitStyle(
 
   // Enter Phase
   if (enterAnimation !== 'none' && relTime < enterDuration && enterDuration > 0) {
-    const t = easeCubicOut(Math.max(0, Math.min(1, relTime / enterDuration)));
+    const t = easeEnterOut(Math.max(0, Math.min(1, relTime / enterDuration)));
     if (enterAnimation === 'fade-in') {
       opacity = t;
     } else if (enterAnimation === 'slide-up') {
@@ -514,7 +150,7 @@ function computeEnterExitStyle(
 
   // Exit Phase
   if (exitAnimation !== 'none' && timeUntilEnd <= exitDuration && exitDuration > 0) {
-    const t = easeCubicInOut(Math.max(0, Math.min(1, (exitDuration - timeUntilEnd) / exitDuration)));
+    const t = easeExitOut(Math.max(0, Math.min(1, (exitDuration - timeUntilEnd) / exitDuration)));
     if (exitAnimation === 'fade-out') {
       opacity = Math.min(opacity, 1 - t);
     } else if (exitAnimation === 'slide-up') {
@@ -635,7 +271,7 @@ const animationMap: Record<string, React.FC<any>> = {
   'scale-down-fade': ScaleDownFade,
   'per-character-rise': PerCharacterRise,
   'per-word-crossfade': PerWordCrossfade,
-  'text-reveal': (props: any) => <TextReveal text={props.children} speed={props.speed || 1} color={props.color || '#ffffff'} revealColor="#a855f7" fontSize={props.fontSize} fontFamily={props.fontFamily} />,
+  'text-reveal': (props: any) => <TextReveal text={props.children} speed={props.speed || 1} color={props.color || '#ffffff'} revealColor={props.revealColor || '#FF9137'} fontSize={props.fontSize} fontFamily={props.fontFamily} />,
   'dia-text-reveal': (props: any) => <DiaTextRevealUI text={props.children} duration={1.5 / (props.speed || 1)} repeat={true} />,
 };
 
@@ -851,10 +487,46 @@ function SelectionCornerHandles({
   );
 }
 
+function calculateCornerDragDelta(
+  corner: 'tl' | 'tr' | 'bl' | 'br',
+  startMouseX: number,
+  startMouseY: number,
+  currentMouseX: number,
+  currentMouseY: number
+): number {
+  let dx = currentMouseX - startMouseX;
+  let dy = currentMouseY - startMouseY;
+  if (corner === 'tl') {
+    dx = -dx;
+    dy = -dy;
+  } else if (corner === 'tr') {
+    dy = -dy;
+  } else if (corner === 'bl') {
+    dx = -dx;
+  }
+  return (dx + dy) * 0.7071;
+}
+
 // Module-level drag state — survives React re-renders/re-mounts
 const _canvasDragState = { isDragging: false, draggedLayerId: null as string | null };
 
-function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGTextLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
+function TextLayerRenderer({
+  layer,
+  zIndex,
+  isVisible,
+  isExiting,
+  sceneId,
+  sceneLayers,
+  localTime,
+}: {
+  layer: MGTextLayer;
+  zIndex?: number;
+  isVisible: boolean;
+  isExiting: boolean;
+  sceneId: string;
+  sceneLayers: MGLayer[];
+  localTime: number;
+}) {
   const { state, dispatch, updateLayer, seekTo, play, getSceneStartTime } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
@@ -998,6 +670,7 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
         const kfOpacity = hasKf ? interpolateProperty(layer.keyframes, 'opacity', relTime, 1) : 1;
         return {
           position: 'absolute' as const,
+          zIndex: isSelected ? 1000 : (zIndex ?? 10),
           left: `${kfPosX}%`,
           top: `${kfPosY}%`,
           transform: `translate(-50%, -50%) scale(${kfScale}) rotate(${kfRotation}deg)`,
@@ -1012,9 +685,10 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
           fontWeight: layer.isBold ? 800 : 400,
           fontStyle: layer.isItalic ? 'italic' : 'normal',
           cursor: isDragging ? 'grabbing' : 'grab',
-          border: isSelected ? '2px dashed #a855f7' : '2px solid transparent',
-          outline: isSelected ? '1px solid #000000' : 'none',
-          boxShadow: isSelected ? '0 0 0 1px #000000' : 'none',
+          border: isSelected ? '2px solid #000000' : '2px solid transparent',
+          outline: isSelected ? '2px dashed #70FFD2' : 'none',
+          outlineOffset: isSelected ? '-2px' : '0',
+          boxShadow: 'none',
           borderRadius: '4px',
           padding: '8px 16px',
           transition: 'border-color 0.15s ease',
@@ -1039,14 +713,20 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
         {layer.animationType === 'none' || !AnimComp ? (
           <span>{layer.text}</span>
         ) : (
-          <AnimComp key={triggerKey} speed={effectiveSpeed}>
+          <AnimComp
+            key={triggerKey}
+            speed={effectiveSpeed}
+            localTime={localTime}
+            layerStartTime={layer.startTime}
+            layerDuration={layer.duration}
+          >
             {layer.text}
           </AnimComp>
         )}
       </EnterAnimationWrapper>
       {isSelected && (
         <SelectionCornerHandles
-          onScaleStart={(e, _corner) => {
+          onScaleStart={(e, corner) => {
             const handleEl = e.currentTarget as HTMLElement;
             if (handleEl && 'setPointerCapture' in handleEl) {
               try { handleEl.setPointerCapture(e.pointerId); } catch {}
@@ -1056,17 +736,9 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
             const startMouseY = e.clientY;
             const initialFontSize = layer.fontSize || 32;
 
-            const parentEl = containerRef.current;
-            if (!parentEl) return;
-            const rect = parentEl.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const initialDist = Math.hypot(startMouseX - centerX, startMouseY - centerY);
-
             const handleMove = (moveEvent: PointerEvent) => {
-              const currentDist = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
-              const ratio = currentDist / Math.max(10, initialDist);
-              const newFontSize = Math.round(Math.max(12, Math.min(200, initialFontSize * ratio)));
+              const effectiveDelta = calculateCornerDragDelta(corner, startMouseX, startMouseY, moveEvent.clientX, moveEvent.clientY);
+              const newFontSize = Math.round(Math.max(1, Math.min(300, initialFontSize + effectiveDelta * 0.5)));
               updateLayer(layer.id, { fontSize: newFontSize } as any);
             };
 
@@ -1087,7 +759,23 @@ function TextLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, 
   );
 }
 
-function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLayers, localTime }: { layer: MGComponentLayer; isVisible: boolean; isExiting: boolean; sceneId: string; sceneLayers: MGLayer[]; localTime: number }) {
+function ComponentLayerRenderer({
+  layer,
+  zIndex,
+  isVisible,
+  isExiting,
+  sceneId,
+  sceneLayers,
+  localTime,
+}: {
+  layer: MGComponentLayer;
+  zIndex?: number;
+  isVisible: boolean;
+  isExiting: boolean;
+  sceneId: string;
+  sceneLayers: MGLayer[];
+  localTime: number;
+}) {
   const { state, dispatch, updateLayer, seekTo, play, getSceneStartTime } = useMGState();
   const { setActiveGuides } = useAlignmentGuides();
   const [triggerKey, setTriggerKey] = useState(1);
@@ -1126,31 +814,52 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
   const renderComponent = () => {
     switch (layer.templateId) {
       case 'count-up':
-        return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 48} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <CountUp key={triggerKey} to={layer.props.to ?? 100} from={layer.props.from ?? 0} duration={layer.props.duration ?? 2} speed={speed} separator={layer.props.separator ?? ','} color={layer.props.color ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} fontSize={layer.props.fontSize ?? 64} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'animated-list':
-        return <AnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize} borderRadius={layer.props.borderRadius} isBold={layer.props.isBold} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <AnimatedList key={triggerKey} items={layer.props.items} speed={speed} itemBg={layer.props.itemBg} textColor={layer.props.textColor} fontSize={layer.props.fontSize ?? 16} borderRadius={layer.props.borderRadius ?? 10} isBold={layer.props.isBold ?? false} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'logo-loop':
-        return <LogoLoop key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <LogoLoop key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} direction={layer.props.direction} gap={layer.props.gap} logoHeight={layer.props.logoHeight ?? 38} textColor={layer.props.textColor ?? '#ffffff'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'ai-loader':
         return <AILoader key={`${triggerKey}-${layer.props.speed ?? 1}`} variant={layer.props.variant ?? 'dots'} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'bubble-menu':
-        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 90} bubbleSize={layer.props.bubbleSize ?? 44} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <BubbleMenu key={triggerKey} items={layer.props.items} speed={speed} menuBg="transparent" radius={layer.props.radius ?? 130} bubbleSize={layer.props.bubbleSize ?? 58} centerImageUrl={layer.props.centerImageUrl} centerBg={layer.props.centerBg} centerSize={layer.props.centerSize} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'unlumen-animated-list':
-        return <UnlumenAnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} count={layer.props.count} speed={speed * (layer.props.speed ?? 1)} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <UnlumenAnimatedList key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} count={layer.props.count} speed={speed * (layer.props.speed ?? 1)} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'word-rotate':
-        return <WordRotate key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <WordRotate key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} speed={speed * (layer.props.speed ?? 1)} color={layer.props.color ?? '#ffffff'} fontSize={layer.props.fontSize ?? 48} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'highlighter':
-        return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 32} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <Highlighter key={triggerKey} text={layer.props.text ?? 'My name is World'} highlightWords={layer.props.highlightWords ?? 'World'} action={layer.props.action ?? 'highlight'} color={layer.props.color ?? '#ffd1dc'} textColor={layer.props.textColor ?? '#ffffff'} highlightTextColor={layer.props.highlightTextColor ?? ''} strokeWidth={layer.props.strokeWidth ?? 2} animationDuration={layer.props.animationDuration ?? 600} speed={speed} fontSize={layer.props.fontSize ?? 44} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'animated-beam':
-        return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 400} height={layer.props.height ?? 200} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <AnimatedBeam key={triggerKey} variant={layer.props.variant ?? 'unidirectional'} nodes={layer.props.nodes} centerNode={layer.props.centerNode} curvature={layer.props.curvature ?? 50} duration={layer.props.duration ?? 5} pathColor={layer.props.pathColor ?? 'gray'} pathWidth={layer.props.pathWidth ?? 2} pathOpacity={layer.props.pathOpacity ?? 0.2} gradientStartColor={layer.props.gradientStartColor ?? '#ffaa40'} gradientStopColor={layer.props.gradientStopColor ?? '#9c40ff'} speed={speed} width={layer.props.width ?? 600} height={layer.props.height ?? 300} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'orbiting-circles':
-        return <OrbitingCircles key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} radius={layer.props.radius ?? 80} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 36} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <OrbitingCircles key={`${triggerKey}-${layer.props.speed ?? 1}`} items={layer.props.items} radius={layer.props.radius ?? 120} speed={speed * (layer.props.speed ?? 1)} iconSize={layer.props.iconSize ?? 48} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'text-reveal':
-        return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 32} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <TextReveal key={triggerKey} text={layer.props.text ?? 'Reveal This Text'} speed={speed} color={layer.props.color ?? '#ffffff'} revealColor={layer.props.revealColor ?? '#FF9137'} fontSize={layer.props.fontSize ?? 48} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+      case 'dia-text-reveal': {
+        const diaText = layer.props.text ?? 'Design Systems';
+        const parsedDiaText = Array.isArray(diaText) ? diaText : (typeof diaText === 'string' && diaText.includes('\n') ? diaText.split('\n').map(s => s.trim()).filter(Boolean) : diaText);
+        const diaColors = layer.props.colors && layer.props.colors.length > 0 ? layer.props.colors : ['#c679c4', '#fa3d1d', '#ffb005', '#e1e1fe', '#0358f7'];
+        return (
+          <div key={triggerKey} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: `${layer.props.fontSize ?? 48}px`, fontFamily: layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif', fontWeight: (layer.props.isBold ?? true) ? 800 : 400, fontStyle: (layer.props.isItalic ?? false) ? 'italic' : 'normal' }}>
+             <DiaTextRevealUI
+               text={parsedDiaText}
+               colors={diaColors}
+               textColor={layer.props.textColor ?? '#ffffff'}
+               duration={1.5 / (speed * (layer.props.speed ?? 1))}
+               repeat={layer.props.repeat ?? true}
+               repeatDelay={layer.props.repeatDelay ?? 0.5}
+               startOnView={false}
+               localTime={localTime}
+               layerStartTime={layer.startTime}
+               layerDuration={layer.duration}
+             />
+          </div>
+        );
+      }
       case 'skeleton-shimmer':
         return <SkeletonShimmer key={`${triggerKey}-${layer.props.color ?? '#ffffff'}-${layer.props.speed ?? 1}`} lines={layer.props.lines ?? 3} showAvatar={layer.props.showAvatar ?? true} showImage={layer.props.showImage ?? false} color={layer.props.color ?? '#ffffff'} baseColor={layer.props.baseColor} shimmerColor={layer.props.shimmerColor} speed={speed * (layer.props.speed ?? 1)} borderRadius={layer.props.borderRadius ?? 6} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'text-3d-flip':
-        return <Text3DFlip key={`${triggerKey}-${layer.props.rotateDirection ?? 'top'}-${layer.props.staggerFrom ?? 'first'}-${layer.props.isLoop ?? true}-${layer.props.speed ?? 1}`} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 36} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed * (layer.props.speed ?? 1)} autoPlay={true} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
+        return <Text3DFlip key={`${triggerKey}-${layer.props.rotateDirection ?? 'top'}-${layer.props.staggerFrom ?? 'first'}-${layer.props.isLoop ?? true}-${layer.props.speed ?? 1}`} text={layer.props.text ?? 'Stay hungry, stay foolish'} flippedText={layer.props.flippedText ?? ''} color={layer.props.color ?? '#ffffff'} flipColor={layer.props.flipColor ?? '#a855f7'} fontSize={layer.props.fontSize ?? 52} fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'} isBold={layer.props.isBold ?? true} isItalic={layer.props.isItalic ?? false} staggerFrom={layer.props.staggerFrom ?? 'first'} rotateDirection={layer.props.rotateDirection ?? 'top'} speed={speed * (layer.props.speed ?? 1)} autoPlay={true} isLoop={layer.props.isLoop ?? true} layerDuration={layer.duration} localTime={localTime} layerStartTime={layer.startTime} />;
       case 'camera-zoom':
         return <div style={{ width: '150px', height: '100px' }} />;
       case 'media-upload':
@@ -1225,6 +934,8 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
             stagger={(layer.props.stagger ?? 0.09) / speed}
             align={layer.props.align ?? 'center'}
             weight={layer.props.weight ?? 700}
+            isItalic={layer.props.isItalic ?? false}
+            fontFamily={layer.props.fontFamily ?? '"Plus Jakarta Sans", sans-serif'}
             tracking={layer.props.tracking ?? -0.03}
             lineHeight={layer.props.lineHeight ?? 1.06}
             textScale={layer.props.textScale ?? 0.115}
@@ -1314,8 +1025,8 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
           setActiveGuides(snapped.guides);
 
           if (layer.templateId === 'phone-device') {
-            const calcX = Number(((snapped.position.x - 50) / 12.5).toFixed(2));
-            const calcY = Number((-(snapped.position.y - 50) / 12.5).toFixed(2));
+            const calcX = Number(((snapped.position.x - 50) / 40).toFixed(2));
+            const calcY = Number((-(snapped.position.y - 50) / 40).toFixed(2));
             updateLayer(layer.id, {
               position: snapped.position,
               props: { ...layer.props, posX: calcX, posY: calcY },
@@ -1353,6 +1064,7 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
         const kfOpacity = hasKf ? interpolateProperty(layer.keyframes, 'opacity', relTime, 1) : 1;
         return {
           position: 'absolute' as const,
+          zIndex: isSelected ? 1000 : (zIndex ?? 10),
           left: `${kfPosX}%`,
           top: `${kfPosY}%`,
           transform: `translate(-50%, -50%) scale(${kfScale}) rotate(${kfRotation}deg)`,
@@ -1361,9 +1073,10 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
           maxWidth: 'none',
           flexShrink: 0,
           cursor: isDragging ? 'grabbing' : 'grab',
-          border: isSelected ? '2px dashed #a855f7' : '2px solid transparent',
-          outline: isSelected ? '1px solid #000000' : 'none',
-          boxShadow: isSelected ? '0 0 0 1px #000000' : 'none',
+          border: isSelected ? '2px solid #000000' : '2px solid transparent',
+          outline: isSelected ? '2px dashed #70FFD2' : 'none',
+          outlineOffset: isSelected ? '-2px' : '0',
+          boxShadow: 'none',
           borderRadius: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? `${layer.props.borderRadius ?? 8}px` : '8px',
           padding: layer.templateId === 'image' || layer.templateId === 'media-upload' || layer.templateId === 'video-upload' ? '0' : '8px',
           transition: 'border-color 0.15s ease',
@@ -1387,7 +1100,7 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
       </EnterAnimationWrapper>
       {isSelected && (
         <SelectionCornerHandles
-          onScaleStart={(e, _corner) => {
+          onScaleStart={(e, corner) => {
             const handleEl = e.currentTarget as HTMLElement;
             if (handleEl && 'setPointerCapture' in handleEl) {
               try { handleEl.setPointerCapture(e.pointerId); } catch {}
@@ -1399,17 +1112,9 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
               ? (layer.props.deviceSize ?? layer.scale ?? 1)
               : (layer.scale ?? 1);
 
-            const parentEl = containerRef.current;
-            if (!parentEl) return;
-            const rect = parentEl.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const initialDist = Math.hypot(startMouseX - centerX, startMouseY - centerY);
-
             const handleMove = (moveEvent: PointerEvent) => {
-              const currentDist = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
-              const ratio = currentDist / Math.max(10, initialDist);
-              const newScale = Number((Math.max(0.2, Math.min(5.0, initialScale * ratio))).toFixed(2));
+              const effectiveDelta = calculateCornerDragDelta(corner, startMouseX, startMouseY, moveEvent.clientX, moveEvent.clientY);
+              const newScale = Number((Math.max(0.05, Math.min(5.0, initialScale + (effectiveDelta / 150)))).toFixed(2));
               if (layer.templateId === 'phone-device') {
                 updateLayer(layer.id, { scale: newScale, props: { ...layer.props, deviceSize: newScale } } as any);
               } else {
@@ -1435,7 +1140,8 @@ function ComponentLayerRenderer({ layer, isVisible, isExiting, sceneId, sceneLay
 }
 
 function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime: number; style?: React.CSSProperties }) {
-  const { dispatch } = useMGState();
+  const { state, dispatch } = useMGState();
+  const { scenes } = state;
 
   // Calculate camera zoom from active camera-zoom layers
   let cameraScale = 1;
@@ -1486,21 +1192,37 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
         ...style,
       }}
     >
-      <div style={{ width: '100%', height: '100%', transform: `scale(${cameraScale})`, transformOrigin: `${cameraOriginX}% ${cameraOriginY}%`, transition: 'none', overflow: 'hidden', borderRadius: 'inherit' }}>
-      {scene.layers.map((layer) => {
+      <div style={{
+        width: '100%',
+        height: '100%',
+        transform: cameraScale !== 1 ? `scale(${cameraScale})` : undefined,
+        transformOrigin: `${cameraOriginX}% ${cameraOriginY}%`,
+        transition: 'none',
+        overflow: 'hidden',
+        borderRadius: 'inherit',
+      }}>
+      {scene.layers.map((layer, index) => {
         // Layer visibility is strictly within this scene's local time
-        const layerEnd = Math.min(layer.startTime + layer.duration, getSceneDuration(scene));
+        const layerEnd = Math.min(layer.startTime + layer.duration, getSceneDuration(scene, scenes.length));
         const isVisible = localTime >= layer.startTime && localTime < layerEnd;
-        // Determine if layer is in its exit window (capped at max 40% of layer duration)
+        // Determine if layer is in its exit window using accurate scaled duration
+        const basePacing = layer.pacingPreset === 'snappy' ? 1.8 : layer.pacingPreset === 'cinematic' ? 0.75 : 1.0;
+        const durBoost = (layer.duration && layer.duration < 2.5) ? Math.max(1, 2.5 / Math.max(0.3, layer.duration)) : 1;
+        const wordCount = layer.type === 'text' ? ((layer.text || '').split(/\s+/).filter(Boolean).length || 1) : 1;
+        const wordBoost = layer.type === 'text' && wordCount > 4 ? 1 + (wordCount - 4) * 0.15 : 1;
+        const layerSpeed = basePacing * durBoost * wordBoost;
+
         const rawExitDur = ('exitDuration' in layer ? layer.exitDuration : 1.0) || 1.0;
-        const exitDur = Math.min(rawExitDur, layer.duration * 0.4);
-        const isExiting = isVisible && (layerEnd - localTime) <= exitDur;
+        const effectiveExitDur = Math.min(rawExitDur / layerSpeed, (layer.duration || 1) * 0.4);
+        const isExiting = isVisible && (layerEnd - localTime) <= effectiveExitDur;
+        const zIndex = (scene.layers.length - index) * 10;
 
         if (layer.type === 'component') {
           return (
             <ComponentLayerRenderer
               key={layer.id}
               layer={layer}
+              zIndex={zIndex}
               isVisible={isVisible}
               isExiting={isExiting}
               sceneId={scene.id}
@@ -1514,6 +1236,7 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
           <TextLayerRenderer
             key={layer.id}
             layer={layer}
+            zIndex={zIndex}
             isVisible={isVisible}
             isExiting={isExiting}
             sceneId={scene.id}
@@ -1523,106 +1246,61 @@ function SceneRenderer({ scene, localTime, style }: { scene: MGScene; localTime:
         );
       })}
       </div>
-      {/* Phone device - full screen canvas overlay with Enter/Exit animations */}
-      {scene.layers.map((layer) => {
-        if (layer.type !== 'component' || layer.templateId !== 'phone-device') return null;
-        const layerEnd = Math.min(layer.startTime + layer.duration, getSceneDuration(scene));
-        const isVisible = localTime >= layer.startTime && localTime < layerEnd;
-        const pacing = layer.pacingPreset || 'balanced';
-        const basePacingSpeed = pacing === 'snappy' ? 1.8 : pacing === 'cinematic' ? 0.75 : 1.0;
-        const durationSpeedBoost = (layer.duration && layer.duration < 2.5)
-          ? Math.max(1, 2.5 / Math.max(0.3, layer.duration))
-          : 1;
-        const speed = basePacingSpeed * durationSpeedBoost;
-        const effectiveEnterDur = Math.min((layer.enterDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
-        const effectiveExitDur = Math.min((layer.exitDuration ?? 1.0) / speed, (layer.duration || 1) * 0.4);
-        const isExiting = isVisible && (layerEnd - localTime) <= effectiveExitDur;
-
-        if (!isVisible) return null;
-
-        return (
-          <div
-            key={layer.id}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              pointerEvents: 'none',
-            }}
-          >
-            <EnterAnimationWrapper
-              enterAnimation={layer.enterAnimation || 'none'}
-              enterDuration={effectiveEnterDur}
-              exitAnimation={layer.exitAnimation || 'none'}
-              exitDuration={effectiveExitDur}
-              triggerKey={1}
-              isExiting={isExiting}
-              localTime={localTime}
-              layerStartTime={layer.startTime}
-              layerDuration={layer.duration}
-              style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 'inherit' }}
-            >
-              <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
-                <Canvas
-                  camera={{ position: [0, 0, 4], fov: 45 }}
-                  gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
-                  style={{ background: 'transparent', pointerEvents: 'none' }}
-                  dpr={[1, 2]}
-                >
-                  <ambientLight intensity={0.7} />
-                  <directionalLight position={[5, 5, 5]} intensity={1} />
-                  <directionalLight position={[-3, 3, -2]} intensity={0.4} />
-                  <Suspense fallback={null}>
-                    <AnimatedDeviceInline
-                      deviceType={layer.props.deviceType ?? 'iphone'}
-                      deviceColor={layer.props.deviceColor ?? '#1a1a1a'}
-                      screenImage={layer.props.screenImage}
-                      screenVideo={layer.props.screenVideo}
-                      animationTemplate={layer.props.animationTemplate ?? 'float'}
-                      speed={(layer.pacingPreset === 'snappy' ? 1.8 : layer.pacingPreset === 'cinematic' ? 0.75 : 1.0) * ((layer.duration && layer.duration < 2.5) ? Math.max(1, 2.5 / Math.max(0.3, layer.duration)) : 1)}
-                      deviceSize={layer.props.deviceSize ?? layer.props.size ?? layer.scale ?? 1}
-                      posX={layer.props.posX ?? 0}
-                      posY={layer.props.posY ?? 0}
-                      rotX={layer.props.rotX ?? 0}
-                      rotY={layer.props.rotY ?? 0}
-                      localTime={localTime - layer.startTime}
-                    />
-                  </Suspense>
-                </Canvas>
-              </div>
-            </EnterAnimationWrapper>
-          </div>
-        );
-      })}
     </div>
   );
 }
 
 export default function MotionCanvas() {
-  const { state, dispatch, removeLayer, getSceneAtTime } = useMGState();
-  const { scenes, currentTime, selectedLayerId } = state;
+  const { state, dispatch, removeLayer, removeLayers, getSceneAtTime, addScene } = useMGState();
+  const { scenes, currentTime, selectedLayerId, multiSelectedLayerIds = [], aspectRatio } = state;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
-  // Delete selected layer on Delete/Backspace key
+  const logicalWidth = aspectRatio === '9:16' ? 1080 : 1920;
+  const logicalHeight = aspectRatio === '9:16' ? 1920 : 1080;
+
+  // Measure container and compute scale for logical canvas
   useEffect(() => {
-    if (!selectedLayerId) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      const scaleX = width / logicalWidth;
+      const scaleY = height / logicalHeight;
+      setScale(Math.min(scaleX, scaleY));
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [logicalWidth, logicalHeight]);
+
+  // Delete selected layer(s) on Delete/Backspace key
+  useEffect(() => {
+    if (!selectedLayerId && multiSelectedLayerIds.length === 0) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
-        removeLayer(selectedLayerId);
+        const toDelete = Array.from(new Set([...(selectedLayerId ? [selectedLayerId] : []), ...multiSelectedLayerIds]));
+        if (toDelete.length > 1) {
+          removeLayers(toDelete);
+        } else if (toDelete.length === 1) {
+          removeLayer(toDelete[0]);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedLayerId, removeLayer]);
+  }, [selectedLayerId, multiSelectedLayerIds, removeLayer, removeLayers]);
 
   // Keep an empty selected scene visible without giving it timeline duration.
   const activeScene = scenes.find((scene) => scene.id === state.activeSceneId);
-  const currentInfo = activeScene && getSceneDuration(activeScene) === 0
+  const currentInfo = activeScene && getSceneDuration(activeScene, scenes.length) === 0
     ? { scene: activeScene, localTime: 0, transitionProgress: 1 }
     : getSceneAtTime(currentTime);
+
+  const currentScene = currentInfo?.scene || activeScene || scenes[0];
+  const hasNoLayers = !currentScene || currentScene.layers.length === 0;
 
   // Find previous scene for exit animation (or dark fallback for initial scene)
   const prevScene = useMemo(() => {
@@ -1637,11 +1315,71 @@ export default function MotionCanvas() {
   const prevLocalTime = useMemo(() => {
     if (!prevScene) return 0;
     // show last frame of previous scene (subtracting 0.001 so localTime < layerEnd stays true)
-    return Math.max(0, getSceneDuration(prevScene) - 0.001);
-  }, [prevScene]);
+    return Math.max(0, getSceneDuration(prevScene, scenes.length) - 0.001);
+  }, [prevScene, scenes.length]);
+
+  // Collect all active 3D phone devices across incoming scene and transition scene
+  const activeDevices = useMemo<ActiveDeviceDescriptor[]>(() => {
+    const list: ActiveDeviceDescriptor[] = [];
+
+    // 1. Current / incoming scene devices
+    if (currentScene) {
+      const localT = currentInfo ? currentInfo.localTime : 0;
+      const sceneDur = getSceneDuration(currentScene, scenes.length);
+      currentScene.layers?.forEach((l) => {
+        if (l.type === 'component' && l.templateId === 'phone-device') {
+          const lEnd = Math.min(l.startTime + l.duration, sceneDur);
+          if (localT >= l.startTime && (localT < lEnd || Math.abs(localT - lEnd) < 0.001)) {
+            list.push({
+              layer: l,
+              sceneId: currentScene.id,
+              localTime: localT,
+              isOutgoing: false,
+            });
+          }
+        }
+      });
+    }
+
+    // 2. Previous / outgoing scene devices during transition
+    if (prevScene && currentInfo && currentInfo.transitionProgress < 1) {
+      const prevSceneDur = getSceneDuration(prevScene, scenes.length);
+      prevScene.layers?.forEach((l) => {
+        if (l.type === 'component' && l.templateId === 'phone-device') {
+          const lEnd = Math.min(l.startTime + l.duration, prevSceneDur);
+          if (prevLocalTime >= l.startTime && (prevLocalTime < lEnd || Math.abs(prevLocalTime - lEnd) < 0.001)) {
+            list.push({
+              layer: l,
+              sceneId: prevScene.id,
+              localTime: prevLocalTime,
+              isOutgoing: true,
+              transitionOpacity: 1 - currentInfo.transitionProgress,
+            });
+          }
+        }
+      });
+    }
+
+    return list;
+  }, [currentScene, currentInfo, prevScene, prevLocalTime, scenes.length]);
+
+  // Calculate the DOM zIndex for the DevicePoolCanvas based on the active phone-device layer's position in scene.layers
+  const activeDeviceZIndex = useMemo(() => {
+    if (!currentScene || activeDevices.length === 0) return 5;
+    const currentDevice = activeDevices.find((d) => !d.isOutgoing) || activeDevices[0];
+    if (!currentDevice || !currentDevice.layer) return 5;
+    const isSelected = selectedLayerId === currentDevice.layer.id || multiSelectedLayerIds.includes(currentDevice.layer.id);
+    if (isSelected) return 1000;
+    const idx = currentScene.layers.findIndex((l) => l.id === currentDevice.layer.id);
+    if (idx !== -1) {
+      return (currentScene.layers.length - idx) * 10;
+    }
+    return 5;
+  }, [currentScene, activeDevices, selectedLayerId, multiSelectedLayerIds]);
 
   return (
     <div
+      ref={containerRef}
       data-motion-canvas-wrapper="true"
       onClick={() => {
         if (_canvasDragState.draggedLayerId) { _canvasDragState.draggedLayerId = null; return; }
@@ -1649,25 +1387,40 @@ export default function MotionCanvas() {
       }}
       style={{
         width: 'auto',
-        height: '85%',
-        aspectRatio: '16 / 9',
-        maxWidth: '90%',
-        maxHeight: '85%',
+        height: '90%',
+        aspectRatio: aspectRatio === '9:16' ? '9 / 16' : '16 / 9',
+        maxWidth: '95%',
+        maxHeight: '90%',
         borderRadius: '12px',
         position: 'relative',
         overflow: 'hidden',
         boxShadow: '0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15)',
         background: '#12121c',
         border: '1px solid var(--border-color)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
+      <div
+        data-logical-canvas="true"
+        style={{
+        width: `${logicalWidth}px`,
+        height: `${logicalHeight}px`,
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        transformOrigin: 'center center',
+        flexShrink: 0,
+      }}>
       {/* Incoming scene (underneath — revealed as previous scene masks away) */}
       {currentInfo && (
         <SceneRenderer
           scene={currentInfo.scene}
           localTime={currentInfo.localTime}
           style={{
-            zIndex: 1,
+            zIndex: currentInfo.transitionProgress < 1 ? 1 : undefined,
           }}
         />
       )}
@@ -1684,6 +1437,9 @@ export default function MotionCanvas() {
         />
       )}
 
+      {/* Persistent 3D Device Pool Canvas (Single WebGL context, zero lifecycle teardown) */}
+      <DevicePoolCanvas activeDevices={activeDevices} zIndex={activeDeviceZIndex} />
+
       {/* Loading line overlay (only for loading-line transition) */}
       {currentInfo && currentInfo.transitionProgress < 1 && currentInfo.scene.transition === 'loading-line' && (
         <LoadingLineOverlay progress={currentInfo.transitionProgress} />
@@ -1691,21 +1447,7 @@ export default function MotionCanvas() {
 
       {/* Assisted alignment guides */}
       <AlignmentGuidesOverlay />
-
-      {scenes.length === 0 && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'rgba(255,255,255,0.3)',
-          fontSize: '16px',
-          fontFamily: '"Plus Jakarta Sans", sans-serif',
-        }}>
-          Add scenes to get started
-        </div>
-      )}
+      </div>
     </div>
   );
 }

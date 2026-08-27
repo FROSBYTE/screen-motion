@@ -1,6 +1,6 @@
 'use client';
 
-// Suppress three.js deprecation & HMR development warnings coming from react-three-fiber and Turbopack internals
+// Suppress three.js deprecation, shader compiler info logs & HMR development warnings
 if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -10,6 +10,9 @@ if (typeof window !== 'undefined') {
       typeof message === 'string' &&
       (message.includes('THREE.Clock: This module has been deprecated.') ||
        message.includes('THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated.') ||
+       message.includes('THREE.WebGLProgram: Program Info Log:') ||
+       message.includes('warning X4122:') ||
+       message.includes('cannot be represented accurately in double precision') ||
        message.includes('Unexpected import of module') ||
        message.includes('deleted by an HMR update'))
     ) {
@@ -24,10 +27,10 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Home as HomeIcon } from 'lucide-react';
 import { AppProvider, useAppState } from '@/store';
-import RightSidebar from '@/components/RightSidebar';
+import RightSidebar from '@/components/3d-editor/panels/RightSidebar';
 
 // Dynamic import for 3D preview (no SSR)
-const Preview3D = dynamic(() => import('@/components/Preview3D'), {
+const Preview3D = dynamic(() => import('@/components/3d-editor/models/Preview3D'), {
   ssr: false,
   loading: () => (
     <div className="preview-canvas-container" style={{
@@ -72,31 +75,15 @@ function AppContent() {
     <>
       <style>{`html, body { overflow: hidden; }`}</style>
       
-      {/* Professional Top-Left Header Controls */}
-      <div className="editor-top-nav-container" style={{ position: 'fixed', top: '24px', left: '24px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Link
-          href="/"
-          className="home-nav-btn"
-          title="Return to Home"
-          aria-label="Home"
-          style={{
-            position: 'static',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 12px',
-            borderRadius: '10px',
-            background: 'rgba(20, 20, 20, 0.85)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            textDecoration: 'none',
-            color: '#ffffff',
-          }}
-        >
-          <img src="/icon-transparent.png" alt="Screen Motion" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-          <span style={{ fontSize: '13px', fontWeight: 700 }}>screenmotion</span>
-        </Link>
-      </div>
+      {/* Top-Left Home Icon Navigation */}
+      <Link
+        href="/"
+        className="home-nav-btn"
+        title="Return to Home"
+        aria-label="Home"
+      >
+        <img src="/logo.svg" alt="Screen Motion" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'invert(1)' }} />
+      </Link>
 
       <div className="app-layout" id="app-container" style={{ position: 'relative' }}>
         <div className="main-container">

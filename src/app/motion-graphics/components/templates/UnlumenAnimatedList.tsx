@@ -16,6 +16,9 @@ export interface UnlumenAnimatedListProps {
   items?: NotificationItem[];
   count?: number; // how many notifications to show (cycles/limits from items)
   speed?: number;
+  isBold?: boolean;
+  isItalic?: boolean;
+  fontFamily?: string;
   className?: string;
   layerDuration?: number;
   localTime?: number;
@@ -34,6 +37,9 @@ export default function UnlumenAnimatedList({
   items = DEFAULT_ITEMS,
   count,
   speed = 1,
+  isBold = true,
+  isItalic = false,
+  fontFamily = '"Plus Jakarta Sans", sans-serif',
   className = '',
   layerDuration,
   localTime,
@@ -70,7 +76,7 @@ export default function UnlumenAnimatedList({
     const displayedItems = effectiveItems.slice(0, visibleCount).reverse();
 
     return (
-      <div className={className} style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div className={className} style={{ width: '100%', maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {displayedItems.map((item, index) => {
           // The most recent item is index 0 in the reversed list
           const originalIndex = visibleCount - 1 - index;
@@ -88,22 +94,22 @@ export default function UnlumenAnimatedList({
               style={{
                 opacity,
                 transform: `translateY(${y}px)`,
-                padding: '12px 16px',
+                padding: '14px 18px',
                 background: item.bgColor || 'rgba(255,255,255,0.05)',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 border: '1px solid rgba(255,255,255,0.08)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
+                gap: '14px',
               }}
             >
               <div style={{
-                width: '8px', height: '8px', borderRadius: '50%',
+                width: '10px', height: '10px', borderRadius: '50%',
                 background: item.accentColor || '#6366f1', flexShrink: 0,
               }} />
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
-                <div style={{ fontSize: '11px', color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
+                <div style={{ fontSize: '15px', fontWeight: isBold ? 800 : 500, fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
+                <div style={{ fontSize: '13px', fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
               </div>
             </div>
           );
@@ -113,7 +119,7 @@ export default function UnlumenAnimatedList({
   }
 
   return (
-    <div className={className} style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className={className} style={{ width: '100%', maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <AnimatePresence initial={false}>
         {visibleItems.map((item, index) => (
           <motion.div
@@ -123,22 +129,22 @@ export default function UnlumenAnimatedList({
             transition={{ duration: 0.3 / safeSpeed, ease: [0.25, 0.46, 0.45, 0.94] }}
             layout={false}
             style={{
-              padding: '12px 16px',
+              padding: '14px 18px',
               background: item.bgColor || 'rgba(255,255,255,0.05)',
-              borderRadius: '10px',
+              borderRadius: '12px',
               border: '1px solid rgba(255,255,255,0.08)',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              gap: '14px',
             }}
           >
             <div style={{
-              width: '8px', height: '8px', borderRadius: '50%',
+              width: '10px', height: '10px', borderRadius: '50%',
               background: item.accentColor || '#6366f1', flexShrink: 0,
             }} />
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
-              <div style={{ fontSize: '11px', color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
+              <div style={{ fontSize: '15px', fontWeight: isBold ? 800 : 500, fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
+              <div style={{ fontSize: '13px', fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
             </div>
           </motion.div>
         ))}

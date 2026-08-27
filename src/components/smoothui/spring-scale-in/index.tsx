@@ -18,6 +18,9 @@ export interface SpringScaleInProps {
   speed?: number;
   /** Animate only once the text scrolls into view. */
   triggerOnView?: boolean;
+  localTime?: number;
+  layerStartTime?: number;
+  layerDuration?: number;
 }
 
 const DURATION_S = 0.36;
@@ -31,12 +34,58 @@ export default function SpringScaleIn({
   stagger = 95,
   speed = 1,
   triggerOnView = false,
+  localTime,
+  layerStartTime = 0,
 }: SpringScaleInProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
   const words = (children || "").split(" ");
+
+  if (localTime !== undefined) {
+    const elapsed = Math.max(0, localTime - layerStartTime);
+    const animDur = DURATION_S / Math.max(0.1, speed);
+    const staggerS = (stagger / Math.max(0.1, speed)) / MS;
+    const baseDelayS = delay / MS;
+
+    return (
+      <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>
+        {words.map((word, index) => {
+          const wordStart = baseDelayS + index * staggerS;
+          const wordElapsed = Math.max(0, elapsed - wordStart);
+          const progress = Math.min(1, Math.max(0, wordElapsed / animDur));
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const opacity = eased;
+          const scale = 0.7 + eased * 0.3;
+
+          return (
+            <span key={index} style={{ display: "inline-block" }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-block",
+                  whiteSpace: "pre",
+                  opacity,
+                  transform: `scale(${scale.toFixed(3)})`,
+                }}
+              >
+                {word}
+              </span>
+              {index < words.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  style={{ display: "inline-block", whiteSpace: "pre" }}
+                >
+                  {" "}
+                </span>
+              )}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   return (
     <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>

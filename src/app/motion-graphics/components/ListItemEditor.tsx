@@ -91,8 +91,8 @@ export default function ListItemEditor<T>({
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.color = '#FF9137';
+              e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'var(--text-muted)';
@@ -129,10 +129,10 @@ export default function ListItemEditor<T>({
         style={{
           width: '100%',
           padding: '8px',
-          background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px dashed rgba(255, 255, 255, 0.25)',
+          background: '#FFFFFF',
+          border: '1px dashed rgba(15, 23, 42, 0.25)',
           borderRadius: '6px',
-          color: '#ffffff',
+          color: 'var(--text-primary)',
           fontSize: '11px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -140,14 +140,17 @@ export default function ListItemEditor<T>({
           alignItems: 'center',
           justifyContent: 'center',
           gap: '4px',
+          transition: 'all 0.15s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.45)';
+          e.currentTarget.style.background = '#FFFDE6';
+          e.currentTarget.style.borderColor = '#FF9137';
+          e.currentTarget.style.color = '#FF9137';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+          e.currentTarget.style.background = '#FFFFFF';
+          e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.25)';
+          e.currentTarget.style.color = 'var(--text-primary)';
         }}
       >
         <Plus size={12} /> {addLabel}

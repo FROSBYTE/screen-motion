@@ -10,6 +10,7 @@ First, run the development server:
 npm run dev
 # or
 yarn dev
+https://colorhunt.co/palette/70ffd2fffc8cffcc4dff9137
 # or
 pnpm dev
 # or

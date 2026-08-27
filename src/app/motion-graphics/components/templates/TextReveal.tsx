@@ -10,6 +10,8 @@ export interface TextRevealProps {
   revealColor?: string;
   fontSize?: number;
   fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
   className?: string;
   layerDuration?: number;
   localTime?: number;
@@ -20,9 +22,11 @@ export default function TextReveal({
   text = 'Reveal This Text',
   speed = 1,
   color = '#ffffff',
-  revealColor = '#a855f7',
-  fontSize = 32,
+  revealColor = '#FF9137',
+  fontSize = 48,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
+  isBold = true,
+  isItalic = false,
   className = '',
   layerDuration,
   localTime,
@@ -79,7 +83,8 @@ export default function TextReveal({
                   color,
                   fontSize: `${fontSize}px`,
                   fontFamily,
-                  fontWeight: 700,
+                  fontWeight: isBold ? 800 : 400,
+                  fontStyle: isItalic ? 'italic' : 'normal',
                   position: 'relative',
                   zIndex: 0,
                   opacity: textOpacity,
@@ -124,7 +129,8 @@ export default function TextReveal({
                 color,
                 fontSize: `${fontSize}px`,
                 fontFamily,
-                fontWeight: 700,
+                fontWeight: isBold ? 800 : 400,
+                fontStyle: isItalic ? 'italic' : 'normal',
                 position: 'relative',
                 zIndex: 0,
               }}

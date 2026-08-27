@@ -9,6 +9,7 @@ export { default as Highlighter } from './Highlighter';
 export { default as AnimatedBeam } from './AnimatedBeam';
 export { default as OrbitingCircles } from './OrbitingCircles';
 export { default as TextReveal } from './TextReveal';
+
 export { default as SkeletonShimmer } from './SkeletonShimmer';
 export { default as Text3DFlip } from './Text3DFlip';
 export { default as MediaUpload } from './MediaUpload';
@@ -29,6 +30,7 @@ export type ComponentTemplateName =
   | 'animated-beam'
   | 'orbiting-circles'
   | 'text-reveal'
+  | 'dia-text-reveal'
   | 'skeleton-shimmer'
   | 'text-3d-flip'
   | 'camera-zoom'
@@ -47,6 +49,20 @@ export interface ComponentTemplateConfig {
 }
 
 export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
+  {
+    id: 'text-reveal',
+    name: 'Text Reveal',
+    description: 'Smooth progressive text reveal block animation with customizable colors',
+    category: 'component',
+    source: 'smoothui',
+  },
+  {
+    id: 'dia-text-reveal',
+    name: 'Dia Text Reveal',
+    description: 'Dynamic multi-color kinetic text reveal animation',
+    category: 'component',
+    source: 'smoothui',
+  },
   {
     id: 'image',
     name: 'Image',

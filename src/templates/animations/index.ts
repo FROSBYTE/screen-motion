@@ -79,18 +79,12 @@ export function createAnimation(
   const dummyCameraPosition = new THREE.Vector3().copy(initialCamPos);
   const dummyDeviceScale = new THREE.Vector3(1, 1, 1);
 
-  // Intercept camera position updates and apply inverse translation to device position
+  // Intercept camera position updates without displacing the device's physical center point
   const proxiedCameraPosition = new Proxy(realTarget.camera.position, {
     set(targetVec, prop, value, receiver) {
       if (prop === 'x' || prop === 'y' || prop === 'z') {
         const numVal = Number(value);
         dummyCameraPosition[prop as 'x' | 'y' | 'z'] = numVal;
-
-        const originalVal = initialCamPos[prop as 'x' | 'y' | 'z'];
-        const delta = numVal - originalVal;
-
-        // Move device in the opposite direction (camera translation -> device translation)
-        realTarget.device.position[prop as 'x' | 'y' | 'z'] = -delta;
         return true;
       }
       return Reflect.set(targetVec, prop, value, receiver);
