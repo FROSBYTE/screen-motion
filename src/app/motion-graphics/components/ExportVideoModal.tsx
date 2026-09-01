@@ -789,7 +789,15 @@ export default function ExportVideoModal({ isOpen, onClose }: ExportVideoModalPr
                   }
                 }
 
-                ctx.fillText(textContent, drawX, drawY);
+                if (textContent.includes('\n')) {
+                  const lines = textContent.split('\n');
+                  const lineHeight = parseFloat(style.lineHeight) * exportScaleY * totalScaleY || computedFontSize * 1.2;
+                  lines.forEach((line, lineIdx) => {
+                    ctx.fillText(line, drawX, drawY + lineIdx * lineHeight);
+                  });
+                } else {
+                  ctx.fillText(textContent, drawX, drawY);
+                }
                 ctx.restore();
               }
             }

@@ -15,6 +15,8 @@ export interface LogoLoopProps {
   logoHeight?: number;
   textColor?: string;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   fontFamily?: string;
   className?: string;
@@ -40,6 +42,8 @@ export default function LogoLoop({
   logoHeight = 38,
   textColor = '#ffffff',
   isBold = true,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   className = '',
@@ -47,6 +51,7 @@ export default function LogoLoop({
   localTime,
   layerStartTime = 0,
 }: LogoLoopProps) {
+  const resolvedFontWeight = fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300);
   const baseItems = items && items.length > 0 ? items : DEFAULT_ITEMS;
   
   // Ensure enough items to smoothly overflow width
@@ -79,7 +84,7 @@ export default function LogoLoop({
         justifyContent: 'center',
         padding: item.type === 'text' ? '0 16px' : '0',
         fontSize: '16px',
-        fontWeight: isBold ? 800 : 500,
+        fontWeight: resolvedFontWeight,
         fontStyle: isItalic ? 'italic' : 'normal',
         fontFamily,
         color: textColor,

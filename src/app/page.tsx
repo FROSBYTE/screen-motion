@@ -449,6 +449,18 @@ export default function LandingPage() {
             gap: 48px;
           }
         }
+
+        .footer-nav-link {
+          font-size: 14px;
+          color: #64748B;
+          text-decoration: none;
+          transition: color 0.15s ease, transform 0.15s ease;
+          display: inline-block;
+        }
+        .footer-nav-link:hover {
+          color: #0F172A;
+          transform: translateX(2px);
+        }
       `}</style>
 
       {/* Hero Section */}
@@ -721,7 +733,271 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Premium Clean Editorial Footer */}
+      <footer
+        style={{
+          borderTop: "1px solid rgba(15, 23, 42, 0.08)",
+          backgroundColor: "#F4F4F0",
+          color: "#0F172A",
+          position: "relative",
+          zIndex: 10,
+          paddingTop: "72px",
+          paddingBottom: "48px",
+          width: "100%",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1280px",
+            margin: "0 auto",
+            paddingLeft: "32px",
+            paddingRight: "32px",
+          }}
+        >
+          {/* Top Row: Brand Info + Navigation Columns */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "48px 32px",
+              paddingBottom: "56px",
+              borderBottom: "1px solid rgba(15, 23, 42, 0.08)",
+            }}
+          >
+            {/* Brand & Mission Column */}
+            <div style={{ gridColumn: "span 2", maxWidth: "380px" }}>
+              <Link
+                href="/"
+                style={{
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <img
+                  src="/logo.svg"
+                  alt="Screen Motion"
+                  style={{ width: "26px", height: "26px", objectFit: "contain", filter: "invert(1)" }}
+                />
+                <span
+                  style={{
+                    fontSize: "19px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.04em",
+                    color: "#0F172A",
+                  }}
+                >
+                  screenmotion
+                </span>
+              </Link>
+              <p
+                style={{
+                  fontSize: "14px",
+                  lineHeight: "1.65",
+                  color: "#64748B",
+                  margin: "0 0 20px 0",
+                }}
+              >
+                Studio-grade 3D device mockups and kinetic motion graphics for SaaS product videos. Built for speed, precision, and high-converting launches.
+              </p>
+              {/* Operational Status indicator */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  background: "rgba(15, 23, 42, 0.04)",
+                  border: "1px solid rgba(15, 23, 42, 0.06)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.04em",
+                  color: "#475569",
+                }}
+              >
+                <span
+                  style={{
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    backgroundColor: "#10B981",
+                    boxShadow: "0 0 8px rgba(16, 185, 129, 0.6)",
+                    display: "inline-block",
+                  }}
+                />
+                <span>Client-Side Render Engine • 60 FPS</span>
+              </div>
+            </div>
 
+            {/* Product Column */}
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "#0F172A",
+                  marginBottom: "18px",
+                }}
+              >
+                Product
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+                <li>
+                  <Link href="/projects" className="footer-nav-link">
+                    3D Scene Studio
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/motion-graphics" className="footer-nav-link">
+                    Motion Graphics
+                  </Link>
+                </li>
+                <li>
+                  <a href="#templates" className="footer-nav-link">
+                    Video Templates
+                  </a>
+                </li>
+                <li>
+                  <a href="#use-cases" className="footer-nav-link">
+                    Use Cases
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Capabilities Column */}
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "#0F172A",
+                  marginBottom: "18px",
+                }}
+              >
+                Capabilities
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+                <li style={{ fontSize: "14px", color: "#64748B" }}>
+                  Kinetic Typography
+                </li>
+                <li style={{ fontSize: "14px", color: "#64748B" }}>
+                  3D Device Mockups
+                </li>
+                <li style={{ fontSize: "14px", color: "#64748B" }}>
+                  1080p / 4K MP4 Export
+                </li>
+                <li style={{ fontSize: "14px", color: "#64748B" }}>
+                  100% Local Processing
+                </li>
+              </ul>
+            </div>
+
+            {/* Support & Community Column */}
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "#0F172A",
+                  marginBottom: "18px",
+                }}
+              >
+                Support
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+                <li>
+                  <a href="#faq" className="footer-nav-link">
+                    FAQ
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://x.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="footer-nav-link"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <span>Community</span>
+                    <span style={{ fontSize: "11px", opacity: 0.7 }}>↗</span>
+                  </a>
+                </li>
+                <li>
+                  <Link href="/projects" className="footer-nav-link">
+                    Get Started Free
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar / Colophon */}
+          <div
+            style={{
+              paddingTop: "32px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              fontSize: "13px",
+              color: "#64748B",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span>© {new Date().getFullYear()} ScreenMotion. All rights reserved.</span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#94A3B8" }}>
+                DESIGNED FOR FOUNDERS & CREATORS
+              </span>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.05em",
+                  color: "#475569",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#FF9137";
+                  e.currentTarget.style.background = "rgba(255, 145, 55, 0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#475569";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span>BACK TO TOP</span>
+                <span>↑</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

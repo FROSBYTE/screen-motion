@@ -14,6 +14,8 @@ export interface Text3DFlipProps {
   fontSize?: number;
   fontFamily?: string;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   staggerDuration?: number;
   staggerFrom?: StaggerFrom;
@@ -42,6 +44,8 @@ export default function Text3DFlip({
   fontSize = 52,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   isBold = true,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   staggerFrom = 'first',
   rotateDirection = 'top',
@@ -53,22 +57,26 @@ export default function Text3DFlip({
   localTime,
   layerStartTime = 0,
 }: Text3DFlipProps) {
+  const resolvedFontWeight = fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300);
   const [isFlipped, setIsFlipped] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const words = useMemo(() => text.split(' '), [text]);
-  const flippedWords = useMemo(() => (flippedText || text).split(' '), [flippedText, text]);
+  const lines = useMemo(() => (text || '').split('\n'), [text]);
+  const flippedLines = useMemo(() => (flippedText || text || '').split('\n'), [flippedText, text]);
   const allChars = useMemo(() => {
-    const chars: { char: string; wordIdx: number; charIdx: number; globalIdx: number }[] = [];
+    const chars: { char: string; lineIdx: number; wordIdx: number; charIdx: number; globalIdx: number }[] = [];
     let globalIdx = 0;
-    words.forEach((word, wordIdx) => {
-      Array.from(word).forEach((char, charIdx) => {
-        chars.push({ char, wordIdx, charIdx, globalIdx });
-        globalIdx++;
+    lines.forEach((line, lineIdx) => {
+      const words = line.split(' ');
+      words.forEach((word, wordIdx) => {
+        Array.from(word).forEach((char, charIdx) => {
+          chars.push({ char, lineIdx, wordIdx, charIdx, globalIdx });
+          globalIdx++;
+        });
       });
     });
     return chars;
-  }, [words]);
+  }, [lines]);
 
   const totalChars = allChars.length;
   const safeSpeed = Math.max(0.1, speed);
@@ -157,103 +165,112 @@ export default function Text3DFlip({
       onMouseLeave={() => !autoPlay && setIsFlipped(false)}
       style={{
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.3em',
+        flexDirection: 'column',
+        gap: '0.2em',
         justifyContent: 'center',
         alignItems: 'center',
         cursor: 'pointer',
         perspective: '800px',
         fontSize: `${fontSize}px`,
         fontFamily,
-        fontWeight: isBold ? 800 : 400,
+        fontWeight: resolvedFontWeight,
         fontStyle: isItalic ? 'italic' : 'normal',
       }}
     >
-      {words.map((word, wordIdx) => (
-        <span key={wordIdx} style={{ display: 'inline-flex' }}>
-          {Array.from(word).map((char, charIdx) => {
-            const globalIdx = allChars.findIndex(
-              (c) => c.wordIdx === wordIdx && c.charIdx === charIdx
-            );
-            const delay = getDelay(globalIdx);
-            const flippedWord = flippedWords[wordIdx] || '';
-            const flippedChar = Array.from(flippedWord)[charIdx] || char;
+      {lines.map((line, lineIdx) => {
+        const words = line.split(' ');
+        const flippedLine = flippedLines[lineIdx] || '';
+        const flippedWords = flippedLine.split(' ');
+        return (
+          <div key={lineIdx} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3em', justifyContent: 'center', alignItems: 'center' }}>
+            {words.map((word, wordIdx) => (
+              <span key={wordIdx} style={{ display: 'inline-flex' }}>
+                {Array.from(word).map((char, charIdx) => {
+                  const globalIdx = allChars.findIndex(
+                    (c) => c.lineIdx === lineIdx && c.wordIdx === wordIdx && c.charIdx === charIdx
+                  );
+                  const delay = getDelay(globalIdx);
+                  const flippedWord = flippedWords[wordIdx] || '';
+                  const flippedChar = Array.from(flippedWord)[charIdx] || char;
 
-            const charAngle = deterministicRotationAngles
-              ? deterministicRotationAngles[globalIdx] ?? 0
-              : (isFlipped ? 180 : 0);
+                  const charAngle = deterministicRotationAngles
+                    ? deterministicRotationAngles[globalIdx] ?? 0
+                    : (isFlipped ? 180 : 0);
 
-            const rotationTransform =
-              rotateDirection === 'top' || rotateDirection === 'bottom'
-                ? `rotateX(${rotateDirection === 'bottom' ? -charAngle : charAngle}deg)`
-                : `rotateY(${rotateDirection === 'left' ? -charAngle : charAngle}deg)`;
+                  const rotationTransform =
+                    rotateDirection === 'top' || rotateDirection === 'bottom'
+                      ? `rotateX(${rotateDirection === 'bottom' ? -charAngle : charAngle}deg)`
+                      : `rotateY(${rotateDirection === 'left' ? -charAngle : charAngle}deg)`;
 
-            if (deterministicRotationAngles) {
-              const isBackFace = charAngle >= 90;
-              const activeChar = isBackFace ? flippedChar : char;
-              const activeColor = isBackFace ? flipColor : color;
-              const cosScale = Math.max(0.05, Math.abs(Math.cos((charAngle * Math.PI) / 180)));
-              const isVertical = rotateDirection === 'top' || rotateDirection === 'bottom';
-              const scaleTransform = isVertical ? `scaleY(${cosScale.toFixed(3)})` : `scaleX(${cosScale.toFixed(3)})`;
+                  if (deterministicRotationAngles) {
+                    const isBackFace = charAngle >= 90;
+                    const activeChar = isBackFace ? flippedChar : char;
+                    const activeColor = isBackFace ? flipColor : color;
+                    const cosScale = Math.max(0.05, Math.abs(Math.cos((charAngle * Math.PI) / 180)));
+                    const isVertical = rotateDirection === 'top' || rotateDirection === 'bottom';
+                    const scaleTransform = isVertical ? `scaleY(${cosScale.toFixed(3)})` : `scaleX(${cosScale.toFixed(3)})`;
 
-              return (
-                <span
-                  key={`${wordIdx}-${charIdx}`}
-                  style={{
-                    display: 'inline-block',
-                    position: 'relative',
-                    color: activeColor,
-                    whiteSpace: 'pre',
-                    transform: scaleTransform,
-                    transformOrigin: 'center center',
-                  }}
-                >
-                  {activeChar}
-                </span>
-              );
-            }
+                    return (
+                      <span
+                        key={`${lineIdx}-${wordIdx}-${charIdx}`}
+                        style={{
+                          display: 'inline-block',
+                          position: 'relative',
+                          color: activeColor,
+                          whiteSpace: 'pre',
+                          transform: scaleTransform,
+                          transformOrigin: 'center center',
+                        }}
+                      >
+                        {activeChar}
+                      </span>
+                    );
+                  }
 
-            return (
-              <motion.span
-                key={`${wordIdx}-${charIdx}`}
-                animate={{
-                  transform: isFlipped ? ROTATION_MAP[rotateDirection] : 'rotateX(0deg) rotateY(0deg)',
-                }}
-                transition={{ ...springTransition, delay }}
-                style={{
-                  display: 'inline-block',
-                  transformStyle: 'preserve-3d',
-                  position: 'relative',
-                  color,
-                  whiteSpace: 'pre',
-                }}
-              >
-                {/* Front face */}
-                <span style={{
-                  backfaceVisibility: 'hidden',
-                  display: 'inline-block',
-                }}>
-                  {char}
-                </span>
-                {/* Back face (flip color) */}
-                <span style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  color: flipColor,
-                  backfaceVisibility: 'hidden',
-                  transform: rotateDirection === 'top' || rotateDirection === 'bottom'
-                    ? 'rotateX(180deg)' : 'rotateY(180deg)',
-                  display: 'inline-block',
-                }}>
-                  {flippedChar}
-                </span>
-              </motion.span>
-            );
-          })}
-          {wordIdx < words.length - 1 && <span style={{ whiteSpace: 'pre' }}> </span>}
-        </span>
-      ))}
+                  return (
+                    <motion.span
+                      key={`${lineIdx}-${wordIdx}-${charIdx}`}
+                      animate={{
+                        transform: isFlipped ? ROTATION_MAP[rotateDirection] : 'rotateX(0deg) rotateY(0deg)',
+                      }}
+                      transition={{ ...springTransition, delay }}
+                      style={{
+                        display: 'inline-block',
+                        transformStyle: 'preserve-3d',
+                        position: 'relative',
+                        color,
+                        whiteSpace: 'pre',
+                      }}
+                    >
+                      {/* Front face */}
+                      <span style={{
+                        backfaceVisibility: 'hidden',
+                        display: 'inline-block',
+                      }}>
+                        {char}
+                      </span>
+                      {/* Back face (flip color) */}
+                      <span style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        color: flipColor,
+                        backfaceVisibility: 'hidden',
+                        transform: rotateDirection === 'top' || rotateDirection === 'bottom'
+                          ? 'rotateX(180deg)' : 'rotateY(180deg)',
+                        display: 'inline-block',
+                      }}>
+                        {flippedChar}
+                      </span>
+                    </motion.span>
+                  );
+                })}
+                {wordIdx < words.length - 1 && <span style={{ whiteSpace: 'pre' }}> </span>}
+              </span>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

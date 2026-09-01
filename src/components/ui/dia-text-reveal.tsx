@@ -254,9 +254,9 @@ export function DiaTextReveal({
           backgroundSize: "100% 100%",
           backgroundImage: deterministicGradient,
           display: "inline-block",
+          whiteSpace: isMulti ? "nowrap" : "pre-wrap",
           ...(isMulti && {
             overflow: "hidden",
-            whiteSpace: "nowrap",
             verticalAlign: "text-center",
           }),
         }}
@@ -289,9 +289,9 @@ export function DiaTextReveal({
         backgroundSize: "100% 100%",
         backgroundImage,
         display: "inline-block",
+        whiteSpace: isMulti ? "nowrap" : "pre-wrap",
         ...(isMulti && {
           overflow: "hidden",
-          whiteSpace: "nowrap",
           verticalAlign: "text-center",
           ...(fixedW != null && { width: fixedW }),
         }),

@@ -18,6 +18,8 @@ export interface HighlighterProps {
   fontSize?: number;
   fontFamily?: string;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   className?: string;
   layerDuration?: number;
@@ -150,6 +152,8 @@ export default function Highlighter({
   fontSize = 44,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   isBold = true,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   className = '',
   layerDuration,
@@ -216,7 +220,7 @@ export default function Highlighter({
       style={{
         fontSize: `${fontSize}px`,
         fontFamily,
-        fontWeight: isBold ? 800 : 400,
+        fontWeight: fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300),
         fontStyle: isItalic ? 'italic' : 'normal',
         color: textColor,
         display: 'inline',

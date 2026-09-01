@@ -56,13 +56,18 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     category: 'component',
     source: 'smoothui',
   },
-  {
-    id: 'dia-text-reveal',
-    name: 'Dia Text Reveal',
-    description: 'Dynamic multi-color kinetic text reveal animation',
-    category: 'component',
-    source: 'smoothui',
-  },
+  // ============================================================================
+  // TEMPORARILY DISABLED COMPONENT (DO NOT DELETE / DO NOT REMOVE DURING CLEANUP)
+  // Dia Text Reveal is temporarily disabled from the component picker by user request.
+  // Full implementation is preserved in MotionCanvas, PropertiesPanel, and SceneTexts.
+  // ============================================================================
+  // {
+  //   id: 'dia-text-reveal',
+  //   name: 'Dia Text Reveal',
+  //   description: 'Dynamic multi-color kinetic text reveal animation',
+  //   category: 'component',
+  //   source: 'smoothui',
+  // },
   {
     id: 'image',
     name: 'Image',
@@ -161,13 +166,18 @@ export const COMPONENT_TEMPLATES: ComponentTemplateConfig[] = [
     category: 'text',
     source: 'reactbits',
   },
-  {
-    id: 'camera-zoom',
-    name: 'Camera Zoom',
-    description: 'Smooth zoom in then zoom out effect on the scene',
-    category: 'component',
-    source: 'smoothui',
-  },
+  // ============================================================================
+  // TEMPORARILY DISABLED COMPONENT (DO NOT DELETE / DO NOT REMOVE DURING CLEANUP)
+  // Camera Zoom is temporarily disabled from the component picker by user request.
+  // Full implementation is preserved in MotionCanvas, PropertiesPanel, and store.
+  // ============================================================================
+  // {
+  //   id: 'camera-zoom',
+  //   name: 'Camera Zoom',
+  //   description: 'Smooth zoom in then zoom out effect on the scene',
+  //   category: 'component',
+  //   source: 'smoothui',
+  // },
   {
     id: 'phone-device',
     name: 'Phone Device',

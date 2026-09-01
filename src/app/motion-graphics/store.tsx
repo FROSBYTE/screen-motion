@@ -221,6 +221,8 @@ export interface MGTextLayer {
   fontFamily: string;
   letterSpacing?: number; // in pixels, default 0
   isBold: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic: boolean;
   startTime: number; // seconds
   duration: number;  // seconds

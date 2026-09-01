@@ -61,6 +61,7 @@ export default function ScaleDownFade({
           display: "inline-block",
           opacity,
           transform: `translateY(${y.toFixed(2)}px) scale(${scale.toFixed(3)})`,
+          whiteSpace: "pre-wrap",
         }}
       >
         {children}
@@ -77,7 +78,7 @@ export default function ScaleDownFade({
         shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 8, scale: 1.04 }
       }
       ref={ref}
-      style={{ display: "inline-block" }}
+      style={{ display: "inline-block", whiteSpace: "pre-wrap" }}
       transition={
         shouldReduceMotion
           ? { duration: 0 }

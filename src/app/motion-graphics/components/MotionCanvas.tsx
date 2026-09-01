@@ -682,7 +682,7 @@ function TextLayerRenderer({
           fontSize: `${layer.fontSize}px`,
           fontFamily: layer.fontFamily,
           letterSpacing: layer.letterSpacing !== undefined ? `${layer.letterSpacing}px` : undefined,
-          fontWeight: layer.isBold ? 800 : 400,
+          fontWeight: (layer as any).fontWeight ? (layer as any).fontWeight : (layer.isBold ? ((layer as any).boldLevel === 'half' ? 550 : 800) : 300),
           fontStyle: layer.isItalic ? 'italic' : 'normal',
           cursor: isDragging ? 'grabbing' : 'grab',
           border: isSelected ? '2px solid #000000' : '2px solid transparent',

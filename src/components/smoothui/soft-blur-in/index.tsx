@@ -83,30 +83,33 @@ export default function SoftBlurIn({
 
   return (
     <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>
-      {characters.map((char, index) => (
-        <motion.span
-          animate={play ? { filter: "blur(0px)", opacity: 1, y: 0 } : undefined}
-          aria-hidden="true"
-          initial={
-            shouldReduceMotion
-              ? { opacity: 1 }
-              : { filter: "blur(12px)", opacity: 0, y: 16 }
-          }
-          key={index}
-          style={{ display: "inline-block", whiteSpace: "pre" }}
-          transition={
-            shouldReduceMotion
-              ? { duration: 0 }
-              : {
-                  delay: delay / MS + (index * (stagger / speed)) / MS,
-                  duration: DURATION_S / speed,
-                  ease: EASE,
-                }
-          }
-        >
-          {char === " " ? "\u00A0" : String(char)}
-        </motion.span>
-      ))}
+      {characters.map((char, index) => {
+        if (char === "\n") return <br key={index} />;
+        return (
+          <motion.span
+            animate={play ? { filter: "blur(0px)", opacity: 1, y: 0 } : undefined}
+            aria-hidden="true"
+            initial={
+              shouldReduceMotion
+                ? { opacity: 1 }
+                : { filter: "blur(12px)", opacity: 0, y: 16 }
+            }
+            key={index}
+            style={{ display: "inline-block", whiteSpace: "pre" }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : {
+                    delay: delay / MS + (index * (stagger / speed)) / MS,
+                    duration: DURATION_S / speed,
+                    ease: EASE,
+                  }
+            }
+          >
+            {char === " " ? "\u00A0" : String(char)}
+          </motion.span>
+        );
+      })}
     </span>
   );
 }

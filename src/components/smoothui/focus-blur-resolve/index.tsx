@@ -53,13 +53,14 @@ export default function FocusBlurResolve({
     const y = (1 - eased) * 14;
 
     return (
-      <span aria-label={children} className={className} ref={ref}>
+      <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block", whiteSpace: "pre-wrap" }}>
         <span
           aria-hidden="true"
           style={{
             display: "inline-block",
             opacity,
             transform: `translateY(${y.toFixed(2)}px)`,
+            whiteSpace: "pre-wrap",
           }}
         >
           {children}
@@ -69,7 +70,7 @@ export default function FocusBlurResolve({
   }
 
   return (
-    <span aria-label={children} className={className} ref={ref}>
+    <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block", whiteSpace: "pre-wrap" }}>
       <motion.span
         animate={
           play ? { opacity: 1, y: 0, filter: "blur(0px)", scale: 1 } : undefined
@@ -80,7 +81,7 @@ export default function FocusBlurResolve({
             ? { opacity: 1, y: 0, filter: "blur(0px)", scale: 1 }
             : { opacity: 0, y: 14, filter: "blur(14px)", scale: 1.01 }
         }
-        style={{ display: "inline-block" }}
+        style={{ display: "inline-block", whiteSpace: "pre-wrap" }}
         transition={
           shouldReduceMotion
             ? { duration: 0 }

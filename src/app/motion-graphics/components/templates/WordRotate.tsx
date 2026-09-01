@@ -17,6 +17,8 @@ export interface WordRotateProps {
   fontSize?: number;
   fontFamily?: string;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   className?: string;
   isLoop?: boolean;
@@ -39,6 +41,8 @@ export default function WordRotate({
   fontSize = 48,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   isBold = true,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   className = '',
   isLoop = true,
@@ -94,7 +98,7 @@ export default function WordRotate({
 
   const currentRaw = items[activeIndex] || items[0] || 'Word';
   const currentText = typeof currentRaw === 'string' ? currentRaw : currentRaw?.text || 'Word';
-  const resolvedIsBold = isBold;
+  const resolvedFontWeight = fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300);
   const resolvedIsItalic = isItalic;
   const resolvedFontFamily = fontFamily;
 
@@ -107,7 +111,7 @@ export default function WordRotate({
             color,
             whiteSpace: 'nowrap',
             fontSize: `${fontSize}px`,
-            fontWeight: resolvedIsBold ? 800 : 400,
+            fontWeight: resolvedFontWeight,
             fontStyle: resolvedIsItalic ? 'italic' : 'normal',
             fontFamily: resolvedFontFamily,
             lineHeight: 1.3,
@@ -135,7 +139,7 @@ export default function WordRotate({
             color,
             whiteSpace: 'nowrap',
             fontSize: `${fontSize}px`,
-            fontWeight: resolvedIsBold ? 800 : 400,
+            fontWeight: resolvedFontWeight,
             fontStyle: resolvedIsItalic ? 'italic' : 'normal',
             fontFamily: resolvedFontFamily,
             lineHeight: 1.3,

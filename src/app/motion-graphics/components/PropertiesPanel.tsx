@@ -464,6 +464,90 @@ const SECTION_HEADING_STYLE: React.CSSProperties = {
   letterSpacing: '0.05em',
 };
 
+function BoldSplitControl({
+  isBold,
+  boldLevel,
+  fontWeight,
+  onChange,
+}: {
+  isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
+  onChange: (updates: { isBold: boolean; boldLevel?: 'half' | 'full'; fontWeight?: number }) => void;
+}) {
+  const isHalf = Boolean(isBold && (boldLevel === 'half' || fontWeight === 550));
+  const isFull = Boolean(isBold && (boldLevel === 'full' || (!boldLevel && fontWeight !== 550 && isBold)));
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', width: '100%', height: '36px' }}>
+      <button
+        type="button"
+        onClick={() => {
+          if (isHalf) {
+            onChange({ isBold: false, boldLevel: undefined, fontWeight: 300 });
+          } else {
+            onChange({ isBold: true, boldLevel: 'half', fontWeight: 550 });
+          }
+        }}
+        style={{
+          width: '100%',
+          height: '100%',
+          background: isHalf ? '#0F172A' : 'var(--bg-primary)',
+          border: isHalf ? '1px solid #0F172A' : '1px solid var(--border-color)',
+          borderRadius: '6px',
+          color: isHalf ? '#FFFFFF' : 'var(--text-primary)',
+          fontSize: '11px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          boxShadow: isHalf ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+          transition: 'all 0.15s ease',
+          padding: '0 2px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'var(--font-mono, monospace)',
+          letterSpacing: '-0.02em',
+        }}
+        title="Half Bold (550 Weight)"
+      >
+        Half
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (isFull) {
+            onChange({ isBold: false, boldLevel: undefined, fontWeight: 300 });
+          } else {
+            onChange({ isBold: true, boldLevel: 'full', fontWeight: 800 });
+          }
+        }}
+        style={{
+          width: '100%',
+          height: '100%',
+          background: isFull ? '#0F172A' : 'var(--bg-primary)',
+          border: isFull ? '1px solid #0F172A' : '1px solid var(--border-color)',
+          borderRadius: '6px',
+          color: isFull ? '#FFFFFF' : 'var(--text-primary)',
+          fontSize: '11px',
+          fontWeight: 800,
+          cursor: 'pointer',
+          boxShadow: isFull ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
+          transition: 'all 0.15s ease',
+          padding: '0 2px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'var(--font-mono, monospace)',
+          letterSpacing: '-0.02em',
+        }}
+        title="Full Bold (800 Weight)"
+      >
+        Full
+      </button>
+    </div>
+  );
+}
+
 function PacingPresetControl({
   value = 'balanced',
   onChange,
@@ -782,26 +866,12 @@ export default React.memo(function PropertiesPanel() {
               {/* Bold Button */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                <button
-                  type="button"
-                  onClick={() => updateLayer(selectedLayer.id, { isBold: !selectedLayer.isBold })}
-                  style={{
-                    width: '100%',
-                    height: '36px',
-                    background: selectedLayer.isBold ? '#0F172A' : 'var(--bg-primary)',
-                    border: selectedLayer.isBold ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    color: selectedLayer.isBold ? '#FFFFFF' : 'var(--text-primary)',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    boxShadow: selectedLayer.isBold ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                  title="Toggle Bold"
-                >
-                  B
-                </button>
+                <BoldSplitControl
+                  isBold={selectedLayer.isBold}
+                  boldLevel={selectedLayer.boldLevel}
+                  fontWeight={selectedLayer.fontWeight}
+                  onChange={(updates) => updateLayer(selectedLayer.id, updates)}
+                />
               </div>
 
               {/* Italic Button */}
@@ -1031,26 +1101,12 @@ export default React.memo(function PropertiesPanel() {
                     {/* Bold */}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
 
                     {/* Italic */}
@@ -1145,26 +1201,12 @@ export default React.memo(function PropertiesPanel() {
                     {/* Bold */}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !selectedLayer.props.isBold } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: selectedLayer.props.isBold ? '#0F172A' : 'var(--bg-primary)',
-                          border: selectedLayer.props.isBold ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: selectedLayer.props.isBold ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: selectedLayer.props.isBold ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
 
                     {/* Italic */}
@@ -1269,27 +1311,12 @@ export default React.memo(function PropertiesPanel() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title="Bold">Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: selectedLayer.props.isBold === undefined ? false : !selectedLayer.props.isBold } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                          boxSizing: 'border-box',
-                        }}
-                        title="Toggle Bold Text"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title="Italic">Italic</label>
@@ -1605,26 +1632,12 @@ export default React.memo(function PropertiesPanel() {
                     {/* Bold */}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
 
                     {/* Italic */}
@@ -1752,26 +1765,12 @@ export default React.memo(function PropertiesPanel() {
                     {/* Bold */}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
 
                     {/* Italic */}
@@ -1921,26 +1920,12 @@ export default React.memo(function PropertiesPanel() {
                     {/* Bold */}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
 
                     {/* Italic */}
@@ -2131,26 +2116,12 @@ export default React.memo(function PropertiesPanel() {
                     />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>
@@ -2507,26 +2478,12 @@ export default React.memo(function PropertiesPanel() {
                     />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Bold</label>
-                      <button
-                        type="button"
-                        onClick={() => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, isBold: !(selectedLayer.props.isBold ?? true) } } as any)}
-                        style={{
-                          width: '100%',
-                          height: '36px',
-                          background: (selectedLayer.props.isBold ?? true) ? '#0F172A' : 'var(--bg-primary)',
-                          border: (selectedLayer.props.isBold ?? true) ? '1px solid #0F172A' : '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          color: (selectedLayer.props.isBold ?? true) ? '#FFFFFF' : 'var(--text-primary)',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: (selectedLayer.props.isBold ?? true) ? '0 2px 6px rgba(15, 23, 42, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Toggle Bold"
-                      >
-                        B
-                      </button>
+                      <BoldSplitControl
+                        isBold={selectedLayer.props.isBold ?? true}
+                        boldLevel={selectedLayer.props.boldLevel}
+                        fontWeight={selectedLayer.props.fontWeight}
+                        onChange={(updates) => updateLayer(selectedLayer.id, { props: { ...selectedLayer.props, ...updates } } as any)}
+                      />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <label style={{ ...H2_STYLE, textAlign: 'center' }}>Italic</label>

@@ -116,7 +116,7 @@ function TextAnimationPreview({ animationId, isHovered }: { animationId: string;
     case 'per-word-crossfade':
       return <PerWordCrossfade className="text-[#0F172A] text-lg font-semibold" triggerOnView={false}>Sample Text</PerWordCrossfade>;
     case 'dia-text-reveal':
-      return <DiaTextRevealUI text="Sample Text" duration={1.5} repeat={true} className="text-[#0F172A] text-lg font-semibold" />;
+      return <DiaTextRevealUI text="Sample Text" duration={1.5} repeat={true} textColor="#0F172A" colors={['#c679c4', '#fa3d1d', '#ffb005', '#0358f7']} className="text-lg font-semibold" />;
     default:
       return null;
   }
@@ -155,7 +155,14 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
     case 'ai-loader':
       return <AILoader variant="dots" speed={1} color="#FF9137" />;
     case 'bubble-menu':
-      return <BubbleMenu items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} speed={1} menuBg="transparent" radius={36} bubbleSize={20} />;
+      return (
+        <div style={{ position: 'relative', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'linear-gradient(135deg, #FF9137, #FF6B00)', boxShadow: '0 2px 6px rgba(255,145,55,0.35)', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '9px', fontWeight: 800 }}>•</div>
+          <div style={{ position: 'absolute', top: '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #FF9137', boxShadow: '0 2px 5px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#FF9137' }}>1</div>
+          <div style={{ position: 'absolute', bottom: '6px', left: '6px', width: '16px', height: '16px', borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #FF9137', boxShadow: '0 2px 5px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#FF9137' }}>2</div>
+          <div style={{ position: 'absolute', bottom: '6px', right: '6px', width: '16px', height: '16px', borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #FF9137', boxShadow: '0 2px 5px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#FF9137' }}>3</div>
+        </div>
+      );
     case 'unlumen-animated-list':
       return <UnlumenAnimatedList items={[
         { title: 'New Message', description: 'You have received a message', bgColor: '#FFFFFF', titleColor: '#0F172A', descriptionColor: '#64748B', accentColor: '#FF9137' },
@@ -166,12 +173,37 @@ function MiniPreview({ templateId, isHovered }: { templateId: ComponentTemplateN
       return <WordRotate items={[{ text: 'Hello' }, { text: 'World' }]} speed={1.5} color="#0F172A" fontSize={16} />;
     case 'highlighter':
       return <Highlighter text="Highlight me" highlightWords="Highlight" action="highlight" color="#FFFC8C" textColor="#0F172A" highlightTextColor="" strokeWidth={2} animationDuration={600} speed={1} fontSize={14} />;
+    case 'animated-beam':
+      return <AnimatedBeam variant="unidirectional" width={100} height={50} duration={3} pathColor="#CBD5E1" pathOpacity={0.7} gradientStartColor="#FF9137" gradientStopColor="#9333EA" speed={1} />;
     case 'orbiting-circles':
-      return <OrbitingCircles items={[{ imageUrl: undefined }, { imageUrl: undefined }, { imageUrl: undefined }]} radius={45} speed={1} iconSize={24} />;
+      return (
+        <div style={{ position: 'relative', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', border: '1.5px dashed rgba(15, 23, 42, 0.2)', position: 'absolute' }} />
+          <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#FF9137', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '9px', fontWeight: 800 }}>•</div>
+          <div style={{ position: 'absolute', top: '2px', left: '50%', transform: 'translateX(-50%)', width: '14px', height: '14px', borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 700, color: '#0F172A' }}>A</div>
+          <div style={{ position: 'absolute', bottom: '6px', left: '8px', width: '14px', height: '14px', borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 700, color: '#0F172A' }}>B</div>
+          <div style={{ position: 'absolute', bottom: '6px', right: '8px', width: '14px', height: '14px', borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 700, color: '#0F172A' }}>C</div>
+        </div>
+      );
     case 'text-reveal':
       return <TextReveal text="Reveal" speed={1} color="#0F172A" revealColor="#FF9137" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' />;
+    case 'dia-text-reveal':
+      return (
+        <DiaTextRevealUI
+          text="Dia Reveal"
+          colors={['#c679c4', '#fa3d1d', '#ffb005', '#0358f7']}
+          textColor="#0F172A"
+          duration={1.5}
+          repeat={true}
+          className="text-base font-bold text-center"
+        />
+      );
     case 'skeleton-shimmer':
-      return <SkeletonShimmer lines={2} showAvatar={false} showImage={false} baseColor="rgba(15, 23, 42, 0.08)" shimmerColor="rgba(15, 23, 42, 0.16)" speed={1} borderRadius={4} />;
+      return (
+        <div style={{ width: '80px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <SkeletonShimmer lines={2} showAvatar={true} showImage={false} baseColor="rgba(15, 23, 42, 0.10)" shimmerColor="rgba(255, 145, 55, 0.35)" speed={1.2} borderRadius={4} />
+        </div>
+      );
     case 'text-3d-flip':
       return <Text3DFlip text="Flip" flippedText="" color="#0F172A" flipColor="#FF9137" fontSize={16} fontFamily='"Plus Jakarta Sans", sans-serif' staggerDuration={0.05} staggerFrom="first" rotateDirection="top" speed={1} autoPlay />;
     case 'camera-zoom':

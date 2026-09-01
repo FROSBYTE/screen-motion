@@ -17,6 +17,8 @@ export interface UnlumenAnimatedListProps {
   count?: number; // how many notifications to show (cycles/limits from items)
   speed?: number;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   fontFamily?: string;
   className?: string;
@@ -38,6 +40,8 @@ export default function UnlumenAnimatedList({
   count,
   speed = 1,
   isBold = true,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   className = '',
@@ -45,6 +49,7 @@ export default function UnlumenAnimatedList({
   localTime,
   layerStartTime = 0,
 }: UnlumenAnimatedListProps) {
+  const resolvedFontWeight = fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300);
   const safeSpeed = Math.max(0.1, speed || 1);
   const effectiveItems = typeof count === 'number' ? items.slice(0, count) : items;
   const [visibleItems, setVisibleItems] = useState<typeof effectiveItems>([]);
@@ -108,7 +113,7 @@ export default function UnlumenAnimatedList({
                 background: item.accentColor || '#6366f1', flexShrink: 0,
               }} />
               <div>
-                <div style={{ fontSize: '15px', fontWeight: isBold ? 800 : 500, fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
+                <div style={{ fontSize: '15px', fontWeight: resolvedFontWeight, fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
                 <div style={{ fontSize: '13px', fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
               </div>
             </div>
@@ -143,7 +148,7 @@ export default function UnlumenAnimatedList({
               background: item.accentColor || '#6366f1', flexShrink: 0,
             }} />
             <div>
-              <div style={{ fontSize: '15px', fontWeight: isBold ? 800 : 500, fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
+              <div style={{ fontSize: '15px', fontWeight: resolvedFontWeight, fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.titleColor || '#ffffff', marginBottom: '2px' }}>{item.title}</div>
               <div style={{ fontSize: '13px', fontStyle: isItalic ? 'italic' : 'normal', fontFamily, color: item.descriptionColor || 'rgba(255,255,255,0.5)' }}>{item.description}</div>
             </div>
           </motion.div>
