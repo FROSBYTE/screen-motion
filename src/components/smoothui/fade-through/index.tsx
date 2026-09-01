@@ -37,7 +37,7 @@ export default function FadeThrough({
   const shouldReduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
 
-  const phrases = phrasesProp ?? (children ? children.split("\n") : []);
+  const phrases = phrasesProp ?? (children ? [children] : []);
 
   useEffect(() => {
     if (localTime !== undefined || shouldReduceMotion || !phrases || phrases.length <= 1) {
@@ -64,13 +64,14 @@ export default function FadeThrough({
       <span
         aria-live="polite"
         className={className}
-        style={{ display: "inline-block", position: "relative" }}
+        style={{ display: "inline-block", position: "relative", whiteSpace: "pre-wrap" }}
       >
         <span
           style={{
             display: "inline-block",
             opacity,
             transform: `translateY(${y.toFixed(2)}px)`,
+            whiteSpace: "pre-wrap",
           }}
         >
           {phrases[idx] ?? ""}
@@ -85,7 +86,7 @@ export default function FadeThrough({
     <span
       aria-live="polite"
       className={className}
-      style={{ display: "inline-block", position: "relative" }}
+      style={{ display: "inline-block", position: "relative", whiteSpace: "pre-wrap" }}
     >
       <AnimatePresence mode="wait">
         <motion.span
@@ -103,7 +104,7 @@ export default function FadeThrough({
               : { opacity: 0, y: 6, scale: 0.99, filter: "blur(2px)" }
           }
           key={index}
-          style={{ display: "inline-block" }}
+          style={{ display: "inline-block", whiteSpace: "pre-wrap" }}
           transition={
             shouldReduceMotion
               ? { duration: 0 }

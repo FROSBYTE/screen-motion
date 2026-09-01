@@ -12,6 +12,8 @@ export interface AnimatedListProps {
   fontSize?: number;
   borderRadius?: number;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   fontFamily?: string;
   layerDuration?: number;
@@ -44,12 +46,15 @@ export default function AnimatedList({
   fontSize = 16,
   borderRadius = 10,
   isBold = false,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   layerDuration,
   localTime,
   layerStartTime = 0,
 }: AnimatedListProps) {
+  const resolvedFontWeight = fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300);
   const normalizedItems = useMemo(() => {
     const raw = Array.isArray(items) ? items : typeof items === 'object' && items !== null ? Object.values(items) : [items];
     return raw.map(parseItemToString);
@@ -114,7 +119,7 @@ export default function AnimatedList({
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 fontSize: `${fontSize}px`,
                 color: textColor,
-                fontWeight: isBold ? 800 : 500,
+                fontWeight: resolvedFontWeight,
                 fontStyle: isItalic ? 'italic' : 'normal',
                 fontFamily,
               }}
@@ -145,7 +150,7 @@ export default function AnimatedList({
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               fontSize: `${fontSize}px`,
               color: textColor,
-              fontWeight: isBold ? 800 : 500,
+              fontWeight: resolvedFontWeight,
               fontStyle: isItalic ? 'italic' : 'normal',
               fontFamily,
             }}

@@ -41,7 +41,7 @@ export default function SpringScaleIn({
   const inView = useInView(ref, { once: true });
   const shouldReduceMotion = useReducedMotion();
   const play = (!triggerOnView || inView) && !shouldReduceMotion;
-  const words = (children || "").split(" ");
+  const lines = (children || "").split("\n");
 
   if (localTime !== undefined) {
     const elapsed = Math.max(0, localTime - layerStartTime);
@@ -49,37 +49,47 @@ export default function SpringScaleIn({
     const staggerS = (stagger / Math.max(0.1, speed)) / MS;
     const baseDelayS = delay / MS;
 
-    return (
-      <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>
-        {words.map((word, index) => {
-          const wordStart = baseDelayS + index * staggerS;
-          const wordElapsed = Math.max(0, elapsed - wordStart);
-          const progress = Math.min(1, Math.max(0, wordElapsed / animDur));
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const opacity = eased;
-          const scale = 0.7 + eased * 0.3;
+    let globalWordIndex = 0;
 
+    return (
+      <span aria-label={children} className={className} ref={ref} style={{ display: "block" }}>
+        {lines.map((line, lineIdx) => {
+          const words = line.split(" ");
           return (
-            <span key={index} style={{ display: "inline-block" }}>
-              <span
-                aria-hidden="true"
-                style={{
-                  display: "inline-block",
-                  whiteSpace: "pre",
-                  opacity,
-                  transform: `scale(${scale.toFixed(3)})`,
-                }}
-              >
-                {word}
-              </span>
-              {index < words.length - 1 && (
-                <span
-                  aria-hidden="true"
-                  style={{ display: "inline-block", whiteSpace: "pre" }}
-                >
-                  {" "}
-                </span>
-              )}
+            <span key={lineIdx} style={{ display: "block" }}>
+              {line === "" ? <br /> : words.map((word, index) => {
+                const wordIdx = globalWordIndex++;
+                const wordStart = baseDelayS + wordIdx * staggerS;
+                const wordElapsed = Math.max(0, elapsed - wordStart);
+                const progress = Math.min(1, Math.max(0, wordElapsed / animDur));
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const opacity = eased;
+                const scale = 0.7 + eased * 0.3;
+
+                return (
+                  <span key={index} style={{ display: "inline-block" }}>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: "inline-block",
+                        whiteSpace: "pre",
+                        opacity,
+                        transform: `scale(${scale.toFixed(3)})`,
+                      }}
+                    >
+                      {word}
+                    </span>
+                    {index < words.length - 1 && (
+                      <span
+                        aria-hidden="true"
+                        style={{ display: "inline-block", whiteSpace: "pre" }}
+                      >
+                        {" "}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
             </span>
           );
         })}
@@ -87,39 +97,51 @@ export default function SpringScaleIn({
     );
   }
 
+  let globalWordIndex = 0;
+
   return (
-    <span aria-label={children} className={className} ref={ref} style={{ display: "inline-block" }}>
-      {words.map((word, index) => (
-        <span key={index} style={{ display: "inline-block" }}>
-          <motion.span
-            animate={play ? { opacity: 1, scale: 1 } : undefined}
-            aria-hidden="true"
-            initial={
-              shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.7 }
-            }
-            style={{ display: "inline-block", whiteSpace: "pre" }}
-            transition={
-              shouldReduceMotion
-                ? { duration: 0 }
-                : {
-                    delay: delay / MS + (index * (stagger / speed)) / MS,
-                    duration: DURATION_S / speed,
-                    ease: EASE,
-                  }
-            }
-          >
-            {word}
-          </motion.span>
-          {index < words.length - 1 && (
-            <span
-              aria-hidden="true"
-              style={{ display: "inline-block", whiteSpace: "pre" }}
-            >
-              {" "}
-            </span>
-          )}
-        </span>
-      ))}
+    <span aria-label={children} className={className} ref={ref} style={{ display: "block" }}>
+      {lines.map((line, lineIdx) => {
+        const words = line.split(" ");
+        return (
+          <span key={lineIdx} style={{ display: "block" }}>
+            {line === "" ? <br /> : words.map((word, index) => {
+              const wordIdx = globalWordIndex++;
+              return (
+                <span key={index} style={{ display: "inline-block" }}>
+                  <motion.span
+                    animate={play ? { opacity: 1, scale: 1 } : undefined}
+                    aria-hidden="true"
+                    initial={
+                      shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.7 }
+                    }
+                    style={{ display: "inline-block", whiteSpace: "pre" }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : {
+                            delay: delay / MS + (wordIdx * (stagger / speed)) / MS,
+                            duration: DURATION_S / speed,
+                            ease: EASE,
+                          }
+                    }
+                  >
+                    {word}
+                  </motion.span>
+                  {index < words.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      style={{ display: "inline-block", whiteSpace: "pre" }}
+                    >
+                      {" "}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
     </span>
   );
 }

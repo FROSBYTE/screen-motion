@@ -284,12 +284,12 @@ function OverlayText({
           borderRadius: '4px',
           color: config.color,
           fontSize: `${fontSizePx}px`,
-          fontWeight: config.isBold !== false ? 800 : 400,
+          fontWeight: config.fontWeight ? config.fontWeight : (config.isBold === false ? 300 : (config.boldLevel === 'half' ? 550 : 800)),
           fontStyle: config.isItalic ? 'italic' : 'normal',
           textDecoration: config.isUnderline ? 'underline' : 'none',
           textAlign: 'center',
           fontFamily: config.fontFamily || '"Plus Jakarta Sans", "Google Sans", "Inter", sans-serif',
-          whiteSpace: 'pre',
+          whiteSpace: 'pre-wrap',
           padding: '6px 12px',
           boxSizing: 'border-box',
           userSelect: 'none',
@@ -334,11 +334,11 @@ function OverlayText({
             }
 
             if (effectiveType === 'text-animate') {
-              return <TextAnimate key={`${animTrigger}-${effectiveType}-${animSpeed}`} animation="fadeIn" duration={2 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TextAnimate>;
+              return <TextAnimate key={`${animTrigger}-${effectiveType}-${animSpeed}`} animation="fadeIn" duration={2 / animSpeed} style={{ whiteSpace: 'pre-wrap' }}>{displayText}</TextAnimate>;
             }
 
             if (effectiveType === 'typing-animation') {
-              return <TypingAnimation key={`${animTrigger}-${effectiveType}-${animSpeed}`} duration={100 / animSpeed} style={{ whiteSpace: 'pre' }}>{displayText}</TypingAnimation>;
+              return <TypingAnimation key={`${animTrigger}-${effectiveType}-${animSpeed}`} duration={100 / animSpeed} style={{ whiteSpace: 'pre-wrap' }}>{displayText}</TypingAnimation>;
             }
 
             if (effectiveType === 'text-reveal') {
@@ -356,7 +356,7 @@ function OverlayText({
               return (
                 <DiaTextReveal
                   key={`${animTrigger}-${effectiveType}-${animSpeed}`}
-                  text={displayText.includes('\n') ? displayText.split('\n').filter(Boolean) : displayText}
+                  text={displayText}
                   duration={1.5 / animSpeed}
                   textColor={config.color || '#ffffff'}
                   repeat={true}

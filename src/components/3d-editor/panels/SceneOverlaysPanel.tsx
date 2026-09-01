@@ -41,7 +41,8 @@ const animationItems = [
   { id: 'per-character-rise', label: 'Per Char Rise' },
   { id: 'per-word-crossfade', label: 'Per Word Crossfade' },
   { id: 'text-reveal', label: 'Text Reveal' },
-  { id: 'dia-text-reveal', label: 'Dia Text Reveal' },
+  // Temporarily disabled per user request - DO NOT DELETE during cleanup
+  // { id: 'dia-text-reveal', label: 'Dia Text Reveal' },
 ];
 
 const imageAnimationItems = [
@@ -206,10 +207,26 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const newTexts = texts.map((tx) => (tx.id === t.id ? { ...tx, isBold: !tx.isBold } : tx));
+                          let nextBold = true;
+                          let nextLevel: 'half' | 'full' | undefined = 'full';
+                          let nextWeight = 800;
+                          if (t.isBold !== false && (t.boldLevel === 'full' || (!t.boldLevel && t.fontWeight !== 550))) {
+                            nextBold = true;
+                            nextLevel = 'half';
+                            nextWeight = 550;
+                          } else if (t.isBold !== false && (t.boldLevel === 'half' || t.fontWeight === 550)) {
+                            nextBold = false;
+                            nextLevel = undefined;
+                            nextWeight = 300;
+                          } else {
+                            nextBold = true;
+                            nextLevel = 'full';
+                            nextWeight = 800;
+                          }
+                          const newTexts = texts.map((tx) => (tx.id === t.id ? { ...tx, isBold: nextBold, boldLevel: nextLevel, fontWeight: nextWeight } : tx));
                           dispatch({ scene: { texts: newTexts } });
                         }}
-                        title="Toggle Bold"
+                        title={t.isBold === false ? 'Normal (Click for Full Bold)' : (t.boldLevel === 'half' ? 'Half Bold (Click for Normal)' : 'Full Bold (Click for Half Bold)')}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -221,9 +238,15 @@ export default function SceneOverlaysPanel({ fileInputRef }: SceneOverlaysPanelP
                           background: t.isBold !== false ? 'rgba(0,0,0,0.12)' : 'var(--bg-secondary, #f3f4f6)',
                           color: 'var(--text-primary)',
                           cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: t.boldLevel === 'half' ? 600 : 800,
                         }}
                       >
-                        <Bold size={14} />
+                        {t.boldLevel === 'half' ? (
+                          <span style={{ fontSize: '10px', fontWeight: 600, fontFamily: 'var(--font-mono, monospace)' }}>H</span>
+                        ) : (
+                          <Bold size={14} />
+                        )}
                       </button>
                     )}
 

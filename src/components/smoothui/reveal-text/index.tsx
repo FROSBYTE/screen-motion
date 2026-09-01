@@ -64,6 +64,7 @@ const RevealText: React.FC<RevealTextProps> = ({
           display: "inline-block",
           opacity,
           transform,
+          whiteSpace: "pre-wrap",
         }}
       >
         {children}
@@ -83,7 +84,7 @@ const RevealText: React.FC<RevealTextProps> = ({
         shouldReduceMotion ? { opacity: 1 } : directionVariants[direction]
       }
       ref={ref}
-      style={{ display: "inline-block" }}
+      style={{ display: "inline-block", whiteSpace: "pre-wrap" }}
       transition={
         shouldReduceMotion
           ? { duration: 0 }

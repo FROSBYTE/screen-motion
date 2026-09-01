@@ -36,7 +36,9 @@ export default function ShortSlideDown({
   const shouldReduceMotion = useReducedMotion();
 
   const currentPhrase = phrases[phraseIndex] ?? "";
-  const words = currentPhrase.split(" ");
+  const words = currentPhrase.includes("\n")
+    ? currentPhrase.split("\n").filter(Boolean)
+    : currentPhrase.split(" ");
 
   useEffect(() => {
     if (localTime !== undefined || shouldReduceMotion) return;

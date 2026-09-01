@@ -411,9 +411,11 @@ function PooledDeviceSlot({
   descriptor?: ActiveDeviceDescriptor | null;
 }) {
   const slotGroupRef = useRef<THREE.Group>(null!);
+  const camCompGroupRef = useRef<THREE.Group>(null!);
   const deviceAnimGroupRef = useRef<THREE.Group>(null!);
   const deviceTransformGroupRef = useRef<THREE.Group>(null!);
   const animRef = useRef<TemplateAnimation | null>(null);
+  const virtualCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   // Persistent reusable Video element & VideoTexture per slot
   const videoElRef = useRef<HTMLVideoElement | null>(null);
@@ -534,6 +536,7 @@ function PooledDeviceSlot({
     const virtualCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     virtualCamera.position.set(0, 0, 4);
     virtualCamera.lookAt(0, 0, 0);
+    virtualCameraRef.current = virtualCamera;
 
     const target: AnimationTarget = {
       camera: virtualCamera,
@@ -590,6 +593,17 @@ function PooledDeviceSlot({
     slotGroupRef.current.position.y = posY * 1.28;
     slotGroupRef.current.position.z = 0;
 
+    // Tier 1.5: Camera animation compensation transforms
+    if (virtualCameraRef.current && camCompGroupRef.current) {
+      const vCam = virtualCameraRef.current;
+      camCompGroupRef.current.position.x = -vCam.position.x;
+      camCompGroupRef.current.position.y = -vCam.position.y;
+      camCompGroupRef.current.position.z = 4 - vCam.position.z;
+      camCompGroupRef.current.rotation.x = -vCam.rotation.x;
+      camCompGroupRef.current.rotation.y = -vCam.rotation.y;
+      camCompGroupRef.current.rotation.z = -vCam.rotation.z;
+    }
+
     // Tier 3: Independent User Transforms applied directly to the device
     if (deviceTransformGroupRef.current) {
       deviceTransformGroupRef.current.scale.set(baseScale, baseScale, baseScale);
@@ -638,20 +652,23 @@ function PooledDeviceSlot({
 
   return (
     <group ref={slotGroupRef} visible={isSlotActive}>
-      {/* Tier 2: Template animation (GSAP animates around device's own local center) */}
-      <group ref={deviceAnimGroupRef}>
-        {/* Tier 3: Independent device transforms (User Size, RotX, RotY) */}
-        <group ref={deviceTransformGroupRef}>
-          <PooledIPhoneModel
-            deviceColor={deviceColor}
-            screenTexture={activeScreenTexture}
-            visible={deviceType === 'iphone'}
-          />
-          <PooledAndroidModel
-            deviceColor={deviceColor}
-            screenTexture={activeScreenTexture}
-            visible={deviceType === 'android'}
-          />
+      {/* Tier 1.5: Camera animation compensation group */}
+      <group ref={camCompGroupRef}>
+        {/* Tier 2: Template animation (GSAP animates around device's own local center) */}
+        <group ref={deviceAnimGroupRef}>
+          {/* Tier 3: Independent device transforms (User Size, RotX, RotY) */}
+          <group ref={deviceTransformGroupRef}>
+            <PooledIPhoneModel
+              deviceColor={deviceColor}
+              screenTexture={activeScreenTexture}
+              visible={deviceType === 'iphone'}
+            />
+            <PooledAndroidModel
+              deviceColor={deviceColor}
+              screenTexture={activeScreenTexture}
+              visible={deviceType === 'android'}
+            />
+          </group>
         </group>
       </group>
     </group>

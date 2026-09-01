@@ -19,6 +19,12 @@ export interface SkeletonShimmerProps {
 }
 
 function parseShimmerColors(color?: string, baseColor?: string, shimmerColor?: string) {
+  if (baseColor || shimmerColor) {
+    return {
+      effectiveBase: baseColor || 'rgba(15, 23, 42, 0.08)',
+      effectiveShimmer: shimmerColor || 'rgba(15, 23, 42, 0.22)',
+    };
+  }
   if (color) {
     const clean = color.startsWith('#') ? color : '#ffffff';
     let r = 255, g = 255, b = 255;
@@ -37,8 +43,8 @@ function parseShimmerColors(color?: string, baseColor?: string, shimmerColor?: s
     };
   }
   return {
-    effectiveBase: baseColor || 'rgba(255,255,255,0.08)',
-    effectiveShimmer: shimmerColor || 'rgba(255,255,255,0.18)',
+    effectiveBase: 'rgba(255,255,255,0.08)',
+    effectiveShimmer: 'rgba(255,255,255,0.18)',
   };
 }
 

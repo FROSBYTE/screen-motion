@@ -15,6 +15,8 @@ export interface CountUpProps {
   separator?: string;
   color?: string;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   fontFamily?: string;
   fontSize?: number;
@@ -34,6 +36,8 @@ export default function CountUp({
   separator = '',
   color = '#ffffff',
   isBold = true,
+  boldLevel,
+  fontWeight,
   isItalic = false,
   fontFamily = '"Plus Jakarta Sans", sans-serif',
   fontSize = 64,
@@ -90,7 +94,7 @@ export default function CountUp({
         display: 'inline-block',
         fontVariantNumeric: 'tabular-nums',
         color,
-        fontWeight: isBold ? 800 : 400,
+        fontWeight: fontWeight || (isBold ? (boldLevel === 'half' ? 550 : 800) : 300),
         fontStyle: isItalic ? 'italic' : 'normal',
         fontFamily,
         fontSize: `${fontSize}px`,

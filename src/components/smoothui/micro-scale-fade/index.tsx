@@ -60,6 +60,7 @@ export default function MicroScaleFade({
           display: "inline-block",
           opacity,
           transform: `scale(${scale.toFixed(3)})`,
+          whiteSpace: "pre-wrap",
         }}
       >
         {children}
@@ -76,7 +77,7 @@ export default function MicroScaleFade({
         shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.96 }
       }
       ref={ref}
-      style={{ display: "inline-block" }}
+      style={{ display: "inline-block", whiteSpace: "pre-wrap" }}
       transition={
         shouldReduceMotion
           ? { duration: 0 }

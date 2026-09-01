@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useAppState } from '@/store';
 import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
 import { Model as IPhone16 } from './IPhone16';
@@ -11,8 +11,8 @@ import { Center } from '@react-three/drei';
 
 function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
   const { state } = useAppState();
+  const { camera } = useThree();
   const groupRef = useRef<THREE.Group>(null!);
-  const cameraRef = useRef<THREE.PerspectiveCamera>(null!);
   const animRef = useRef<TemplateAnimation | null>(null);
   const videoRestartRef = useRef<(() => void) | null>(null);
 
@@ -22,7 +22,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
 
   // Create / recreate animation when template, orientation, or device changes
   useEffect(() => {
-    if (!groupRef.current || !cameraRef.current) return;
+    if (!groupRef.current || !camera) return;
 
     // Kill previous animation
     if (animRef.current) {
@@ -42,7 +42,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
       || null;
 
     const target: AnimationTarget = {
-      camera: cameraRef.current,
+      camera: camera as THREE.PerspectiveCamera,
       device: groupRef.current,
       screenMesh: screenMesh,
     };
@@ -54,7 +54,7 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
     return () => {
       anim.timeline.kill();
     };
-  }, [state.template, state.orientation, state.device]);
+  }, [state.template, state.orientation, state.device, camera]);
 
   // Dynamically update timescale when speed slider changes without restarting or auto-playing
   useEffect(() => {
@@ -62,13 +62,6 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
       animRef.current.timeline.timeScale(state.speed);
     }
   }, [state.speed]);
-
-  // Update camera to match R3F camera
-  useFrame(({ camera }) => {
-    if (cameraRef.current !== camera) {
-      cameraRef.current = camera as THREE.PerspectiveCamera;
-    }
-  });
 
   // Restart animation only when export rendering begins
   useEffect(() => {

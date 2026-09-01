@@ -54,6 +54,8 @@ export interface TextOverlay {
   delay?: number;
   animationSpeed: number;
   isBold?: boolean;
+  boldLevel?: 'half' | 'full';
+  fontWeight?: number;
   isItalic?: boolean;
   isUnderline?: boolean;
   fontFamily?: string;

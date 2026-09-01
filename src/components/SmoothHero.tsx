@@ -290,10 +290,58 @@ export default function SmoothHero() {
             <Link href="#use-cases" style={{ display: "block", color: "#475569", textDecoration: "none", fontSize: "14.7px", fontWeight: 600, padding: "5px 10px", transition: "color 0.2s", whiteSpace: "nowrap" }} onMouseOver={e=>e.currentTarget.style.color="#FF9137"} onMouseOut={e=>e.currentTarget.style.color="#475569"}>Use Cases</Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2, ease: "easeOut" }}>
-            <Link href="/motion-graphics" style={{ display: "block", color: "#FF9137", textDecoration: "none", fontSize: "14.7px", fontWeight: 800, padding: "5px 10px", transition: "color 0.2s", whiteSpace: "nowrap" }} onMouseOver={e=>e.currentTarget.style.color="#E6791E"} onMouseOut={e=>e.currentTarget.style.color="#FF9137"}>Motion Graphics</Link>
+            <Link
+              href="/motion-graphics"
+              style={{
+                display: "block",
+                background: "linear-gradient(135deg, #0F172A 15%, #FF9137 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textDecoration: "none",
+                fontSize: "14.7px",
+                fontWeight: 800,
+                padding: "5px 10px",
+                transition: "all 0.2s ease",
+                whiteSpace: "nowrap",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #0F172A 0%, #FF6B00 100%)";
+                e.currentTarget.style.webkitBackgroundClip = "text";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #0F172A 15%, #FF9137 100%)";
+                e.currentTarget.style.webkitBackgroundClip = "text";
+              }}
+            >
+              Motion Graphics
+            </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2, ease: "easeOut" }}>
-            <Link href="/editor" style={{ display: "block", color: "#FF9137", textDecoration: "none", fontSize: "14.7px", fontWeight: 800, padding: "5px 10px", transition: "color 0.2s", whiteSpace: "nowrap" }} onMouseOver={e=>e.currentTarget.style.color="#E6791E"} onMouseOut={e=>e.currentTarget.style.color="#FF9137"}>3D Mockup</Link>
+            <Link
+              href="/editor"
+              style={{
+                display: "block",
+                background: "linear-gradient(135deg, #0F172A 15%, #FF9137 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textDecoration: "none",
+                fontSize: "14.7px",
+                fontWeight: 800,
+                padding: "5px 10px",
+                transition: "all 0.2s ease",
+                whiteSpace: "nowrap",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #0F172A 0%, #FF6B00 100%)";
+                e.currentTarget.style.webkitBackgroundClip = "text";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #0F172A 15%, #FF9137 100%)";
+                e.currentTarget.style.webkitBackgroundClip = "text";
+              }}
+            >
+              3D Mockup
+            </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2, ease: "easeOut" }}>
             <Link href="#faq" style={{ display: "block", color: "#475569", textDecoration: "none", fontSize: "14.7px", fontWeight: 600, padding: "5px 10px", transition: "color 0.2s", whiteSpace: "nowrap" }} onMouseOver={e=>e.currentTarget.style.color="#FF9137"} onMouseOut={e=>e.currentTarget.style.color="#475569"}>FAQ</Link>
