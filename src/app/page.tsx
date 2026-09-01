@@ -20,16 +20,25 @@ const SHOWCASE_ANIMATIONS = [
   { name: "Depth Zoom", id: "depth-zoom" },
 ];
 
-const TEMPLATE_CARDS = [
+interface TemplateCardData {
+  id: string;
+  animationName: string;
+  video: string;
+  gradient?: string;
+  isVertical?: boolean;
+}
+
+const TEMPLATE_CARDS: TemplateCardData[] = [
   { id: "corkscrew-reveal", animationName: "Corkscrew Reveal", video: "/showcase-videos/screen-motion-1080p-corkscrew-reveal-1785452727399.webm", gradient: "#050509" },
   { id: "bounce-drop", animationName: "Bounce Drop", video: "/showcase-videos/screen-motion-1080p-bounce-drop-1785438886976.webm", gradient: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)" },
   { id: "flip", animationName: "Flip & Land", video: "/showcase-videos/screen-motion-1080p-flip-1785165653076.webm", gradient: "linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)" },
-  { id: "depth-zoom", animationName: "Depth Zoom", video: "/showcase-videos/screen-motion-4k-depth-zoom-1785492356200.webm", gradient: "linear-gradient(135deg, #312e81 0%, #4c1d95 100%)" },
-  { id: "rise", animationName: "Studio Rise", video: "/showcase-videos/screen-motion-4k-rise-1785492156624.webm", gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" },
+  { id: "depth-zoom", animationName: "Depth Zoom", video: "/showcase-videos/screen-motion-4k-depth-zoom-1785492356200.webm", gradient: "linear-gradient(135deg, #312e81 0%, #4c1d95 100%)", isVertical: true },
   { id: "orbit", animationName: "Orbit 3D", video: "/animation-card-videos/orbit-template.webm", gradient: "linear-gradient(135deg, #a7f3d0 0%, #a855f7 50%, #facc15 100%)" },
-  { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
+  { id: "rise", animationName: "Studio Rise", video: "/showcase-videos/screen-motion-4k-rise-1785492156624.webm", gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)", isVertical: true },
+  { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" },
   { id: "float", animationName: "Floating Drift", video: "/animation-card-videos/float-template.webm", gradient: "linear-gradient(135deg, #c084fc 0%, #facc15 50%, #f97316 100%)" },
-  { id: "dynamic-showcase", animationName: "Dynamic 3D Showcase", video: "/animation-card-videos/dynamic-showcase-template.webm", gradient: "linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #fb923c 100%)" }
+  { id: "hero-reveal", animationName: "Hero Reveal", video: "/animation-card-videos/hero-reveal-template.webm", gradient: "#09090b" },
+  { id: "cinematic-pan", animationName: "Cinematic Pan", video: "/animation-card-videos/cinematic-pan-template.webm", gradient: "linear-gradient(135deg, #1e293b 0%, #334155 100%)" }
 ];
 
 
@@ -80,15 +89,7 @@ const FAQ_ITEMS = [
   }
 ];
 
-interface TemplateCardData {
-  id: string;
-  animationName: string;
-  video: string;
-  gradient?: string;
-  aspectRatio?: string;
-}
-
-function TemplateCardItem({ card }: { card: TemplateCardData }) {
+function TemplateCardItem({ card, index = 0 }: { card: TemplateCardData; index?: number }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [isIntersecting, setIsIntersecting] = React.useState(false);
@@ -106,7 +107,7 @@ function TemplateCardItem({ card }: { card: TemplateCardData }) {
           videoRef.current?.pause();
         }
       },
-      { threshold: 0.15, rootMargin: '100px' }
+      { threshold: 0.1, rootMargin: '150px' }
     );
 
     observer.observe(el);
@@ -114,114 +115,125 @@ function TemplateCardItem({ card }: { card: TemplateCardData }) {
   }, []);
 
   return (
-    <Link
-      href="/projects"
-      style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%", outline: "none" }}
-      className="template-card-link"
-      aria-label={`Launch ${card.animationName} template`}
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.5, delay: (index % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
+      className={`template-card-cell ${card.isVertical ? "vertical-span" : ""}`}
+      style={{ width: "100%", height: "100%" }}
     >
-      <motion.div
-        ref={containerRef}
-        whileHover={{ y: -6, scale: 1.015 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        style={{
-          position: "relative",
-          borderRadius: "14px",
-          overflow: "hidden",
-          background: card.gradient || "#0F172A",
-          width: "100%",
-          aspectRatio: "16/10",
-          border: "1px solid rgba(15, 23, 42, 0.08)",
-          boxShadow: "0 8px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04)",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-          transform: "translateZ(0)",
-        }}
+      <Link
+        href="/projects"
+        style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%", outline: "none" }}
+        className="template-card-link"
+        aria-label={`Launch ${card.animationName} template`}
       >
-        {/* Main Video element with lazy IntersectionObserver playback */}
-        <div style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "hidden" }}>
-          {isIntersecting && (
-            <video
-              ref={videoRef}
-              src={card.video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center",
-                display: "block",
-              }}
-            />
-          )}
-        </div>
-
-        {/* Bottom Label + Launch Action without black tint */}
-        <div
+        <motion.div
+          ref={containerRef}
+          whileHover={{ y: -6, scale: 1.015 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className={`template-card-inner ${card.isVertical ? "is-vertical-card" : ""}`}
           style={{
             position: "relative",
-            zIndex: 2,
-            padding: "16px 18px",
-            background: "transparent",
+            borderRadius: "16px",
+            overflow: "hidden",
+            background: card.gradient || "#0F172A",
+            width: "100%",
+            height: "100%",
+            aspectRatio: card.isVertical ? undefined : "16/10",
+            minHeight: card.isVertical ? "100%" : undefined,
+            border: "1px solid rgba(15, 23, 42, 0.08)",
+            boxShadow: "0 8px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            transform: "translateZ(0)",
+            willChange: "transform",
           }}
         >
-          <div>
-            <div style={{
-              color: "#FFFFFF",
-              fontWeight: 700,
-              fontSize: "14.5px",
-              letterSpacing: "-0.01em",
-              textShadow: "0 2px 6px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)"
-            }}>
-              {card.animationName}
-            </div>
-            <div style={{
-              color: "rgba(255, 255, 255, 0.85)",
-              fontSize: "11px",
-              fontFamily: "var(--font-mono)",
-              marginTop: "2px",
-              textShadow: "0 1px 4px rgba(0,0,0,0.8)"
-            }}>
-              SaaS Product Motion
-            </div>
+          {/* Main Video element with lazy IntersectionObserver playback */}
+          <div style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "hidden" }}>
+            {isIntersecting && (
+              <video
+                ref={videoRef}
+                src={card.video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center",
+                  display: "block",
+                }}
+              />
+            )}
           </div>
-          <span
-            className="template-launch-badge"
+
+          {/* Bottom Label + Launch Action */}
+          <div
             style={{
-              backgroundColor: "#FF9137",
-              color: "#0F172A",
-              fontWeight: 700,
-              fontSize: "12px",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              boxShadow: "0 2px 10px rgba(255, 145, 55, 0.4)",
-              flexShrink: 0,
+              position: "relative",
+              zIndex: 2,
+              padding: "16px 18px",
+              background: "linear-gradient(to top, rgba(5, 5, 9, 0.8) 0%, rgba(5, 5, 9, 0.3) 60%, transparent 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
             }}
           >
-            Launch
-          </span>
-        </div>
-      </motion.div>
-    </Link>
+            <div>
+              <div style={{
+                color: "#FFFFFF",
+                fontWeight: 700,
+                fontSize: "14.5px",
+                letterSpacing: "-0.01em",
+                textShadow: "0 2px 6px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)"
+              }}>
+                {card.animationName}
+              </div>
+              <div style={{
+                color: "rgba(255, 255, 255, 0.85)",
+                fontSize: "11px",
+                fontFamily: "var(--font-mono)",
+                marginTop: "2px",
+                textShadow: "0 1px 4px rgba(0,0,0,0.8)"
+              }}>
+                {card.isVertical ? "Vertical Mobile Motion" : "SaaS Product Motion"}
+              </div>
+            </div>
+            <span
+              className="template-launch-badge"
+              style={{
+                backgroundColor: "#FF9137",
+                color: "#0F172A",
+                fontWeight: 700,
+                fontSize: "12px",
+                padding: "6px 14px",
+                borderRadius: "6px",
+                boxShadow: "0 2px 10px rgba(255, 145, 55, 0.4)",
+                flexShrink: 0,
+              }}
+            >
+              Launch
+            </span>
+          </div>
+        </motion.div>
+      </Link>
+    </motion.div>
   );
 }
 
 function TemplateShowcaseGrid({ cards }: { cards: TemplateCardData[] }) {
   return (
     <div className="template-showcase-grid">
-      {cards.map((card) => (
-        <div key={card.id} className="template-card-cell">
-          <TemplateCardItem card={card} />
-        </div>
+      {cards.map((card, idx) => (
+        <TemplateCardItem key={card.id} card={card} index={idx} />
       ))}
     </div>
   );
@@ -406,22 +418,37 @@ export default function LandingPage() {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 24px;
+          grid-auto-flow: dense;
         }
         .template-card-cell {
           width: 100%;
           display: flex;
           flex-direction: column;
         }
+        .template-card-cell.vertical-span {
+          grid-row: span 2;
+          height: 100%;
+        }
         @media (max-width: 1024px) {
           .template-showcase-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 20px;
           }
+          .template-card-cell.vertical-span {
+            grid-row: span 2;
+          }
         }
         @media (max-width: 640px) {
           .template-showcase-grid {
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 18px;
+          }
+          .template-card-cell.vertical-span {
+            grid-row: auto;
+          }
+          .template-card-cell.vertical-span .template-card-inner {
+            aspect-ratio: 4 / 5 !important;
+            height: auto !important;
           }
         }
         .template-card-link:focus-visible > div {
