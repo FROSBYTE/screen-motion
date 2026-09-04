@@ -905,6 +905,7 @@ function findAvailableTrackIndex(existingLayers: MGLayer[], startTime: number, d
       const existingLayers = targetScene?.layers || [];
       const assignedTrackIndex = findAvailableTrackIndex(existingLayers, startTime, initialDuration);
 
+      const isPhoneDevice = templateId === 'phone-device';
       const newLayer: MGComponentLayer = {
         id,
         type: 'component',
@@ -917,9 +918,9 @@ function findAvailableTrackIndex(existingLayers: MGLayer[], startTime: number, d
         position: { x: 50, y: 50 },
         scale: 1,
         enterAnimation: 'fade-in',
-        enterDuration: 1.0,
+        enterDuration: isPhoneDevice ? 0.7 : 1.0,
         exitAnimation: 'fade-out',
-        exitDuration: 1.0,
+        exitDuration: isPhoneDevice ? 0.7 : 1.0,
       };
 
       return {

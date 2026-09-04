@@ -22,7 +22,7 @@ export interface ActiveDeviceDescriptor {
   transitionClipPath?: string;
 }
 
-const POOL_SIZE = 3;
+const POOL_SIZE = 2;
 const DEFAULT_PLACEHOLDER_URL = '/Drag_And_Drop.png';
 
 // Global Texture Cache for static images
@@ -406,9 +406,11 @@ function PooledAndroidModel({
 function PooledDeviceSlot({
   slotIndex,
   descriptor,
+  wrapperRef,
 }: {
   slotIndex: number;
   descriptor?: ActiveDeviceDescriptor | null;
+  wrapperRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const slotGroupRef = useRef<THREE.Group>(null!);
   const camCompGroupRef = useRef<THREE.Group>(null!);
@@ -443,6 +445,20 @@ function PooledDeviceSlot({
   const rotY = compLayer?.props?.rotY ?? 0;
   const rotZ = compLayer?.props?.rotZ ?? 0;
   const localTime = descriptor && compLayer ? descriptor.localTime - compLayer.startTime : 0;
+
+  // Enter & Exit fade animation parameters (defaults to 0.7s fade-in and fade-out for phone-device)
+  const isPhoneDevice = compLayer?.templateId === 'phone-device';
+  const enterAnimation = compLayer?.enterAnimation ?? (isPhoneDevice ? 'fade-in' : 'none');
+  const exitAnimation = compLayer?.exitAnimation ?? (isPhoneDevice ? 'fade-out' : 'none');
+  const defaultDuration = isPhoneDevice ? 0.7 : 1.0;
+  const rawEnterDuration = (isPhoneDevice && compLayer?.enterDuration === 1.0)
+    ? 0.7
+    : (compLayer?.enterDuration ?? defaultDuration);
+  const rawExitDuration = (isPhoneDevice && compLayer?.exitDuration === 1.0)
+    ? 0.7
+    : (compLayer?.exitDuration ?? defaultDuration);
+  const effectiveEnterDur = Math.min(rawEnterDuration, layerDuration * 0.4);
+  const effectiveExitDur = Math.min(rawExitDuration, layerDuration * 0.4);
 
   // Initialize persistent video element & texture once per slot
   useEffect(() => {
@@ -572,21 +588,10 @@ function PooledDeviceSlot({
 
   // Offset & scale calculation
   const baseScale = 0.15 * (deviceSize || 1);
-  const prevOpacityRef = useRef<number>(-1);
 
-  // Position & User Transform controller (without enter/exit translations)
+  // Position & User Transform controller (with smooth 2D canvas wrapper opacity fade)
   useFrame(() => {
     if (!isSlotActive || !slotGroupRef.current) return;
-
-    // If outgoing transition opacity is present (during cross-scene transitions)
-    const finalOpacity = Math.max(0, Math.min(1, descriptor?.transitionOpacity ?? 1));
-
-    if (finalOpacity <= 0.001) {
-      slotGroupRef.current.visible = false;
-      return;
-    } else {
-      slotGroupRef.current.visible = true;
-    }
 
     // Tier 1: Canvas Slot Positioning (center of the device in canvas space)
     slotGroupRef.current.position.x = posX * 1.28;
@@ -612,40 +617,41 @@ function PooledDeviceSlot({
       deviceTransformGroupRef.current.rotation.z = (rotZ * Math.PI) / 180;
     }
 
-    // Apply cross-scene opacity only when needed
-    if (finalOpacity >= 0.999) {
-      if (prevOpacityRef.current < 0.999) {
-        prevOpacityRef.current = 1.0;
-        slotGroupRef.current.traverse((child: any) => {
-          if (child.isMesh && child.material) {
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            mats.forEach((m: any) => {
-              if (m) {
-                m.transparent = false;
-                m.depthWrite = true;
-                m.depthTest = true;
-                m.opacity = 1.0;
-              }
-            });
-          }
-        });
+    // Compute layer enter and exit fade opacity
+    let layerOpacity = 1.0;
+
+    // Enter Phase (fade-in)
+    if (enterAnimation === 'fade-in' && effectiveEnterDur > 0) {
+      if (localTime < effectiveEnterDur) {
+        const t = Math.max(0, Math.min(1, localTime / effectiveEnterDur));
+        // Smooth ease-out matching MotionCanvas: 1 - Math.pow(1 - t, 2.5)
+        layerOpacity = 1 - Math.pow(1 - t, 2.5);
       }
-    } else {
-      if (Math.abs(prevOpacityRef.current - finalOpacity) > 0.005) {
-        prevOpacityRef.current = finalOpacity;
-        slotGroupRef.current.traverse((child: any) => {
-          if (child.isMesh && child.material) {
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            mats.forEach((m: any) => {
-              if (m) {
-                m.transparent = true;
-                m.depthWrite = true;
-                m.depthTest = true;
-                m.opacity = finalOpacity;
-              }
-            });
-          }
-        });
+    }
+
+    // Exit Phase (fade-out)
+    const timeUntilEnd = layerDuration - localTime;
+    if (exitAnimation === 'fade-out' && effectiveExitDur > 0) {
+      if (timeUntilEnd <= effectiveExitDur) {
+        const t = Math.max(0, Math.min(1, (effectiveExitDur - timeUntilEnd) / effectiveExitDur));
+        // Smooth ease-out exit matching MotionCanvas: Math.pow(t, 2.0)
+        const exitOpacity = 1 - Math.pow(t, 2.0);
+        layerOpacity = Math.min(layerOpacity, exitOpacity);
+      }
+    }
+
+    // Total final opacity combining layer enter/exit fade and cross-scene transition
+    const transitionOpacity = descriptor?.transitionOpacity ?? 1;
+    const finalOpacity = Math.max(0, Math.min(1, layerOpacity * transitionOpacity));
+
+    // Update wrapper DOM opacity directly on animation frame (preserves solid 3D depth, eliminates X-ray artifacts)
+    if (wrapperRef?.current) {
+      if (finalOpacity <= 0.001) {
+        wrapperRef.current.style.opacity = '0';
+        wrapperRef.current.style.visibility = 'hidden';
+      } else {
+        wrapperRef.current.style.opacity = String(finalOpacity);
+        wrapperRef.current.style.visibility = 'visible';
       }
     }
   });
@@ -676,36 +682,60 @@ function PooledDeviceSlot({
 }
 
 // ─────────────────────────────────────────────────────────────
-// Master Device Pool Canvas Layer
+// Single Pooled Device Canvas Slot (Renders solid 3D phone with smooth DOM wrapper opacity)
 // ─────────────────────────────────────────────────────────────
-export default function DevicePoolCanvas({
-  activeDevices = [],
-  zIndex = 5,
+function PooledCanvasSlot({
+  slotIndex,
+  descriptor,
 }: {
-  activeDevices: ActiveDeviceDescriptor[];
-  zIndex?: number;
+  slotIndex: number;
+  descriptor?: ActiveDeviceDescriptor | null;
 }) {
-  // Stable Slot Assignment: map active devices to pooled slots 0..POOL_SIZE-1
-  const assignedSlots = useMemo(() => {
-    const slots: (ActiveDeviceDescriptor | null)[] = Array(POOL_SIZE).fill(null);
-    activeDevices.slice(0, POOL_SIZE).forEach((dev, idx) => {
-      slots[idx] = dev;
-    });
-    return slots;
-  }, [activeDevices]);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const compLayer = descriptor?.layer?.type === 'component' ? (descriptor.layer as MGComponentLayer) : null;
+  const isPhoneDevice = compLayer?.templateId === 'phone-device';
+  const enterAnimation = compLayer?.enterAnimation ?? (isPhoneDevice ? 'fade-in' : 'none');
+  const exitAnimation = compLayer?.exitAnimation ?? (isPhoneDevice ? 'fade-out' : 'none');
+  const layerDuration = Math.max(0.3, compLayer?.duration || 3.0);
+  const defaultDuration = isPhoneDevice ? 0.7 : 1.0;
+  const rawEnterDuration = (isPhoneDevice && compLayer?.enterDuration === 1.0)
+    ? 0.7
+    : (compLayer?.enterDuration ?? defaultDuration);
+  const rawExitDuration = (isPhoneDevice && compLayer?.exitDuration === 1.0)
+    ? 0.7
+    : (compLayer?.exitDuration ?? defaultDuration);
+  const effectiveEnterDur = Math.min(rawEnterDuration, layerDuration * 0.4);
+  const effectiveExitDur = Math.min(rawExitDuration, layerDuration * 0.4);
+  const localTime = descriptor && compLayer ? descriptor.localTime - compLayer.startTime : 0;
 
-  const hasAnyActiveDevice = activeDevices.length > 0;
+  // Initial opacity calculation for mount/SSR
+  let initialOpacity = 1.0;
+  if (enterAnimation === 'fade-in' && effectiveEnterDur > 0 && localTime < effectiveEnterDur) {
+    const t = Math.max(0, Math.min(1, localTime / effectiveEnterDur));
+    initialOpacity = 1 - Math.pow(1 - t, 2.5);
+  }
+  const timeUntilEnd = layerDuration - localTime;
+  if (exitAnimation === 'fade-out' && effectiveExitDur > 0 && timeUntilEnd <= effectiveExitDur) {
+    const t = Math.max(0, Math.min(1, (effectiveExitDur - timeUntilEnd) / effectiveExitDur));
+    const exitOpacity = 1 - Math.pow(t, 2.0);
+    initialOpacity = Math.min(initialOpacity, exitOpacity);
+  }
+  const transitionOpacity = descriptor?.transitionOpacity ?? 1;
+  const finalInitialOpacity = Math.max(0, Math.min(1, initialOpacity * transitionOpacity));
 
   return (
     <div
-      data-device-pool-canvas-layer="true"
+      ref={wrapperRef}
+      data-pooled-device-slot={slotIndex}
       style={{
         position: 'absolute',
         inset: 0,
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: zIndex,
+        opacity: finalInitialOpacity,
+        visibility: finalInitialOpacity <= 0.001 || !descriptor ? 'hidden' : 'visible',
+        display: descriptor ? 'block' : 'none',
       }}
     >
       <Canvas
@@ -796,15 +826,55 @@ export default function DevicePoolCanvas({
 
         <Suspense fallback={null}>
           <Environment preset="city" environmentIntensity={0.35} />
-          {assignedSlots.map((desc, idx) => (
-            <PooledDeviceSlot
-              key={`pooled-device-slot-${idx}`}
-              slotIndex={idx}
-              descriptor={desc}
-            />
-          ))}
+          <PooledDeviceSlot
+            slotIndex={slotIndex}
+            descriptor={descriptor}
+            wrapperRef={wrapperRef}
+          />
         </Suspense>
       </Canvas>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Master Device Pool Canvas Layer
+// ─────────────────────────────────────────────────────────────
+export default function DevicePoolCanvas({
+  activeDevices = [],
+  zIndex = 5,
+}: {
+  activeDevices: ActiveDeviceDescriptor[];
+  zIndex?: number;
+}) {
+  // Stable Slot Assignment: map active devices to pooled slots 0..POOL_SIZE-1
+  const assignedSlots = useMemo(() => {
+    const slots: (ActiveDeviceDescriptor | null)[] = Array(POOL_SIZE).fill(null);
+    activeDevices.slice(0, POOL_SIZE).forEach((dev, idx) => {
+      slots[idx] = dev;
+    });
+    return slots;
+  }, [activeDevices]);
+
+  return (
+    <div
+      data-device-pool-canvas-layer="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: zIndex,
+      }}
+    >
+      {assignedSlots.map((desc, idx) => (
+        <PooledCanvasSlot
+          key={`pooled-device-canvas-slot-${idx}`}
+          slotIndex={idx}
+          descriptor={desc}
+        />
+      ))}
     </div>
   );
 }
