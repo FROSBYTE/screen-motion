@@ -7,12 +7,14 @@ import { AnimatedTabs, TabItem } from '@/components/ui/animated-tabs';
 import { trackMixpanelEvent } from '@/lib/mixpanel';
 
 export default function FloatingTopBar() {
-  const { state, dispatch, uploadScreenshot } = useAppState();
-  const { resolution, exportStatus, exportProgress, screenshotUrl, screenshot } = state;
+  const { state, dispatch, uploadScreenshot, uploadCloseScreenshot } = useAppState();
+  const { resolution, exportStatus, exportProgress, screenshotUrl, screenshot, closeScreenshotUrl, closeScreenshot } = state;
 
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [duoMediaTab, setDuoMediaTab] = useState<'open' | 'close'>('open');
   const [exportFps, setExportFps] = useState<30 | 60>(60);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const closeFileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const isPickingFileRef = useRef(false);
 
@@ -73,6 +75,30 @@ export default function FloatingTopBar() {
     const file = e.dataTransfer.files?.[0];
     if (file) {
       uploadScreenshot(file);
+    }
+  };
+
+  const handleCloseUploadClick = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    isPickingFileRef.current = true;
+    closeFileInputRef.current?.click();
+  };
+
+  const handleCloseFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadCloseScreenshot(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleCloseDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      uploadCloseScreenshot(file);
     }
   };
 
@@ -481,6 +507,15 @@ export default function FloatingTopBar() {
           style={{ display: 'none', pointerEvents: 'auto' }}
         />
 
+        {/* Close Screen File Input */}
+        <input
+          ref={closeFileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+          onChange={handleCloseFileChange}
+          style={{ display: 'none', pointerEvents: 'auto' }}
+        />
+
         {/* Minimal Play Preview Button */}
         <button
           onClick={handlePreview}
@@ -537,85 +572,260 @@ export default function FloatingTopBar() {
           {/* Media Content */}
           {activeTab === 'media' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {screenshotUrl ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {state.mediaType === 'video' ? (
-                    <video
-                      src={screenshotUrl}
-                      muted
-                      loop
-                      autoPlay
-                      playsInline
-                      style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
-                    />
-                  ) : (
-                    <img
-                      src={screenshotUrl}
-                      alt="Preview"
-                      style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
-                    />
-                  )}
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {screenshot?.name}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
+              {/* iPhone Duo Dynamic Sync Header */}
+              {state.device === 'iphone-duo' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 8, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Screen Sync
+                    </span>
                     <button
-                      className="show-more-btn"
-                      onClick={handleUploadClick}
-                      style={{ padding: '6px 12px', fontSize: 12, flex: 1, borderRadius: 8, fontWeight: 600 }}
-                    >
-                      Replace
-                    </button>
-                    <button
-                      className="show-more-btn"
-                      onClick={() => {
-                        dispatch({ screenshot: null, screenshotUrl: null, screenshotOrientation: null, mediaType: 'image', orientationMismatch: false });
-                        setActiveTab(null);
+                      type="button"
+                      onClick={() => dispatch({ useSameImageForClose: !(state.useSameImageForClose ?? true) })}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: (state.useSameImageForClose ?? true) ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                        border: `1px solid ${(state.useSameImageForClose ?? true) ? 'rgba(59, 130, 246, 0.3)' : 'rgba(0,0,0,0.1)'}`,
+                        borderRadius: '16px',
+                        padding: '2px 8px',
+                        cursor: 'pointer',
                       }}
-                      style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 8, fontWeight: 600 }}
                     >
-                      Remove
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: (state.useSameImageForClose ?? true) ? '#2563eb' : '#64748b' }}>
+                        Dynamic (Same)
+                      </span>
+                      <div style={{
+                        width: 22,
+                        height: 12,
+                        borderRadius: 6,
+                        background: (state.useSameImageForClose ?? true) ? '#2563eb' : 'rgba(156, 163, 175, 0.5)',
+                        position: 'relative',
+                        transition: 'background 0.2s ease',
+                      }}>
+                        <div style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: '#fff',
+                          position: 'absolute',
+                          top: 2,
+                          left: (state.useSameImageForClose ?? true) ? 12 : 2,
+                          transition: 'left 0.2s ease',
+                        }} />
+                      </div>
                     </button>
                   </div>
+
+                  {state.useSameImageForClose === false && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, background: 'rgba(0,0,0,0.04)', padding: 3, borderRadius: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setDuoMediaTab('open')}
+                        style={{
+                          padding: '5px 8px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          borderRadius: 6,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: duoMediaTab === 'open' ? '#ffffff' : 'transparent',
+                          color: duoMediaTab === 'open' ? '#0f172a' : '#64748b',
+                          boxShadow: duoMediaTab === 'open' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        Open (180°)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDuoMediaTab('close')}
+                        style={{
+                          padding: '5px 8px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          borderRadius: 6,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: duoMediaTab === 'close' ? '#ffffff' : 'transparent',
+                          color: duoMediaTab === 'close' ? '#0f172a' : '#64748b',
+                          boxShadow: duoMediaTab === 'close' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        Close (0°)
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onClick={handleUploadClick}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '12px 8px',
-                    border: '1.5px dashed rgba(0, 0, 0, 0.15)',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  }}
-                  className="hover:bg-slate-100/80"
-                >
-                  <img
-                    src="/Drag_And_Drop.png"
-                    alt="Drag and drop screenshot"
-                    style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '8px', pointerEvents: 'none' }}
-                  />
-                  <span style={{ fontSize: 12, color: '#64748b', textAlign: 'center', pointerEvents: 'none' }}>
-                    Click or drag & drop a screenshot or video to display on the 3D device mockup.
-                  </span>
-                  <button
-                    className="show-more-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUploadClick();
+              )}
+
+              {/* View when in Separate mode and 'Close' tab is selected */}
+              {state.device === 'iphone-duo' && state.useSameImageForClose === false && duoMediaTab === 'close' ? (
+                closeScreenshotUrl ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {state.closeMediaType === 'video' ? (
+                      <video
+                        src={closeScreenshotUrl}
+                        muted
+                        loop
+                        autoPlay
+                        playsInline
+                        style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                      />
+                    ) : (
+                      <img
+                        src={closeScreenshotUrl}
+                        alt="Close Screen Preview"
+                        style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                      />
+                    )}
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {closeScreenshot?.name || 'Cover Screen Image'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        className="show-more-btn"
+                        onClick={handleCloseUploadClick}
+                        style={{ padding: '6px 12px', fontSize: 12, flex: 1, borderRadius: 8, fontWeight: 600 }}
+                      >
+                        Replace
+                      </button>
+                      <button
+                        className="show-more-btn"
+                        onClick={() => {
+                          dispatch({ closeScreenshot: null, closeScreenshotUrl: null, closeMediaType: 'image' });
+                        }}
+                        style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 8, fontWeight: 600 }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDrop={handleCloseDrop}
+                    onClick={handleCloseUploadClick}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '12px 8px',
+                      border: '1.5px dashed rgba(0, 0, 0, 0.15)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
                     }}
-                    style={{ background: '#0f172a', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
+                    className="hover:bg-slate-100/80"
                   >
-                    Upload Media
-                  </button>
-                </div>
+                    <img
+                      src="/Drag_And_Drop.png"
+                      alt="Drag and drop screenshot"
+                      style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '8px', pointerEvents: 'none' }}
+                    />
+                    <span style={{ fontSize: 12, color: '#64748b', textAlign: 'center', pointerEvents: 'none' }}>
+                      Upload media for the folded Cover Screen (0°).
+                    </span>
+                    <button
+                      className="show-more-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseUploadClick();
+                      }}
+                      style={{ background: '#0f172a', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
+                    >
+                      Upload Close Media
+                    </button>
+                  </div>
+                )
+              ) : (
+                /* Default / Open Screen Media View */
+                screenshotUrl ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {state.mediaType === 'video' ? (
+                      <video
+                        src={screenshotUrl}
+                        muted
+                        loop
+                        autoPlay
+                        playsInline
+                        style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                      />
+                    ) : (
+                      <img
+                        src={screenshotUrl}
+                        alt="Preview"
+                        style={{ width: '100%', height: '130px', borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                      />
+                    )}
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {screenshot?.name || (state.device === 'iphone-duo' && state.useSameImageForClose === false ? 'Inner Screen Media' : 'Active Media')}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        className="show-more-btn"
+                        onClick={handleUploadClick}
+                        style={{ padding: '6px 12px', fontSize: 12, flex: 1, borderRadius: 8, fontWeight: 600 }}
+                      >
+                        Replace
+                      </button>
+                      <button
+                        className="show-more-btn"
+                        onClick={() => {
+                          dispatch({ screenshot: null, screenshotUrl: null, screenshotOrientation: null, mediaType: 'image', orientationMismatch: false });
+                          setActiveTab(null);
+                        }}
+                        style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 8, fontWeight: 600 }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onClick={handleUploadClick}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '12px 8px',
+                      border: '1.5px dashed rgba(0, 0, 0, 0.15)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                    }}
+                    className="hover:bg-slate-100/80"
+                  >
+                    <img
+                      src="/Drag_And_Drop.png"
+                      alt="Drag and drop screenshot"
+                      style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '8px', pointerEvents: 'none' }}
+                    />
+                    <span style={{ fontSize: 12, color: '#64748b', textAlign: 'center', pointerEvents: 'none' }}>
+                      {state.device === 'iphone-duo' && state.useSameImageForClose === false
+                        ? 'Upload media for the inner dual screen (180°).'
+                        : 'Click or drag & drop a screenshot or video to display on the 3D device mockup.'}
+                    </span>
+                    <button
+                      className="show-more-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUploadClick();
+                      }}
+                      style={{ background: '#0f172a', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
+                    >
+                      {state.device === 'iphone-duo' && state.useSameImageForClose === false ? 'Upload Open Media' : 'Upload Media'}
+                    </button>
+                  </div>
+                )
               )}
             </div>
           )}

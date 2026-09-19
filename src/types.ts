@@ -1,4 +1,4 @@
-export type DeviceType = 'android' | 'ios';
+export type DeviceType = 'android' | 'ios' | 'iphone-duo';
 export type Orientation = 'portrait' | 'landscape';
 export type TemplateName =
   | 'orbit' | 'hero-reveal' | 'float' | 'flip'
@@ -7,7 +7,8 @@ export type TemplateName =
   | 'slow-pan' | 'horizontal-slide'
   | 'infinity-loop' | 'dynamic-showcase'
   | 'corkscrew-reveal' | 'depth-zoom' | 'corner-drop'
-  | '3d-spin-flip' | 'perspective-float' | 'zoom-pulse';
+  | '3d-spin-flip' | 'perspective-float' | 'zoom-pulse'
+  | 'open-close' | 'close-open';
 export type Resolution = '1080p' | '4k';
 export type ExportStatus = 'idle' | 'rendering' | 'encoding' | 'done' | 'error';
 
@@ -117,6 +118,12 @@ export interface AppState {
   orientationMismatch?: boolean;
   previewTrigger?: number;
   selectedTextId?: string | null;
+  foldState?: 'animated' | 'open' | 'closed' | 'half';
+  foldProgress?: number;
+  closeScreenshot?: File | null;
+  closeScreenshotUrl?: string | null;
+  closeMediaType?: MediaType;
+  useSameImageForClose?: boolean;
 }
 
 export interface AlignmentGuide {
@@ -286,6 +293,20 @@ export const TEMPLATES: TemplateConfig[] = [
     name: 'Zoom Pulse',
     description: 'Dolly-zoom push-in focus highlight to reveal UI detail',
     icon: 'center_focus_weak',
+    duration: 4.5,
+  },
+  {
+    id: 'open-close',
+    name: 'Open to Close',
+    description: 'Folds from open dual screen (180°) to closed state (0°)',
+    icon: 'unfold_less',
+    duration: 4.5,
+  },
+  {
+    id: 'close-open',
+    name: 'Close to Open',
+    description: 'Unfolds from closed state (0°) to open dual screen (180°)',
+    icon: 'unfold_more',
     duration: 4.5,
   },
 ];

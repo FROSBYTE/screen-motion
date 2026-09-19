@@ -7,6 +7,7 @@ import { useAppState } from '@/store';
 import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
 import { Model as IPhone16 } from './IPhone16';
 import { Model as AndroidModel } from './AndroidModel';
+import { Model as IPhoneDuoModel } from './IPhoneDuoModel';
 import { Center } from '@react-three/drei';
 
 function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
@@ -33,12 +34,14 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
     groupRef.current.position.set(0, 0, 0);
     groupRef.current.rotation.set(0, 0, 0);
     groupRef.current.scale.setScalar(1);
+    delete groupRef.current.userData.foldProgress;
 
     // Retrieve screen mesh dynamically from the GLTF children for opacity transitions
     const screenMesh = groupRef.current.getObjectByName('Object_18') as THREE.Mesh 
       || groupRef.current.getObjectByName('Object_9') as THREE.Mesh 
       || groupRef.current.getObjectByName('S22_Ultra001_2') as THREE.Mesh 
       || groupRef.current.getObjectByName('Display_ActiveArea') as THREE.Mesh 
+      || groupRef.current.getObjectByName('Front_Screen') as THREE.Mesh 
       || null;
 
     const target: AnimationTarget = {
@@ -97,6 +100,14 @@ function PhoneModel({ screenshotUrl }: { screenshotUrl: string | null }) {
             >
             {state.device === 'ios' ? (
               <IPhone16 screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
+            ) : state.device === 'iphone-duo' ? (
+              <IPhoneDuoModel
+                screenshotUrl={screenshotUrl}
+                mediaType={state.mediaType}
+                closeScreenshotUrl={state.useSameImageForClose === false ? state.closeScreenshotUrl : screenshotUrl}
+                closeMediaType={state.useSameImageForClose === false ? state.closeMediaType : state.mediaType}
+                onVideoRestart={handleVideoRestart}
+              />
             ) : (
               <AndroidModel screenshotUrl={screenshotUrl} mediaType={state.mediaType} onVideoRestart={handleVideoRestart} />
             )}

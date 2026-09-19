@@ -927,7 +927,7 @@ export default function VideoEditorPanel() {
                       : layer.type === 'text'
                       ? ((layer as any).text.substring(0, 15) || 'Text')
                       : layer.templateId === 'phone-device'
-                      ? ((layer as any).props?.deviceType === 'iphone' ? 'iPhone' : (layer as any).props?.deviceType === 'android' ? 'Android' : 'Phone')
+                      ? ((layer as any).props?.deviceType === 'iphone' ? 'iPhone' : (layer as any).props?.deviceType === 'iphone-duo' ? 'iPhone Duo' : (layer as any).props?.deviceType === 'android' ? 'Android' : 'Phone')
                       : COMPONENT_TEMPLATES.find((t) => t.id === layer.templateId)?.name || layer.templateId;
                     const sceneIdx = scenes.findIndex((s) => s.id === sceneId);
                     const safeSceneIdx = sceneIdx >= 0 ? sceneIdx : 0;

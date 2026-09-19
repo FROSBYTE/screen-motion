@@ -489,7 +489,7 @@ export default React.memo(function HierarchyPanel() {
                                   : layer.type === 'text'
                                   ? ((layer as any).text.substring(0, 15) || 'Text')
                                   : layer.templateId === 'phone-device'
-                                  ? (layer.props?.deviceType === 'iphone' ? 'iPhone' : layer.props?.deviceType === 'android' ? 'Android' : 'Phone')
+                                  ? (layer.props?.deviceType === 'iphone' ? 'iPhone' : layer.props?.deviceType === 'iphone-duo' ? 'iPhone Duo' : layer.props?.deviceType === 'android' ? 'Android' : 'Phone')
                                   : COMPONENT_TEMPLATES.find((t) => t.id === layer.templateId)?.name || layer.templateId;
 
                                 return (

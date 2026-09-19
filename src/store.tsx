@@ -36,6 +36,12 @@ const initialState: AppState = {
   error: null,
   orientationMismatch: false,
   selectedTextId: null,
+  foldState: 'animated',
+  foldProgress: 0,
+  closeScreenshot: null,
+  closeScreenshotUrl: null,
+  closeMediaType: 'image',
+  useSameImageForClose: true,
 };
 
 // ---------- Context ----------
@@ -47,6 +53,7 @@ interface AppContextValue {
   state: AppState;
   dispatch: (update: AppUpdate | ((prev: AppState) => AppUpdate)) => void;
   uploadScreenshot: (file: File) => void;
+  uploadCloseScreenshot: (file: File) => void;
   resetProject: () => Promise<void>;
 }
 
@@ -63,10 +70,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const draft = await loadDraft<Partial<AppState>>('editor_active_draft');
         const savedBlob = await getAsset('editor_screenshot');
+        const savedCloseBlob = await getAsset('editor_close_screenshot');
         let restoredScreenshotUrl: string | null = null;
+        let restoredCloseScreenshotUrl: string | null = null;
 
         if (savedBlob) {
           restoredScreenshotUrl = URL.createObjectURL(savedBlob);
+        }
+        if (savedCloseBlob) {
+          restoredCloseScreenshotUrl = URL.createObjectURL(savedCloseBlob);
         }
 
         if (isMounted) {
@@ -76,12 +88,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
               ...draft.data,
               screenshot: (savedBlob as File) || null,
               screenshotUrl: restoredScreenshotUrl || null,
+              closeScreenshot: (savedCloseBlob as File) || null,
+              closeScreenshotUrl: restoredCloseScreenshotUrl || null,
             }));
-          } else if (savedBlob && restoredScreenshotUrl) {
+          } else {
             setState((prev) => ({
               ...prev,
               screenshot: (savedBlob as File) || null,
-              screenshotUrl: restoredScreenshotUrl,
+              screenshotUrl: restoredScreenshotUrl || null,
+              closeScreenshot: (savedCloseBlob as File) || null,
+              closeScreenshotUrl: restoredCloseScreenshotUrl || null,
             }));
           }
         }
@@ -103,7 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Save serializable editor state
   const serializableState = useMemo(() => {
-    const { screenshot, screenshotUrl, error, exportStatus, exportProgress, ...rest } = state;
+    const { screenshot, screenshotUrl, closeScreenshot, closeScreenshotUrl, error, exportStatus, exportProgress, ...rest } = state;
     return rest;
   }, [state]);
 
@@ -220,21 +236,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const uploadCloseScreenshot = (file: File) => {
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    if (!isImage && !isVideo) {
+      dispatch({ error: 'Please upload an image (PNG, JPG, WEBP) or video (MP4, WEBM, MOV)' });
+      return;
+    }
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+      dispatch({ error: isVideo ? 'Video must be under 100MB' : 'Image must be under 25MB' });
+      return;
+    }
+
+    if (state.closeScreenshotUrl) {
+      URL.revokeObjectURL(state.closeScreenshotUrl);
+    }
+
+    saveAsset('editor_close_screenshot', file, file.name).catch((err) =>
+      console.error('Failed to save close screenshot asset:', err)
+    );
+
+    const url = URL.createObjectURL(file);
+
+    dispatch({
+      closeScreenshot: file,
+      closeScreenshotUrl: url,
+      closeMediaType: isVideo ? 'video' : 'image',
+      error: null,
+    });
+  };
+
   const resetProject = useCallback(async () => {
     try {
       await clearDraft('editor_active_draft');
       await clearDraft('editor_screenshot');
+      await clearDraft('editor_close_screenshot');
       if (state.screenshotUrl) {
         URL.revokeObjectURL(state.screenshotUrl);
+      }
+      if (state.closeScreenshotUrl) {
+        URL.revokeObjectURL(state.closeScreenshotUrl);
       }
       setState(initialState);
     } catch (err) {
       console.error('[AppProvider] Failed to reset project:', err);
     }
-  }, [state.screenshotUrl]);
+  }, [state.screenshotUrl, state.closeScreenshotUrl]);
 
   return (
-    <AppContext.Provider value={{ state, dispatch, uploadScreenshot, resetProject }}>
+    <AppContext.Provider value={{ state, dispatch, uploadScreenshot, uploadCloseScreenshot, resetProject }}>
       {children}
     </AppContext.Provider>
   );

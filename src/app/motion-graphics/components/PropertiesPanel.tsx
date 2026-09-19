@@ -360,6 +360,7 @@ const OBJECT_FIT_OPTIONS = [
 
 const DEVICE_TYPE_OPTIONS = [
   { id: 'iphone', label: 'iPhone' },
+  { id: 'iphone-duo', label: 'iPhone Duo' },
   { id: 'android', label: 'Android' },
 ];
 

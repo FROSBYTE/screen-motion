@@ -5,11 +5,13 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
+import { SkeletonUtils } from 'three-stdlib';
 import type { TemplateName } from '@/types';
 import { MGLayer, MGComponentLayer } from '../../store';
 
-// iPhone & Android screen mesh identifiers
+// iPhone, iPhone Duo & Android screen mesh identifiers
 const IPHONE_SCREEN_MESH = 'Object_18';
+const IPHONE_DUO_SCREEN_MESH = 'Front_Screen';
 const ANDROID_SCREEN_MESH = 'S22_Ultra001_2';
 
 export interface ActiveDeviceDescriptor {
@@ -401,6 +403,155 @@ function PooledAndroidModel({
 }
 
 // ─────────────────────────────────────────────────────────────
+// Pooled iPhone Duo Model Sub-hierarchy
+// ─────────────────────────────────────────────────────────────
+function PooledIPhoneDuoModel({
+  deviceColor,
+  screenTexture,
+  visible,
+}: {
+  deviceColor: string;
+  screenTexture: THREE.Texture | null;
+  visible: boolean;
+}) {
+  const { scene, animations } = useGLTF('/models/apple-iphone-duo-fold/source/apple_iphone_duo_fold_star_white.glb') as any;
+  const cloned = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const initialColors = useRef<Record<string, THREE.Color>>({});
+  const uvFixed = useRef(false);
+  const screenMaterialRef = useRef<THREE.MeshBasicMaterial | null>(null);
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const actionRef = useRef<THREE.AnimationAction | null>(null);
+
+  useEffect(() => {
+    if (!cloned || !animations || animations.length === 0) return;
+    const mixer = new THREE.AnimationMixer(cloned);
+    mixerRef.current = mixer;
+
+    const clip = animations[0];
+    const action = mixer.clipAction(clip);
+    action.setLoop(THREE.LoopPingPong, Infinity);
+    action.play();
+    actionRef.current = action;
+
+    return () => {
+      action.stop();
+      mixer.stopAllAction();
+      mixer.uncacheRoot(cloned);
+      mixerRef.current = null;
+      actionRef.current = null;
+    };
+  }, [cloned, animations]);
+
+  useFrame((_, delta) => {
+    if (visible && mixerRef.current) {
+      mixerRef.current.update(delta);
+    }
+  });
+
+  const centerOffset = useMemo<[number, number, number]>(() => {
+    cloned.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(cloned);
+    const center = box.getCenter(new THREE.Vector3());
+    if (isFinite(center.x) && isFinite(center.y) && isFinite(center.z)) {
+      return [-center.x, -center.y, -center.z];
+    }
+    return [0, 0, 0];
+  }, [cloned]);
+
+  useEffect(() => {
+    if (!cloned) return;
+    const bodyKeys = new Set([
+      'C_StarWhite_Side',
+      'C_StarWhite_Backpanel',
+      'C_SW_Backpanel_Inner',
+      'C_SW_ButtonCap',
+      'C_SW_Side_Matte',
+      'C_SW_CamGloss',
+    ]);
+
+    cloned.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        const mat = child.material;
+        if (bodyKeys.has(mat.name) && mat.color) {
+          if (!initialColors.current[mat.name]) {
+            initialColors.current[mat.name] = mat.color.clone();
+          }
+          mat.color.set(deviceColor);
+          mat.needsUpdate = true;
+        }
+      }
+    });
+  }, [deviceColor, cloned]);
+
+  useEffect(() => {
+    if (uvFixed.current) return;
+    const screenMesh = cloned.getObjectByName(IPHONE_DUO_SCREEN_MESH) as THREE.Mesh | null;
+    if (!screenMesh) return;
+
+    const geometry = screenMesh.geometry;
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox;
+    if (!box) return;
+
+    const posAttr = geometry.attributes.position;
+    const uvAttr = geometry.attributes.uv;
+
+    if (posAttr && uvAttr) {
+      const minX = box.min.x;
+      const maxX = box.max.x;
+      const minY = box.min.y;
+      const maxY = box.max.y;
+      const width = maxX - minX;
+      const height = maxY - minY;
+
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const y = posAttr.getY(i);
+        const u = (x - minX) / width;
+        const v = (y - minY) / height;
+        uvAttr.setXY(i, u, v);
+      }
+      uvAttr.needsUpdate = true;
+      uvFixed.current = true;
+    }
+  }, [cloned]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const screenMesh = cloned.getObjectByName(IPHONE_DUO_SCREEN_MESH) as THREE.Mesh | null;
+    if (!screenMesh) return;
+
+    if (!screenMaterialRef.current) {
+      screenMaterialRef.current = new THREE.MeshBasicMaterial({
+        toneMapped: false,
+        transparent: false,
+        depthWrite: true,
+        depthTest: true,
+      });
+      screenMesh.material = screenMaterialRef.current;
+      screenMesh.renderOrder = 10;
+    }
+
+    const texToApply = screenTexture || getOrCreateImageTexture(DEFAULT_PLACEHOLDER_URL);
+    if (texToApply) {
+      texToApply.needsUpdate = true;
+      screenMaterialRef.current.map = texToApply;
+      screenMaterialRef.current.needsUpdate = true;
+    }
+  }, [screenTexture, cloned, visible]);
+
+  return (
+    <group visible={visible}>
+      <group position={centerOffset}>
+        <group position={[0, -0.05913 * 88.58, 0.00306 * 88.58]} scale={88.58}>
+          <primitive object={cloned} />
+        </group>
+      </group>
+    </group>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Single Pooled 3D Device Slot
 // ─────────────────────────────────────────────────────────────
 function PooledDeviceSlot({
@@ -428,7 +579,7 @@ function PooledDeviceSlot({
 
   const isSlotActive = Boolean(descriptor && descriptor.layer && descriptor.layer.type === 'component');
   const compLayer = descriptor?.layer?.type === 'component' ? (descriptor.layer as MGComponentLayer) : null;
-  const deviceType = (compLayer?.props?.deviceType || 'iphone') as 'iphone' | 'android';
+  const deviceType = (compLayer?.props?.deviceType || 'iphone') as 'iphone' | 'android' | 'iphone-duo';
   const deviceColor = compLayer?.props?.deviceColor || '#1a1a1a';
   const screenImage = compLayer?.props?.screenImage;
   const screenVideo = compLayer?.props?.screenVideo;
@@ -543,6 +694,7 @@ function PooledDeviceSlot({
 
     const screenMesh = deviceTransformGroupRef.current?.getObjectByName(IPHONE_SCREEN_MESH) as THREE.Mesh
       || deviceTransformGroupRef.current?.getObjectByName('Object_9') as THREE.Mesh
+      || deviceTransformGroupRef.current?.getObjectByName(IPHONE_DUO_SCREEN_MESH) as THREE.Mesh
       || deviceTransformGroupRef.current?.getObjectByName(ANDROID_SCREEN_MESH) as THREE.Mesh
       || deviceTransformGroupRef.current?.getObjectByName('Display_ActiveArea') as THREE.Mesh
       || null;
@@ -668,6 +820,11 @@ function PooledDeviceSlot({
               deviceColor={deviceColor}
               screenTexture={activeScreenTexture}
               visible={deviceType === 'iphone'}
+            />
+            <PooledIPhoneDuoModel
+              deviceColor={deviceColor}
+              screenTexture={activeScreenTexture}
+              visible={deviceType === 'iphone-duo'}
             />
             <PooledAndroidModel
               deviceColor={deviceColor}

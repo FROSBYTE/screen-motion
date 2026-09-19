@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAppState } from '@/store';
 import { TEMPLATES, TemplateName, Orientation, DeviceType } from '@/types';
 import type { TextAnimationType } from '@/types';
-import { Settings, Laptop } from 'lucide-react';
+import { Settings, Laptop, Image as ImageIcon } from 'lucide-react';
 import SceneControls from './SceneControls';
 
 const AVAILABLE_TEMPLATE_VIDEOS = new Set([
@@ -103,8 +103,26 @@ function TemplatePreviewCard({ t, isActive, dispatch, device }: { t: any, isActi
 }
 
 export default function RightSidebar() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, uploadScreenshot, uploadCloseScreenshot } = useAppState();
   const [activeTab, setActiveTab] = useState<'animations' | 'texts' | 'scenes'>('animations');
+  const openFileInputRef = React.useRef<HTMLInputElement>(null);
+  const closeFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleOpenImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadScreenshot(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleCloseImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadCloseScreenshot(file);
+    }
+    e.target.value = '';
+  };
 
   const handleOrientationChange = (orient: 'horizontal' | 'vertical') => {
     const orientationVal: Orientation = orient === 'horizontal' ? 'landscape' : 'portrait';
@@ -143,13 +161,12 @@ export default function RightSidebar() {
           {/* Sub-selector for Mobile (iOS vs Android) */}
           <div className="platform-selector-box" style={{ padding: '0 12px 12px 12px' }}>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: 6, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>PLATFORM</label>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               <button
                 className="platform-btn"
                 style={{
-                  flex: 1,
                   fontSize: '12px',
-                  padding: '8px 8px',
+                  padding: '8px 10px',
                   borderRadius: '9999px',
                   cursor: 'pointer',
                   border: '1px solid var(--border-color)',
@@ -160,7 +177,7 @@ export default function RightSidebar() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '4px'
+                  gap: '5px'
                 }}
                 onClick={() => dispatch({ device: 'ios' })}
               >
@@ -170,9 +187,30 @@ export default function RightSidebar() {
               <button
                 className="platform-btn"
                 style={{
-                  flex: 1,
                   fontSize: '12px',
-                  padding: '8px 8px',
+                  padding: '8px 10px',
+                  borderRadius: '9999px',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border-color)',
+                  background: state.device === 'iphone-duo' ? 'var(--accent-primary)' : 'transparent',
+                  color: state.device === 'iphone-duo' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  fontWeight: 600,
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px'
+                }}
+                onClick={() => dispatch({ device: 'iphone-duo' })}
+              >
+                <svg viewBox="0 0 384 512" width="12" height="12" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                iPhone Duo
+              </button>
+              <button
+                className="platform-btn"
+                style={{
+                  fontSize: '12px',
+                  padding: '8px 10px',
                   borderRadius: '9999px',
                   cursor: 'pointer',
                   border: '1px solid var(--border-color)',
@@ -183,7 +221,7 @@ export default function RightSidebar() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '4px'
+                  gap: '5px'
                 }}
                 onClick={() => dispatch({ device: 'android' })}
               >
@@ -195,9 +233,8 @@ export default function RightSidebar() {
                 disabled
                 title="Laptop 3D mockups coming soon"
                 style={{
-                  flex: 1,
                   fontSize: '11px',
-                  padding: '8px 6px',
+                  padding: '8px 10px',
                   borderRadius: '9999px',
                   cursor: 'not-allowed',
                   border: '1px solid var(--border-color)',
@@ -209,7 +246,7 @@ export default function RightSidebar() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '3px'
+                  gap: '4px'
                 }}
               >
                 <Laptop size={12} />
@@ -218,6 +255,300 @@ export default function RightSidebar() {
               </button>
             </div>
           </div>
+
+          {/* Fold Angle & Screen Images for iPhone Duo */}
+          {state.device === 'iphone-duo' && (
+            <div className="fold-controls-box" style={{ padding: '0 12px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Fold Angle Slider */}
+              <div style={{
+                background: 'var(--bg-tertiary, rgba(255,255,255,0.04))',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '10px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
+                    FOLD ANGLE
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {Math.round((1 - (state.foldProgress ?? 0)) * 180)}°
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={state.foldProgress ?? 0}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const update: any = { foldProgress: val };
+                    if (state.template === 'open-close' || state.template === 'close-open') {
+                      update.template = 'orbit';
+                    }
+                    dispatch(update);
+                  }}
+                  style={{ width: '100%', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                />
+              </div>
+
+              {/* Screen Images & Dynamic Toggle */}
+              <div style={{
+                background: 'var(--bg-tertiary, rgba(255,255,255,0.04))',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '10px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                {/* Header & Dynamic Toggle */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
+                    SCREEN DISPLAY
+                  </span>
+
+                  {/* Dynamic Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ useSameImageForClose: !(state.useSameImageForClose ?? true) })}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: (state.useSameImageForClose ?? true) ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                      border: `1px solid ${(state.useSameImageForClose ?? true) ? 'rgba(59, 130, 246, 0.4)' : 'var(--border-color)'}`,
+                      borderRadius: '20px',
+                      padding: '3px 8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    title="When enabled, the same image will be used for both open (inner) and closed (cover) displays."
+                  >
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: (state.useSameImageForClose ?? true) ? 'var(--accent-primary, #3b82f6)' : 'var(--text-secondary)'
+                    }}>
+                      Dynamic (Same)
+                    </span>
+                    <div style={{
+                      width: 24,
+                      height: 13,
+                      borderRadius: 7,
+                      background: (state.useSameImageForClose ?? true) ? 'var(--accent-primary, #3b82f6)' : 'rgba(156, 163, 175, 0.4)',
+                      position: 'relative',
+                      transition: 'background 0.2s ease',
+                    }}>
+                      <div style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        position: 'absolute',
+                        top: 2,
+                        left: (state.useSameImageForClose ?? true) ? 13 : 2,
+                        transition: 'left 0.2s ease',
+                      }} />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Hidden file inputs */}
+                <input
+                  type="file"
+                  ref={openFileInputRef}
+                  onChange={handleOpenImageChange}
+                  accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+                  style={{ display: 'none' }}
+                />
+                <input
+                  type="file"
+                  ref={closeFileInputRef}
+                  onChange={handleCloseImageChange}
+                  accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+                  style={{ display: 'none' }}
+                />
+
+                {(state.useSameImageForClose ?? true) ? (
+                  /* DYNAMIC MODE: 1 SHARED IMAGE */
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    padding: '8px 10px',
+                    background: 'rgba(0,0,0,0.1)',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      {state.screenshotUrl ? (
+                        <img
+                          src={state.screenshotUrl}
+                          alt="Open & Close Screen"
+                          style={{ width: 34, height: 34, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border-color)' }}
+                        />
+                      ) : (
+                        <div style={{ width: 34, height: 34, borderRadius: 6, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <ImageIcon size={16} style={{ color: 'var(--text-secondary)' }} />
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {state.screenshot?.name || (state.screenshotUrl ? 'Active Image' : 'No image chosen')}
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                          Shared for Open & Close
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openFileInputRef.current?.click()}
+                      style={{
+                        padding: '5px 10px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        borderRadius: 6,
+                        background: 'var(--bg-secondary, rgba(255,255,255,0.08))',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}
+                    >
+                      {state.screenshotUrl ? 'Replace' : 'Upload'}
+                    </button>
+                  </div>
+                ) : (
+                  /* SEPARATE MODE: OPEN IMAGE & CLOSE IMAGE */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {/* Open Image Slot */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      padding: '7px 10px',
+                      background: 'rgba(0,0,0,0.1)',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        {state.screenshotUrl ? (
+                          <img
+                            src={state.screenshotUrl}
+                            alt="Open Screen"
+                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border-color)' }}
+                          />
+                        ) : (
+                          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <ImageIcon size={15} style={{ color: 'var(--text-secondary)' }} />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              Open Screen
+                            </span>
+                            <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: 4, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', fontWeight: 700 }}>
+                              180°
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {state.screenshot?.name || (state.screenshotUrl ? 'Inner display image' : 'Default image')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => openFileInputRef.current?.click()}
+                        style={{
+                          padding: '4px 9px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          background: 'var(--bg-secondary, rgba(255,255,255,0.08))',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-color)',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0
+                        }}
+                      >
+                        {state.screenshotUrl ? 'Replace' : 'Upload'}
+                      </button>
+                    </div>
+
+                    {/* Close Image Slot */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      padding: '7px 10px',
+                      background: 'rgba(0,0,0,0.1)',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        {state.closeScreenshotUrl ? (
+                          <img
+                            src={state.closeScreenshotUrl}
+                            alt="Close Screen"
+                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border-color)' }}
+                          />
+                        ) : (
+                          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <ImageIcon size={15} style={{ color: 'var(--text-secondary)' }} />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              Close Screen
+                            </span>
+                            <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: 4, background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', fontWeight: 700 }}>
+                              0° Cover
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {state.closeScreenshot?.name || (state.closeScreenshotUrl ? 'Cover display image' : 'Falls back to open')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => closeFileInputRef.current?.click()}
+                        style={{
+                          padding: '4px 9px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          background: 'var(--bg-secondary, rgba(255,255,255,0.08))',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-color)',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0
+                        }}
+                      >
+                        {state.closeScreenshotUrl ? 'Replace' : 'Upload'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="sidebar-divider desktop-only-divider" style={{ width: '100%', height: 1, background: 'var(--border-color)', marginBottom: 12 }} />
 

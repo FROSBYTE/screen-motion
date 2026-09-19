@@ -1947,6 +1947,14 @@ button:not(:disabled):active,
   0%, 100% { transform: scale(0.85); }
   50% { transform: scale(1.2); }
 }
+@keyframes card-anim-open-close {
+  0% { transform: scaleX(1); }
+  50%, 100% { transform: scaleX(0.5); }
+}
+@keyframes card-anim-close-open {
+  0% { transform: scaleX(0.5); }
+  50%, 100% { transform: scaleX(1); }
+}
 
 /* Ensure R3F canvas inside motion graphics editor always fills 100% of the 1920x1080 canvas */
 .motion-device-canvas,

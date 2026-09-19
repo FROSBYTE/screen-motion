@@ -27,6 +27,8 @@ import { buildCornerDrop } from './corner-drop';
 import { build3DSpinFlip } from './3d-spin-flip';
 import { buildPerspectiveFloat } from './perspective-float';
 import { buildZoomPulse } from './zoom-pulse';
+import { buildOpenClose } from './open-close';
+import { buildCloseOpen } from './close-open';
 
 /**
  * Registry mapping template names to their builder functions.
@@ -54,6 +56,8 @@ const builders: Record<string, AnimationBuilder> = {
   '3d-spin-flip': build3DSpinFlip,
   'perspective-float': buildPerspectiveFloat,
   'zoom-pulse': buildZoomPulse,
+  'open-close': buildOpenClose,
+  'close-open': buildCloseOpen,
 };
 
 export function createAnimation(

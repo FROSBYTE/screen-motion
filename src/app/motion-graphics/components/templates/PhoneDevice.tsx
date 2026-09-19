@@ -6,9 +6,10 @@ import { useGLTF, Center, useVideoTexture, useTexture, Environment } from '@reac
 import { createAnimation, AnimationTarget, TemplateAnimation } from '@/templates/animations';
 import type { TemplateName } from '@/types';
 import * as THREE from 'three';
+import { Model as IPhoneDuoModel } from '@/components/3d-editor/models/IPhoneDuoModel';
 
 export interface PhoneDeviceProps {
-  deviceType?: 'iphone' | 'android';
+  deviceType?: 'iphone' | 'android' | 'iphone-duo';
   deviceColor?: string;
   screenImage?: string;
   screenVideo?: string;
@@ -381,6 +382,12 @@ function AnimatedDevice({
       >
         {deviceType === 'iphone' ? (
           <IPhoneModel deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
+        ) : deviceType === 'iphone-duo' ? (
+          <IPhoneDuoModel
+            screenshotUrl={screenVideo || screenImage}
+            mediaType={screenVideo ? 'video' : 'image'}
+            deviceColor={deviceColor}
+          />
         ) : (
           <AndroidModelComponent deviceColor={deviceColor} screenImage={screenImage} screenVideo={screenVideo} />
         )}
