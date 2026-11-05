@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo, useCallback } from 'react';
-import { trackMixpanelEvent } from '@/lib/mixpanel';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { saveAsset, getAsset, loadDraft, clearDraft } from '@/lib/storage/indexedDb';
 import {
@@ -201,13 +200,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const orientation: Orientation =
           video.videoWidth > video.videoHeight ? 'landscape' : 'portrait';
         dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, mediaType: 'video', error: null });
-        trackMixpanelEvent('screenshot_uploaded', {
-          file_type: 'video',
-          file_name: file.name,
-          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
-          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
-          orientation,
-        });
       };
       video.onerror = () => {
         dispatch({ error: 'Failed to load video. Try another file.' });
@@ -220,13 +212,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const orientation: Orientation =
           img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
         dispatch({ screenshot: file, screenshotUrl: url, screenshotOrientation: orientation, mediaType: 'image', error: null });
-        trackMixpanelEvent('screenshot_uploaded', {
-          file_type: 'image',
-          file_name: file.name,
-          file_extension: file.name.split('.').pop()?.toLowerCase() || '',
-          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
-          orientation,
-        });
       };
       img.onerror = () => {
         dispatch({ error: 'Failed to load image. Try another file.' });

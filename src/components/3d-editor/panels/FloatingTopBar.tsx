@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppState } from '@/store';
 import { TEMPLATES } from '@/types';
 import { AnimatedTabs, TabItem } from '@/components/ui/animated-tabs';
-import { trackMixpanelEvent } from '@/lib/mixpanel';
 
 export default function FloatingTopBar() {
   const { state, dispatch, uploadScreenshot, uploadCloseScreenshot } = useAppState();
@@ -363,14 +362,6 @@ export default function FloatingTopBar() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        trackMixpanelEvent('export_completed', {
-          template: state.template,
-          device: state.device,
-          resolution: state.resolution,
-          orientation: state.orientation,
-          speed: state.speed,
-          duration_seconds: Number((actualDurationMs / 1000).toFixed(1)),
-        });
 
         dispatch({ exportStatus: 'done', exportProgress: 100 });
         setTimeout(() => {

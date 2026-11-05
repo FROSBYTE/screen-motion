@@ -1,14 +1,13 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MotionGraphicsProvider } from '../store';
 import { AlignmentProvider } from '@/context/AlignmentContext';
 import { MotionGraphicsStudioContent } from '../page';
 
-export default function MotionGraphicsProjectPage() {
-  const params = useParams();
-  const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : undefined;
+function ProjectContent() {
+  const id = useSearchParams().get('id') ?? undefined;
 
   return (
     <MotionGraphicsProvider projectId={id}>
@@ -16,5 +15,13 @@ export default function MotionGraphicsProjectPage() {
         <MotionGraphicsStudioContent />
       </AlignmentProvider>
     </MotionGraphicsProvider>
+  );
+}
+
+export default function MotionGraphicsProjectPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProjectContent />
+    </Suspense>
   );
 }

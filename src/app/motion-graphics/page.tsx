@@ -79,7 +79,7 @@ export function MotionGraphicsStudioContent() {
   const handleCreateNew = async () => {
     try {
       const newProj = await createProject('Untitled Video');
-      router.push(`/motion-graphics/${newProj.id}`);
+      router.push(`/motion-graphics/project?id=${newProj.id}`);
     } catch (err) {
       console.error('Failed to create new project:', err);
     }
@@ -475,10 +475,10 @@ export default function MotionGraphicsPage() {
     // If arriving at /motion-graphics directly, redirect to the most recent project or /projects
     listProjects().then((projects) => {
       if (projects.length > 0) {
-        router.replace(`/motion-graphics/${projects[0].id}`);
+        router.replace(`/motion-graphics/project?id=${projects[0].id}`);
       } else {
         createProject('Untitled Video', undefined, '16:9').then((p) => {
-          router.replace(`/motion-graphics/${p.id}`);
+          router.replace(`/motion-graphics/project?id=${p.id}`);
         });
       }
     });

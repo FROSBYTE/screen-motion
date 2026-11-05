@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import MixpanelInit from '@/components/shared/MixpanelInit';
+import ConsoleFilter from '@/components/shared/ConsoleFilter';
 
 const interTight = Inter_Tight({
   variable: "--font-inter-tight",
@@ -63,7 +63,7 @@ export default function RootLayout({
         />
       </head>
       <body style={{ fontFamily: '"Inter Tight", -apple-system, sans-serif', backgroundColor: '#0A0B0F', color: '#FFFFFF' }}>
-        <MixpanelInit />
+        <ConsoleFilter />
         {children}
       </body>
     </html>

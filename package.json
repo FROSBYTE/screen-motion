@@ -11,11 +11,9 @@
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
-    "@types/mixpanel-browser": "^2.60.0",
     "clsx": "^2.1.1",
     "gsap": "^3.15.0",
     "lucide-react": "^1.25.0",
-    "mixpanel-browser": "^2.81.0",
     "motion": "^12.42.2",
     "mp4-muxer": "^5.2.2",
     "next": "16.2.10",

@@ -75,7 +75,7 @@ export default function ProjectsPage() {
     try {
       setIsCreating(true);
       const newProj = await createProject(title, undefined, aspectRatio);
-      router.push(`/motion-graphics/${newProj.id}`);
+      router.push(`/motion-graphics/project?id=${newProj.id}`);
     } catch (err) {
       console.error('Failed to create project:', err);
       setIsCreating(false);
@@ -538,7 +538,7 @@ export default function ProjectsPage() {
             {filteredProjects.map((proj) => (
               <div
                 key={proj.id}
-                onClick={() => router.push(`/motion-graphics/${proj.id}`)}
+                onClick={() => router.push(`/motion-graphics/project?id=${proj.id}`)}
                 style={{
                   position: 'relative',
                   borderRadius: '8px',
@@ -751,7 +751,7 @@ export default function ProjectsPage() {
                         }}
                       >
                         <button
-                          onClick={() => router.push(`/motion-graphics/${proj.id}`)}
+                          onClick={() => router.push(`/motion-graphics/project?id=${proj.id}`)}
                           style={{
                             width: '100%',
                             display: 'flex',
